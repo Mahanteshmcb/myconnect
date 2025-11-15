@@ -75,6 +75,14 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
         await supabase
           .from("follows")
           .insert({ follower_id: currentUserId, following_id: profile.id });
+
+        await supabase.from("notifications").insert({
+          user_id: profile.id,
+          type: "follow",
+          content: "started following you",
+          actor_id: currentUserId,
+        });
+
         setIsFollowing(true);
         setFollowerCount((prev) => prev + 1);
       }

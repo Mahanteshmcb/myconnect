@@ -5,6 +5,7 @@ import { User } from "@supabase/supabase-js";
 import Navigation from "@/components/Navigation";
 import PostCard from "@/components/PostCard";
 import CreatePost from "@/components/CreatePost";
+import StoriesBar from "@/components/stories/StoriesBar";
 import { Loader2 } from "lucide-react";
 
 interface Post {
@@ -97,8 +98,9 @@ const Feed = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation user={user} />
-      
+
       <main className="max-w-2xl mx-auto pt-20 pb-8 px-4">
+        <StoriesBar userId={user.id} />
         <CreatePost userId={user.id} onPostCreated={handlePostCreated} />
         
         {loading ? (

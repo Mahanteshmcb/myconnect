@@ -35,6 +35,16 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
         await supabase
           .from("likes")
           .insert({ post_id: post.id, user_id: currentUserId });
+
+        if (post.user_id !== currentUserId) {
+          await supabase.from("notifications").insert({
+            user_id: post.user_id,
+            type: "like",
+            content: "liked your post",
+            actor_id: currentUserId,
+            related_id: post.id,
+          });
+        }
       }
       onUpdate();
     } catch (error) {
@@ -54,6 +64,16 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
           user_id: currentUserId,
           content: comment,
         });
+
+      if (post.user_id !== currentUserId) {
+        await supabase.from("notifications").insert({
+          user_id: post.user_id,
+          type: "comment",
+          content: "commented on your post",
+          actor_id: currentUserId,
+          related_id: post.id,
+        });
+      }
 
       setComment("");
       onUpdate();

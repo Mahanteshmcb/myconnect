@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Home, User, LogOut } from "lucide-react";
+import { Camera, Home, User, LogOut, MessageCircle, Paperclip, Shield } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface NavigationProps {
   user: SupabaseUser;
@@ -13,6 +14,7 @@ interface NavigationProps {
 const Navigation = ({ user }: NavigationProps) => {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,11 +24,18 @@ const Navigation = ({ user }: NavigationProps) => {
         .select("username, avatar_url")
         .eq("id", user.id)
         .single();
-      
+
       if (data) {
         setUsername(data.username);
         setAvatarUrl(data.avatar_url);
       }
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      setIsAdmin(roles?.some((r) => r.role === "admin" || r.role === "moderator") || false);
     };
 
     fetchProfile();
@@ -49,24 +58,36 @@ const Navigation = ({ user }: NavigationProps) => {
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="hover:bg-secondary"
-          >
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
             <Link to="/feed">
               <Home className="w-5 h-5" />
             </Link>
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="hover:bg-secondary"
-          >
+          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
+            <Link to="/messages">
+              <MessageCircle className="w-5 h-5" />
+            </Link>
+          </Button>
+
+          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
+            <Link to="/files">
+              <Paperclip className="w-5 h-5" />
+            </Link>
+          </Button>
+
+          <NotificationBell userId={user.id} />
+
+          {isAdmin && (
+            <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
+              <Link to="/admin">
+                <Shield className="w-5 h-5" />
+              </Link>
+            </Button>
+          )}
+
+          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
             <Link to={`/profile/${username}`}>
               <User className="w-5 h-5" />
             </Link>
