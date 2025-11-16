@@ -21,6 +21,26 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Maximum file size is 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type (images only)
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -42,6 +62,16 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
       toast({
         title: "Error",
         description: "Please select an image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate caption length (2000 chars max)
+    if (caption.length > 2000) {
+      toast({
+        title: "Caption too long",
+        description: "Caption must be less than 2000 characters",
         variant: "destructive",
       });
       return;

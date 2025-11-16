@@ -85,16 +85,42 @@ const Files = () => {
   };
 
   const handleDownload = async (file: FileItem) => {
-    if (user && file.receiver && !file.opened) {
-      await supabase
-        .from("sent_files")
-        .update({ opened: true, opened_at: new Date().toISOString() })
-        .eq("id", file.id);
+    try {
+      if (user && file.receiver && !file.opened) {
+        await supabase
+          .from("sent_files")
+          .update({ opened: true, opened_at: new Date().toISOString() })
+          .eq("id", file.id);
 
-      fetchFiles(user.id);
+        fetchFiles(user.id);
+      }
+
+      // Extract the file path from the URL for regenerating signed URL
+      const urlParts = file.file_url.split("/");
+      const bucketPath = urlParts.slice(urlParts.indexOf("shared-files") + 1).join("/").split("?")[0];
+
+      // Generate fresh signed URL for download
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from("shared-files")
+        .createSignedUrl(decodeURIComponent(bucketPath), 3600); // 1 hour expiry
+
+      if (urlError) {
+        toast({
+          title: "Download failed",
+          description: "Unable to generate download link",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      window.open(signedUrlData.signedUrl, "_blank");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download file",
+        variant: "destructive",
+      });
     }
-
-    window.open(file.file_url, "_blank");
   };
 
   const formatFileSize = (bytes: number) => {
