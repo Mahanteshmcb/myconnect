@@ -40,6 +40,7 @@ const FileSharingDialog = ({ userId }: FileSharingDialogProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Validate file size (10MB max)
       if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -48,6 +49,17 @@ const FileSharingDialog = ({ userId }: FileSharingDialogProps) => {
         });
         return;
       }
+
+      // Validate file name length
+      if (selectedFile.name.length > 255) {
+        toast({
+          title: "File name too long",
+          description: "File name must be less than 255 characters",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setFile(selectedFile);
     }
   };
@@ -68,18 +80,24 @@ const FileSharingDialog = ({ userId }: FileSharingDialogProps) => {
       const fileExt = file.name.split(".").pop();
       const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage.from("files").upload(fileName, file);
+      // Upload to private shared-files bucket
+      const { error: uploadError } = await supabase.storage
+        .from("shared-files")
+        .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("files").getPublicUrl(fileName);
+      // Use signed URL for private file access (expires in 7 days)
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from("shared-files")
+        .createSignedUrl(fileName, 604800); // 7 days in seconds
+
+      if (urlError) throw urlError;
 
       const { error: insertError } = await supabase.from("sent_files").insert({
         sender_id: userId,
         receiver_id: selectedUser.id,
-        file_url: publicUrl,
+        file_url: signedUrlData.signedUrl,
         file_name: file.name,
         file_size: file.size,
       });

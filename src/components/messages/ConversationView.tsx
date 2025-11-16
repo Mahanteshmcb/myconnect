@@ -100,6 +100,16 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
 
     if (!newMessage.trim()) return;
 
+    // Validate message length (5000 chars max)
+    if (newMessage.trim().length > 5000) {
+      toast({
+        title: "Message too long",
+        description: "Message must be less than 5000 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSending(true);
 
     try {
