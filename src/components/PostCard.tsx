@@ -56,13 +56,23 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
+    // Validate comment length (1000 chars max)
+    if (comment.trim().length > 1000) {
+      toast({
+        title: "Comment too long",
+        description: "Comment must be less than 1000 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await supabase
         .from("comments")
         .insert({
           post_id: post.id,
           user_id: currentUserId,
-          content: comment,
+          content: comment.trim(),
         });
 
       if (post.user_id !== currentUserId) {
