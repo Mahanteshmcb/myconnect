@@ -95,6 +95,47 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate bio length (500 chars max)
+    if (editForm.bio.length > 500) {
+      toast({
+        title: "Bio too long",
+        description: "Bio must be less than 500 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate full name length (100 chars max)
+    if (editForm.full_name.length > 100) {
+      toast({
+        title: "Name too long",
+        description: "Full name must be less than 100 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate avatar file size (10MB max)
+    if (avatarFile && avatarFile.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate avatar file type
+    if (avatarFile && !avatarFile.type.startsWith("image/")) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -120,8 +161,8 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: editForm.full_name,
-          bio: editForm.bio,
+          full_name: editForm.full_name.trim(),
+          bio: editForm.bio.trim(),
           avatar_url: avatarUrl,
         })
         .eq("id", currentUserId);
