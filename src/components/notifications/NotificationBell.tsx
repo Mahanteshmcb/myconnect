@@ -55,7 +55,7 @@ const NotificationBell = ({ userId }: NotificationBellProps) => {
   const fetchNotifications = async () => {
     const { data } = await supabase
       .from("notifications")
-      .select("*, actor:actor_id(username, avatar_url)")
+      .select("*, actor:profiles!actor_id(username, avatar_url)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20);

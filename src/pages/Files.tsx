@@ -65,13 +65,13 @@ const Files = () => {
     try {
       const { data: sent } = await supabase
         .from("sent_files")
-        .select("*, receiver:receiver_id(username, avatar_url)")
+        .select("*, receiver:profiles!receiver_id(username, avatar_url)")
         .eq("sender_id", userId)
         .order("created_at", { ascending: false });
 
       const { data: received } = await supabase
         .from("sent_files")
-        .select("*, sender:sender_id(username, avatar_url)")
+        .select("*, sender:profiles!sender_id(username, avatar_url)")
         .eq("receiver_id", userId)
         .order("created_at", { ascending: false });
 

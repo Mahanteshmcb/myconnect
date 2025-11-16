@@ -115,8 +115,8 @@ const Admin = () => {
     }
   };
 
-  const toggleUserRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === "admin" ? "user" : "admin";
+  const toggleUserRole = async (userId: string, currentRole: "admin" | "moderator" | "user") => {
+    const newRole: "admin" | "moderator" | "user" = currentRole === "admin" ? "user" : "admin";
 
     try {
       const { error } = await supabase
