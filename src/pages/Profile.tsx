@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import Navigation from "@/components/Navigation";
 import ProfileHeader from "@/components/ProfileHeader";
