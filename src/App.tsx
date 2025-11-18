@@ -14,6 +14,7 @@ import Messages from "./pages/Messages";
 import Files from "./pages/Files";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import HashtagPage from "./pages/Hashtag";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/files" element={<Files />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile/:username" element={<Profile />} />
+            <Route path="/hashtags/:tag" element={<HashtagPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -6,7 +6,7 @@ import { Heart, MessageCircle, Share2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import VideoComments from "./VideoComments";
-import MentionText from "../MentionText"; // Import MentionText
+import RenderContent from "../RenderContent";
 
 interface VideoCardProps {
   video: {
@@ -61,7 +61,6 @@ const VideoCard = ({ video, currentUserId, onUpdate }: VideoCardProps) => {
   const handlePlay = async () => {
     if (!isPlaying) {
       setIsPlaying(true);
-      // Increment view count
       await supabase
         .from("videos")
         .update({ views: video.views + 1 })
@@ -136,7 +135,7 @@ const VideoCard = ({ video, currentUserId, onUpdate }: VideoCardProps) => {
         {video.caption && (
           <p className="text-sm">
             <span className="font-semibold mr-2">{video.profiles.username}</span>
-            <MentionText text={video.caption} />
+            <RenderContent text={video.caption} />
           </p>
         )}
       </div>

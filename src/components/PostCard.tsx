@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Heart, MessageCircle, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import MentionText from "./MentionText"; // Import MentionText
-import { createMentionNotifications } from "@/lib/mentionUtils"; // Import the utility
+import RenderContent from "./RenderContent"; // Import RenderContent
+import { createMentionNotifications } from "@/lib/mentionUtils";
 
 interface PostCardProps {
   post: any;
@@ -58,7 +58,6 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
-    // Validate comment length (1000 chars max)
     if (comment.trim().length > 1000) {
       toast({
         title: "Comment too long",
@@ -81,7 +80,6 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
 
       if (insertError) throw insertError;
 
-      // Create notifications for mentions in the comment
       if (commentData?.id) {
         await createMentionNotifications(comment.trim(), currentUserId, post.id, "comment_mention");
       }
@@ -173,7 +171,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
             >
               {post.profiles.username}
             </Link>
-            <MentionText text={post.caption} />
+            <RenderContent text={post.caption} />
           </p>
         )}
 
@@ -190,7 +188,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
                 <div className="flex-1">
                   <p className="text-sm">
                     <span className="font-semibold">{comment.profiles.username}</span>{" "}
-                    <MentionText text={comment.content} />
+                    <RenderContent text={comment.content} />
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}

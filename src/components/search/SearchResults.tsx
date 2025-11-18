@@ -121,6 +121,7 @@ const SearchResults = ({ users, posts, videos, hashtags }: SearchResultsProps) =
             <div
               key={hashtag.id}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary cursor-pointer"
+              onClick={() => navigate(`/hashtags/${hashtag.tag}`)}
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Hash className="w-5 h-5 text-primary" />

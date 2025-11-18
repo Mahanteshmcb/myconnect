@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import MentionText from "../MentionText"; // Import MentionText
-import { createMentionNotifications } from "@/lib/mentionUtils"; // Import the utility
+import RenderContent from "../RenderContent";
+import { createMentionNotifications } from "@/lib/mentionUtils";
 
 interface VideoCommentsProps {
   videoId: string;
@@ -61,7 +61,6 @@ const VideoComments = ({ videoId, currentUserId, onUpdate }: VideoCommentsProps)
 
       if (error) throw error;
 
-      // Create notifications for mentions in the comment
       if (commentData?.id) {
         await createMentionNotifications(newComment.trim(), currentUserId, videoId, "video_comment_mention");
       }
@@ -105,7 +104,7 @@ const VideoComments = ({ videoId, currentUserId, onUpdate }: VideoCommentsProps)
               <div className="bg-secondary rounded-lg p-2">
                 <p className="font-semibold text-sm">{comment.profiles.username}</p>
                 <p className="text-sm">
-                  <MentionText text={comment.content} />
+                  <RenderContent text={comment.content} />
                 </p>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
