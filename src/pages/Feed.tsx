@@ -94,7 +94,7 @@ const Feed = () => {
               <PostCard
                 key={post.id}
                 post={post}
-                currentUserId={user.id}
+                currentUser={user.id}
                 onUpdate={handleUpdate}
               />
             ))}
