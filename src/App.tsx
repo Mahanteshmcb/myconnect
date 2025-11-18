@@ -2,11 +2,12 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import Auth from "@/pages/Auth";
 import Home from "@/pages/Home";
 import Profile from "@/pages/Profile";
-import PostPage from "@/pages/Post";
+import PostPage from "@/pages/PostPage";
 import Messages from "@/pages/Messages";
 import Groups from "@/pages/Groups";
 import Group from "@/pages/Group";
 import Explore from "@/pages/Explore";
+import Videos from "@/pages/Videos";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/home" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/videos" element={<Videos />} />
           <Route path="/:username" element={<Profile />} />
           <Route path="/post/:postId" element={<PostPage />} />
           <Route path="/messages" element={<Messages />} />
