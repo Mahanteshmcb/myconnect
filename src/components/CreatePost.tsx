@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ImagePlus, X } from "lucide-react";
-import { createMentionNotifications } from "@/lib/mentionUtils"; // Import the utility
+import { createMentionNotifications } from "@/lib/mentionUtils";
+import { processHashtags } from "@/lib/hashtagUtils";
 
 interface CreatePostProps {
   userId: string;
@@ -22,7 +23,6 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -31,8 +31,6 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
         });
         return;
       }
-
-      // Validate file type (images only)
       if (!file.type.startsWith("image/")) {
         toast({
           title: "Invalid file type",
@@ -41,7 +39,6 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
         });
         return;
       }
-
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -68,7 +65,6 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
       return;
     }
 
-    // Validate caption length (2000 chars max)
     if (caption.length > 2000) {
       toast({
         title: "Caption too long",
@@ -106,9 +102,9 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
 
       if (insertError) throw insertError;
 
-      // Create notifications for mentions in the caption
       if (postData?.id) {
         await createMentionNotifications(caption, userId, postData.id, "post_mention");
+        await processHashtags(caption, postData.id);
       }
 
       toast({
@@ -136,7 +132,7 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Textarea
-            placeholder="What's on your mind? Tag friends with @username"
+            placeholder="What's on your mind? Tag friends with @username and use #hashtags"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             className="resize-none"

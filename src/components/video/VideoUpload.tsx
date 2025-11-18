@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Loader2, X } from "lucide-react";
+import { processHashtags } from "@/lib/hashtagUtils";
 
 interface VideoUploadProps {
   userId: string;
@@ -60,7 +61,6 @@ const VideoUpload = ({ userId, onVideoUploaded }: VideoUploadProps) => {
         .from("videos")
         .getPublicUrl(fileName);
 
-      // Create video element to get duration
       const video = document.createElement('video');
       video.src = videoPreview!;
       await new Promise((resolve) => {
@@ -68,14 +68,18 @@ const VideoUpload = ({ userId, onVideoUploaded }: VideoUploadProps) => {
       });
       const duration = Math.floor(video.duration);
 
-      const { error: dbError } = await supabase.from("videos").insert({
+      const { data: videoData, error: dbError } = await supabase.from("videos").insert({
         user_id: userId,
         video_url: publicUrl,
         caption: caption.trim() || null,
         duration,
-      });
+      }).select('id').single();
 
       if (dbError) throw dbError;
+
+      if (videoData?.id) {
+        await processHashtags(caption, null, videoData.id);
+      }
 
       toast({
         title: "Video uploaded!",
