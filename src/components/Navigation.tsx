@@ -87,7 +87,7 @@ const Navigation = ({ user }: NavigationProps) => {
           </div>
         </nav>
       </header>
-      <CreatePost isOpen={isCreatePostOpen} onOpenChange={setCreatePostOpen} />
+      <CreatePost userId={user.id} isOpen={isCreatePostOpen} onOpenChange={setCreatePostOpen} />
     </>
   );
 };
