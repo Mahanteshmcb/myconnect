@@ -5,12 +5,15 @@ import { User } from "@supabase/supabase-js";
 import Navigation from "@/components/Navigation";
 import { Loader2 } from "lucide-react";
 import GroupHeader from "@/components/groups/GroupHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import CreateGroupPost from "@/components/groups/CreateGroupPost";
+import GroupFeed from "@/components/groups/GroupFeed";
 
 const GroupPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [group, setGroup] = useState<any>(null);
+  const [isMember, setIsMember] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshFeed, setRefreshFeed] = useState(0);
   const navigate = useNavigate();
   const { groupId } = useParams<{ groupId: string }>();
 
@@ -28,22 +31,24 @@ const GroupPage = () => {
 
   useEffect(() => {
     if (user && groupId) {
-      fetchGroup();
+      fetchGroupAndMembership();
     }
   }, [user, groupId]);
 
-  const fetchGroup = async () => {
+  const fetchGroupAndMembership = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("groups")
-        .select("*, group_members(count)")
-        .eq("id", groupId)
-        .single();
-      if (error) throw error;
-      setGroup(data);
+      const groupPromise = supabase.from("groups").select("*, group_members(count)").eq("id", groupId).single();
+      const membershipPromise = supabase.from("group_members").select("*").eq("group_id", groupId).eq("user_id", user!.id).single();
+      
+      const [{ data: groupData, error: groupError }, { data: membershipData }] = await Promise.all([groupPromise, membershipPromise]);
+
+      if (groupError) throw groupError;
+      
+      setGroup(groupData);
+      setIsMember(!!membershipData);
     } catch (error) {
-      console.error("Error fetching group:", error);
+      console.error("Error fetching group data:", error);
       navigate("/groups");
     } finally {
       setLoading(false);
@@ -61,23 +66,20 @@ const GroupPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation user={user} />
-      <main className="max-w-4xl mx-auto pt-20 pb-8 px-4">
+      <main className="max-w-2xl mx-auto pt-20 pb-8 px-4">
         <GroupHeader
           group={group}
           userId={user.id}
-          onUpdate={fetchGroup}
+          onUpdate={fetchGroupAndMembership}
         />
-        <div className="mt-6">
-          {/* Placeholder for group post feed */}
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              Group posts will appear here soon!
-            </CardContent>
-          </Card>
-        </div>
+        {isMember && (
+          <CreateGroupPost
+            userId={user.id}
+            groupId={group.id}
+            onPostCreated={() => setRefreshFeed(count => count + 1)}
+          />
+        )}
+        <GroupFeed groupId={group.id} userId={user.id} refreshFeed={refreshFeed} />
       </main>
     </div>
   );
-};
-
-export default GroupPage;
