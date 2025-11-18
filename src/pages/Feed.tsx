@@ -6,36 +6,33 @@ import Navigation from "@/components/Navigation";
 import PostCard from "@/components/PostCard";
 import CreatePost from "@/components/CreatePost";
 import StoriesBar from "@/components/stories/StoriesBar";
-import { Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import PostCardSkeleton from "@/components/PostCardSkeleton";
 
-interface Post {
-  id: string;
-  caption: string;
-  image_url: string;
-  created_at: string;
-  user_id: string;
-  profiles: {
-    username: string;
-    full_name: string;
-    avatar_url: string;
-  };
-  likes: { user_id: string }[];
-  comments: {
-    id: string;
-    content: string;
-    created_at: string;
-    profiles: {
-      username: string;
-      avatar_url: string;
-    };
-  }[];
-}
+const fetchPosts = async () => {
+  const { data, error } = await supabase
+    .from("posts")
+    .select(`
+      *,
+      profiles:user_id (username, full_name, avatar_url),
+      likes (user_id),
+      comments (
+        id,
+        content,
+        created_at,
+        profiles:user_id (username, avatar_url)
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
 
 const Feed = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -45,7 +42,6 @@ const Feed = () => {
         return;
       }
       setUser(session.user);
-      fetchPosts();
     };
 
     checkUser();
@@ -61,34 +57,14 @@ const Feed = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchPosts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select(`
-          *,
-          profiles:user_id (username, full_name, avatar_url),
-          likes (user_id),
-          comments (
-            id,
-            content,
-            created_at,
-            profiles:user_id (username, avatar_url)
-          )
-        `)
-        .order("created_at", { ascending: false });
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["posts"],
+    queryFn: fetchPosts,
+    enabled: !!user,
+  });
 
-      if (error) throw error;
-      setPosts(data || []);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePostCreated = () => {
-    fetchPosts();
+  const handleUpdate = () => {
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
   };
 
   if (!user) {
@@ -101,13 +77,14 @@ const Feed = () => {
 
       <main className="max-w-2xl mx-auto pt-20 pb-8 px-4">
         <StoriesBar userId={user.id} />
-        <CreatePost userId={user.id} onPostCreated={handlePostCreated} />
+        <CreatePost userId={user.id} onPostCreated={handleUpdate} />
         
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        {isLoading ? (
+          <div className="space-y-6">
+            <PostCardSkeleton />
+            <PostCardSkeleton />
           </div>
-        ) : posts.length === 0 ? (
+        ) : posts?.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No posts yet. Be the first to share!</p>
           </div>
@@ -118,7 +95,7 @@ const Feed = () => {
                 key={post.id}
                 post={post}
                 currentUserId={user.id}
-                onUpdate={fetchPosts}
+                onUpdate={handleUpdate}
               />
             ))}
           </div>

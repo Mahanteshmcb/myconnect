@@ -131,7 +131,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
 
   return (
     <>
-      <Card className="shadow-elegant border-border/50 overflow-hidden">
+      <Card className="shadow-elegant border-border/50 overflow-hidden animate-fade-in">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3">
             <Link to={`/profile/${post.profiles.username}`}>
