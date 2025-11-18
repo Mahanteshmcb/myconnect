@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, UserMinus, Settings } from "lucide-react";
+import { Loader2, UserPlus, UserMinus, Settings, Link as LinkIcon } from "lucide-react";
 
 interface ProfileHeaderProps {
   profile: any;
@@ -26,6 +26,7 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
   const [editForm, setEditForm] = useState({
     full_name: profile.full_name || "",
     bio: profile.bio || "",
+    website: profile.website || "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -116,6 +117,16 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
       return;
     }
 
+    // Validate website URL
+    if (editForm.website && !/^(https?:\/\/)/.test(editForm.website)) {
+      toast({
+        title: "Invalid URL",
+        description: "Website URL must start with http:// or https://",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate avatar file size (10MB max)
     if (avatarFile && avatarFile.size > 10 * 1024 * 1024) {
       toast({
@@ -163,6 +174,7 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
         .update({
           full_name: editForm.full_name.trim(),
           bio: editForm.bio.trim(),
+          website: editForm.website.trim(),
           avatar_url: avatarUrl,
         })
         .eq("id", currentUserId);
@@ -227,6 +239,15 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
                         id="full_name"
                         value={editForm.full_name}
                         onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="website">Website</Label>
+                      <Input
+                        id="website"
+                        value={editForm.website}
+                        onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                        placeholder="https://example.com"
                       />
                     </div>
                     <div>
@@ -296,6 +317,12 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
           <div>
             <p className="font-semibold">{profile.full_name}</p>
             {profile.bio && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>}
+            {profile.website && (
+              <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
+                <LinkIcon className="w-4 h-4" />
+                {profile.website.replace(/^(https?:\/\/)/, '')}
+              </a>
+            )}
           </div>
         </div>
       </div>

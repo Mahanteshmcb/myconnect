@@ -13,6 +13,7 @@ interface Profile {
   full_name: string;
   bio: string;
   avatar_url: string;
+  website: string;
 }
 
 const Profile = () => {
