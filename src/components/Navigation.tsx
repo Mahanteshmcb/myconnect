@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Home, User, LogOut, MessageCircle, Paperclip, Shield, Video, Search } from "lucide-react";
+import { Camera, Home, User, LogOut, MessageCircle, Paperclip, Shield, Video, Search, Users } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "@/components/notifications/NotificationBell";
 
@@ -74,6 +74,12 @@ const Navigation = ({ user }: NavigationProps) => {
           <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
             <Link to="/search">
               <Search className="w-5 h-5" />
+            </Link>
+          </Button>
+          
+          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
+            <Link to="/groups">
+              <Users className="w-5 h-5" />
             </Link>
           </Button>
 
