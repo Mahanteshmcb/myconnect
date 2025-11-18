@@ -26,7 +26,10 @@ const GroupFeed = ({ groupId, userId, refreshFeed }: GroupFeedProps) => {
           *,
           profiles:user_id (username, avatar_url),
           group_post_likes (user_id),
-          group_post_comments (id)
+          group_post_comments (
+            *,
+            profiles:user_id (username, avatar_url)
+          )
         `)
         .eq("group_id", groupId)
         .order("created_at", { ascending: false });

@@ -11,6 +11,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const GroupPostCard = ({ post, currentUserId, onUpdate }: { post: any, currentUserId: string, onUpdate: () => void }) => {
   const [comment, setComment] = useState("");
+  const [showComments, setShowComments] = useState(false);
   const { toast } = useToast();
 
   const isLiked = post.group_post_likes.some((like: any) => like.user_id === currentUserId);
@@ -62,16 +63,40 @@ const GroupPostCard = ({ post, currentUserId, onUpdate }: { post: any, currentUs
         </div>
       </CardHeader>
       <img src={post.image_url} alt={post.caption || "Group Post"} className="w-full" />
-      <CardContent className="pt-4">
-        {post.caption && <p className="text-sm mb-4">{post.caption}</p>}
-        <div className="flex items-center gap-4">
+      <CardContent className="pt-4 pb-2">
+        <div className="flex items-center gap-4 mb-3">
           <Button variant="ghost" size="sm" className={isLiked ? "text-destructive" : ""} onClick={handleLike}>
             <Heart className={`w-5 h-5 mr-1 ${isLiked ? "fill-current" : ""}`} /> {likesCount}
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => setShowComments(!showComments)}>
             <MessageCircle className="w-5 h-5 mr-1" /> {post.group_post_comments.length}
           </Button>
         </div>
+        {post.caption && <p className="text-sm">{post.caption}</p>}
+        
+        {showComments && post.group_post_comments.length > 0 && (
+          <div className="mt-4 space-y-3 max-h-60 overflow-y-auto">
+            {post.group_post_comments.map((comment: any) => (
+              <div key={comment.id} className="flex gap-2">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={comment.profiles.avatar_url} />
+                  <AvatarFallback className="bg-secondary text-xs">
+                    {comment.profiles.username[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="text-sm">
+                    <span className="font-semibold">{comment.profiles.username}</span>{" "}
+                    {comment.content}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
       <CardFooter>
         <form onSubmit={handleComment} className="flex gap-2 w-full">
