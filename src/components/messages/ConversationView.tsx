@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Paperclip } from "lucide-react";
+import { Send, Check, CheckCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
@@ -13,6 +13,7 @@ interface Message {
   file_url: string | null;
   sender_id: string;
   created_at: string;
+  read_at: string | null;
   profiles: {
     username: string;
     avatar_url: string;
@@ -29,33 +30,48 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
   const [newMessage, setNewMessage] = useState("");
   const [otherUser, setOtherUser] = useState<any>(null);
   const [sending, setSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchMessages();
     fetchOtherUser();
 
-    const channel = supabase
-      .channel(`conversation:${conversationId}`)
+    const messageChannel = supabase
+      .channel(`conversation-messages:${conversationId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        () => {
           fetchMessages();
         }
       )
       .subscribe();
 
+    const typingChannel = supabase.channel(`conversation-typing:${conversationId}`);
+    typingChannel
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.userId !== userId) {
+          setIsTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+        }
+      })
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messageChannel);
+      supabase.removeChannel(typingChannel);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [conversationId]);
+  }, [conversationId, userId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -95,12 +111,18 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
       .is("read_at", null);
   };
 
+  const handleTyping = () => {
+    const channel = supabase.channel(`conversation-typing:${conversationId}`);
+    channel.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { userId },
+    });
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!newMessage.trim()) return;
-
-    // Validate message length (5000 chars max)
     if (newMessage.trim().length > 5000) {
       toast({
         title: "Message too long",
@@ -111,14 +133,12 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
     }
 
     setSending(true);
-
     try {
       const { error } = await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: userId,
         content: newMessage.trim(),
       });
-
       if (error) throw error;
 
       await supabase
@@ -128,11 +148,7 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
 
       setNewMessage("");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -149,6 +165,7 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
             </Avatar>
             <div>
               <div className="font-semibold">{otherUser.username}</div>
+              {isTyping && <div className="text-xs text-primary animate-pulse">typing...</div>}
             </div>
           </div>
         </div>
@@ -165,15 +182,14 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
                   <AvatarFallback>{message.profiles.username[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div
-                    className={`rounded-lg p-3 ${
-                      isOwn ? "bg-primary text-primary-foreground" : "bg-secondary"
-                    }`}
-                  >
+                  <div className={`rounded-lg p-3 ${isOwn ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>
                     {message.content}
                   </div>
-                  <div className={`text-xs text-muted-foreground mt-1 ${isOwn ? "text-right" : "text-left"}`}>
-                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                  <div className={`text-xs text-muted-foreground mt-1 flex items-center gap-1 ${isOwn ? "flex-row-reverse" : ""}`}>
+                    <span>{formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}</span>
+                    {isOwn && (
+                      message.read_at ? <CheckCheck className="w-4 h-4 text-blue-500" /> : <Check className="w-4 h-4" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -188,7 +204,10 @@ const ConversationView = ({ conversationId, userId }: ConversationViewProps) => 
           <Input
             placeholder="Type a message..."
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              handleTyping();
+            }}
             disabled={sending}
           />
           <Button type="submit" disabled={sending || !newMessage.trim()} className="gradient-primary">

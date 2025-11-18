@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 interface Conversation {
   id: string;
@@ -20,6 +21,7 @@ interface Conversation {
     content: string;
     created_at: string;
   } | null;
+  unread_count: number;
 }
 
 interface ConversationListProps {
@@ -86,12 +88,20 @@ const ConversationList = ({ userId, selectedConversationId, onSelectConversation
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
+          
+          const { count: unreadCount } = await supabase
+            .from("messages")
+            .select('*', { count: 'exact', head: true })
+            .eq("conversation_id", conv.id)
+            .neq("sender_id", userId)
+            .is("read_at", null);
 
           return {
             id: conv.id,
             updated_at: conv.updated_at,
             other_user: participants?.profiles as any,
             last_message: lastMessage,
+            unread_count: unreadCount || 0,
           };
         })
       );
@@ -208,7 +218,7 @@ const ConversationList = ({ userId, selectedConversationId, onSelectConversation
             key={conv.id}
             className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
               selectedConversationId === conv.id
-                ? "bg-primary/10 border-l-4 border-primary"
+                ? "bg-primary/10"
                 : "hover:bg-secondary"
             }`}
             onClick={() => onSelectConversation(conv.id)}
@@ -225,11 +235,16 @@ const ConversationList = ({ userId, selectedConversationId, onSelectConversation
                 </div>
               )}
             </div>
-            {conv.last_message && (
-              <div className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(conv.last_message.created_at), { addSuffix: true })}
-              </div>
-            )}
+            <div className="flex flex-col items-end gap-1">
+              {conv.last_message && (
+                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatDistanceToNow(new Date(conv.last_message.created_at), { addSuffix: true })}
+                </div>
+              )}
+              {conv.unread_count > 0 && (
+                <Badge className="gradient-primary">{conv.unread_count}</Badge>
+              )}
+            </div>
           </div>
         ))}
       </div>
