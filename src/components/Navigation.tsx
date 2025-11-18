@@ -1,136 +1,94 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Home, User, LogOut, MessageCircle, Paperclip, Shield, Video, Search, Users } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, User, MessageSquare, Compass, Heart, PlusSquare, Users } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
-import NotificationBell from "@/components/notifications/NotificationBell";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/lib/supabase";
+import CreatePost from "./CreatePost";
+import { useState } from "react";
 
 interface NavigationProps {
   user: SupabaseUser;
 }
 
 const Navigation = ({ user }: NavigationProps) => {
-  const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("id", user.id)
-        .single();
-
-      if (data) {
-        setUsername(data.username);
-        setAvatarUrl(data.avatar_url);
-      }
-
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      setIsAdmin(roles?.some((r) => r.role === "admin" || r.role === "moderator") || false);
-    };
-
-    fetchProfile();
-  }, [user.id]);
+  const [isCreatePostOpen, setCreatePostOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
+  const navLinks = [
+    { path: "/home", icon: <Home />, name: "Home" },
+    { path: "/messages", icon: <MessageSquare />, name: "Messages" },
+    { path: "/groups", icon: <Users />, name: "Groups" },
+    { path: "/explore", icon: <Compass />, name: "Explore" },
+    { path: "/notifications", icon: <Heart />, name: "Notifications" },
+  ];
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/feed" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-glow">
-            <Camera className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-xl gradient-primary bg-clip-text text-transparent">
-            MyConnect
-          </span>
-        </Link>
-
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to="/feed">
-              <Home className="w-5 h-5" />
-            </Link>
-          </Button>
-
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to="/videos">
-              <Video className="w-5 h-5" />
-            </Link>
-          </Button>
-
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to="/search">
-              <Search className="w-5 h-5" />
-            </Link>
-          </Button>
-          
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to="/groups">
-              <Users className="w-5 h-5" />
-            </Link>
-          </Button>
-
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to="/messages">
-              <MessageCircle className="w-5 h-5" />
-            </Link>
-          </Button>
-
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to="/files">
-              <Paperclip className="w-5 h-5" />
-            </Link>
-          </Button>
-
-          <NotificationBell userId={user.id} />
-
-          {isAdmin && (
-            <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-              <Link to="/admin">
-                <Shield className="w-5 h-5" />
-              </Link>
-            </Button>
-          )}
-
-          <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
-            <Link to={`/profile/${username}`}>
-              <User className="w-5 h-5" />
-            </Link>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="hover:bg-destructive/10 hover:text-destructive"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-
-          <Link to={`/profile/${username}`}>
-            <Avatar className="border-2 border-primary/20 hover:border-primary transition-colors">
-              <AvatarImage src={avatarUrl} alt={username} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {username?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
+    <>
+      <header className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-b z-50">
+        <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/home" className="text-2xl font-bold font-pacifico text-primary">
+            Instelegram
           </Link>
-        </div>
-      </div>
-    </nav>
+
+          <div className="flex items-center gap-4">
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`p-2 rounded-md hover:bg-accent ${
+                  location.pathname === link.path ? "text-primary" : "text-foreground/70"
+                }`}
+                title={link.name}
+              >
+                {link.icon}
+              </Link>
+            ))}
+            <button
+              onClick={() => setCreatePostOpen(true)}
+              className="p-2 rounded-md hover:bg-accent text-foreground/70"
+              title="Create Post"
+            >
+              <PlusSquare />
+            </button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={user.user_metadata.avatar_url} />
+                  <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={`/${user.user_metadata.username}`}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Sign out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </nav>
+      </header>
+      <CreatePost isOpen={isCreatePostOpen} onOpenChange={setCreatePostOpen} />
+    </>
   );
 };
 
