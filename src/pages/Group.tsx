@@ -83,3 +83,6 @@ const GroupPage = () => {
       </main>
     </div>
   );
+};
+
+export default GroupPage;
