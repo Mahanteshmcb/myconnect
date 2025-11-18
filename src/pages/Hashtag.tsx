@@ -138,7 +138,7 @@ const HashtagPage = () => {
               <PostCard
                 key={post.id}
                 post={post}
-                currentUserId={user.id}
+                currentUser={user.id}
                 onUpdate={fetchPostsByHashtag}
               />
             ))}
