@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import MentionText from "../MentionText"; // Import MentionText
+import { createMentionNotifications } from "@/lib/mentionUtils"; // Import the utility
 
 interface VideoCommentsProps {
   videoId: string;
@@ -49,13 +51,20 @@ const VideoComments = ({ videoId, currentUserId, onUpdate }: VideoCommentsProps)
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("video_comments").insert({
+      const { data: commentData, error } = await supabase.from("video_comments").insert({
         video_id: videoId,
         user_id: currentUserId,
         content: newComment.trim(),
-      });
+      })
+      .select("id")
+      .single();
 
       if (error) throw error;
+
+      // Create notifications for mentions in the comment
+      if (commentData?.id) {
+        await createMentionNotifications(newComment.trim(), currentUserId, videoId, "video_comment_mention");
+      }
 
       setNewComment("");
       fetchComments();
@@ -75,7 +84,7 @@ const VideoComments = ({ videoId, currentUserId, onUpdate }: VideoCommentsProps)
     <div className="border-t border-border p-4">
       <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
         <Input
-          placeholder="Add a comment..."
+          placeholder="Add a comment... Tag friends with @username"
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           disabled={loading}
@@ -95,7 +104,9 @@ const VideoComments = ({ videoId, currentUserId, onUpdate }: VideoCommentsProps)
             <div className="flex-1">
               <div className="bg-secondary rounded-lg p-2">
                 <p className="font-semibold text-sm">{comment.profiles.username}</p>
-                <p className="text-sm">{comment.content}</p>
+                <p className="text-sm">
+                  <MentionText text={comment.content} />
+                </p>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}

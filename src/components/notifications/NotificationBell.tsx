@@ -78,7 +78,12 @@ const NotificationBell = ({ userId }: NotificationBellProps) => {
     switch (notification.type) {
       case "like":
       case "comment":
-        return `/feed`;
+      case "post_mention": // New case for post mentions
+      case "comment_mention": // New case for comment mentions
+        return `/feed`; // Link to the feed for now, could be specific post later
+      case "video_caption_mention": // New case for video caption mentions
+      case "video_comment_mention": // New case for video comment mentions
+        return `/videos`; // Link to videos for now, could be specific video later
       case "follow":
         return `/profile/${notification.actor?.username}`;
       case "message":

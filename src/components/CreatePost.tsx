@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ImagePlus, X } from "lucide-react";
+import { createMentionNotifications } from "@/lib/mentionUtils"; // Import the utility
 
 interface CreatePostProps {
   userId: string;
@@ -93,15 +94,22 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
         .from("posts")
         .getPublicUrl(fileName);
 
-      const { error: insertError } = await supabase
+      const { data: postData, error: insertError } = await supabase
         .from("posts")
         .insert({
           user_id: userId,
           caption,
           image_url: publicUrl,
-        });
+        })
+        .select("id")
+        .single();
 
       if (insertError) throw insertError;
+
+      // Create notifications for mentions in the caption
+      if (postData?.id) {
+        await createMentionNotifications(caption, userId, postData.id, "post_mention");
+      }
 
       toast({
         title: "Success!",
@@ -128,7 +136,7 @@ const CreatePost = ({ userId, onPostCreated }: CreatePostProps) => {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Textarea
-            placeholder="What's on your mind?"
+            placeholder="What's on your mind? Tag friends with @username"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             className="resize-none"

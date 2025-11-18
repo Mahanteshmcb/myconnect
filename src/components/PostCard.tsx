@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Heart, MessageCircle, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import MentionText from "./MentionText"; // Import MentionText
+import { createMentionNotifications } from "@/lib/mentionUtils"; // Import the utility
 
 interface PostCardProps {
   post: any;
@@ -67,13 +69,22 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
     }
 
     try {
-      await supabase
+      const { data: commentData, error: insertError } = await supabase
         .from("comments")
         .insert({
           post_id: post.id,
           user_id: currentUserId,
           content: comment.trim(),
-        });
+        })
+        .select("id")
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Create notifications for mentions in the comment
+      if (commentData?.id) {
+        await createMentionNotifications(comment.trim(), currentUserId, post.id, "comment_mention");
+      }
 
       if (post.user_id !== currentUserId) {
         await supabase.from("notifications").insert({
@@ -162,7 +173,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
             >
               {post.profiles.username}
             </Link>
-            {post.caption}
+            <MentionText text={post.caption} />
           </p>
         )}
 
@@ -179,7 +190,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
                 <div className="flex-1">
                   <p className="text-sm">
                     <span className="font-semibold">{comment.profiles.username}</span>{" "}
-                    {comment.content}
+                    <MentionText text={comment.content} />
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
@@ -194,7 +205,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
       <CardFooter className="pt-0">
         <form onSubmit={handleComment} className="flex gap-2 w-full">
           <Input
-            placeholder="Add a comment..."
+            placeholder="Add a comment... Tag friends with @username"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             className="flex-1"

@@ -6,6 +6,7 @@ import { Heart, MessageCircle, Share2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import VideoComments from "./VideoComments";
+import MentionText from "../MentionText"; // Import MentionText
 
 interface VideoCardProps {
   video: {
@@ -135,7 +136,7 @@ const VideoCard = ({ video, currentUserId, onUpdate }: VideoCardProps) => {
         {video.caption && (
           <p className="text-sm">
             <span className="font-semibold mr-2">{video.profiles.username}</span>
-            {video.caption}
+            <MentionText text={video.caption} />
           </p>
         )}
       </div>
