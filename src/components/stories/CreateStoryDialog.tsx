@@ -90,7 +90,7 @@ const CreateStoryDialog = ({ userId, open, onOpenChange, onCreated }: CreateStor
         variant: "destructive",
       });
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
