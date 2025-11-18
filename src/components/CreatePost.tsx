@@ -6,17 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ImagePlus, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createMentionNotifications } from "@/lib/mentionUtils";
-import { processHashtags } from "@/lib/hashtagUtils";
 
 interface CreatePostProps {
   userId: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onPostCreated?: () => void;
 }
 
-const CreatePost = ({ userId, isOpen, onOpenChange, onPostCreated }: CreatePostProps) => {
+const CreatePost = ({ userId, isOpen, onOpenChange }: CreatePostProps) => {
   const [caption, setCaption] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -57,24 +54,15 @@ const CreatePost = ({ userId, isOpen, onOpenChange, onPostCreated }: CreatePostP
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from("posts").getPublicUrl(fileName);
-      
-      const { data: postData, error: insertError } = await supabase.from("posts").insert({
+      const { error: insertError } = await supabase.from("posts").insert({
         user_id: userId,
-        caption: caption.trim(),
+        caption,
         image_url: publicUrl,
-      }).select('id').single();
-
+      });
       if (insertError) throw insertError;
-
-      // Process mentions and hashtags
-      if (postData?.id) {
-        await createMentionNotifications(caption, userId, postData.id, "post_mention");
-        await processHashtags(caption, postData.id);
-      }
 
       toast({ title: "Success!", description: "Your post has been shared." });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      if (onPostCreated) onPostCreated();
       closeDialog();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -111,7 +99,7 @@ const CreatePost = ({ userId, isOpen, onOpenChange, onPostCreated }: CreatePostP
             </label>
           )}
           <Textarea
-            placeholder="Write a caption... (use @mentions and #hashtags)"
+            placeholder="Write a caption..."
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             rows={3}

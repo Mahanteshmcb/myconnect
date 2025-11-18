@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, User, MessageSquare, Compass, Heart, PlusSquare, Users, Play, Feather, Search, FileText } from "lucide-react";
+import { Home, User, MessageSquare, Compass, Heart, PlusSquare, Users, Play, Feather } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,7 +13,6 @@ import {
 import { supabase } from "@/lib/supabase";
 import CreatePost from "./CreatePost";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 
 interface NavigationProps {
   user: SupabaseUser;
@@ -31,29 +30,28 @@ const Navigation = ({ user }: NavigationProps) => {
 
   const navLinks = [
     { path: "/home", icon: <Home />, name: "Home" },
-    { path: "/search", icon: <Search />, name: "Search" },
     { path: "/messages", icon: <MessageSquare />, name: "Messages" },
     { path: "/videos", icon: <Play />, name: "Watch" },
     { path: "/echoes", icon: <Feather />, name: "Echoes" },
     { path: "/groups", icon: <Users />, name: "Groups" },
-    { path: "/files", icon: <FileText />, name: "Files" },
     { path: "/explore", icon: <Compass />, name: "Explore" },
+    { path: "/notifications", icon: <Heart />, name: "Notifications" },
   ];
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-b z-50">
         <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/home" className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
-            MyConnect
+          <Link to="/home" className="text-2xl font-bold font-pacifico text-primary">
+            Instelegram
           </Link>
 
-          <div className="hidden md:flex items-center gap-6">
+          <div className="flex items-center gap-4">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`p-2 rounded-md hover:bg-accent transition-colors ${
+                className={`p-2 rounded-md hover:bg-accent ${
                   location.pathname === link.path ? "text-primary" : "text-foreground/70"
                 }`}
                 title={link.name}
@@ -61,40 +59,26 @@ const Navigation = ({ user }: NavigationProps) => {
                 {link.icon}
               </Link>
             ))}
-            <Button
+            <button
               onClick={() => setCreatePostOpen(true)}
-              variant="ghost"
-              size="icon"
-              className="text-foreground/70 hover:bg-accent"
+              className="p-2 rounded-md hover:bg-accent text-foreground/70"
               title="Create Post"
             >
               <PlusSquare />
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setCreatePostOpen(true)}
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-foreground/70 hover:bg-accent"
-              title="Create Post"
-            >
-              <PlusSquare />
-            </Button>
+            </button>
 
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user.user_metadata?.avatar_url || undefined} />
-                  <AvatarFallback>{user.email?.[0].toUpperCase() || "U"}</AvatarFallback>
+                  <AvatarImage src={user.user_metadata.avatar_url} />
+                  <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent>
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to={`/${user.user_metadata?.username || user.id}`}>
+                  <Link to={`/${user.user_metadata.username}`}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </Link>

@@ -14,46 +14,38 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import RenderContent from "./RenderContent";
 
-interface PostCardProps {
-  post: any;
-  currentUserId: string;
-  onUpdate: () => void;
-}
-
-const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
+const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: any, onUpdate: () => void }) => {
   const [comment, setComment] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLiked(post.likes.some((like: any) => like.user_id === currentUserId));
+    setIsLiked(post.likes.some((like: any) => like.user_id === currentUser.id));
     setLikesCount(post.likes.length);
-  }, [post, currentUserId]);
+  }, [post, currentUser.id]);
 
   const handleLike = async () => {
     try {
       if (isLiked) {
-        await supabase.from("likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
+        await supabase.from("likes").delete().eq("post_id", post.id).eq("user_id", currentUser.id);
         setIsLiked(false);
         setLikesCount(prev => prev - 1);
       } else {
-        await supabase.from("likes").insert({ post_id: post.id, user_id: currentUserId });
-        if (post.user_id !== currentUserId) {
+        await supabase.from("likes").insert({ post_id: post.id, user_id: currentUser.id });
+        if (post.user_id !== currentUser.id) {
           await supabase.from("notifications").insert({
             user_id: post.user_id,
             type: "like",
             content: "liked your post",
-            actor_id: currentUserId,
+            actor_id: currentUser.id,
             related_id: post.id,
           });
         }
         setIsLiked(true);
         setLikesCount(prev => prev + 1);
       }
-      onUpdate();
     } catch (error) {
       console.error("Error toggling like:", error);
     }
@@ -65,15 +57,15 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
     try {
       await supabase.from("comments").insert({
         post_id: post.id,
-        user_id: currentUserId,
+        user_id: currentUser.id,
         content: comment.trim(),
       });
-      if (post.user_id !== currentUserId) {
+      if (post.user_id !== currentUser.id) {
         await supabase.from("notifications").insert({
           user_id: post.user_id,
           type: "comment",
           content: "commented on your post",
-          actor_id: currentUserId,
+          actor_id: currentUser.id,
           related_id: post.id,
         });
       }
@@ -109,7 +101,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
               <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
             </div>
           </Link>
-          {post.user_id === currentUserId && (
+          {post.user_id === currentUser.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
@@ -137,7 +129,7 @@ const PostCard = ({ post, currentUserId, onUpdate }: PostCardProps) => {
         </div>
         <p className="text-sm">
           <Link to={`/${post.profiles.username}`} className="font-semibold">{post.profiles.username}</Link>{" "}
-          {post.caption && <RenderContent text={post.caption} />}
+          {post.caption}
         </p>
         {post.comments.length > 0 && (
           <Link to={`/post/${post.id}`} className="text-sm text-muted-foreground mt-2 block">
