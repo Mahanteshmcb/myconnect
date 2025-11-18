@@ -68,7 +68,7 @@ const CommentSection = ({ postId, currentUserId }: CommentSectionProps) => {
       setComments([...comments, data]);
       setNewComment("");
 
-      // Send notification to post owner if it's not their own post
+      // Send notification to post owner
       const { data: postData } = await supabase
         .from("posts")
         .select("user_id")
