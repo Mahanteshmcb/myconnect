@@ -7,6 +7,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Feed from "./pages/Feed";
+import Videos from "./pages/Videos";
+import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 import Files from "./pages/Files";
@@ -26,6 +28,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/feed" element={<Feed />} />
+            <Route path="/videos" element={<Videos />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/files" element={<Files />} />
             <Route path="/admin" element={<Admin />} />
