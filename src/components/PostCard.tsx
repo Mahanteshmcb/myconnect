@@ -14,8 +14,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { User } from "@supabase/supabase-js";
 
-const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: any, onUpdate: () => void }) => {
+const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: User, onUpdate: () => void }) => {
   const [comment, setComment] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);

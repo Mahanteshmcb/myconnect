@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import Navigation from "@/components/Navigation";
 import PostCard from "@/components/PostCard";
-import CreatePost from "@/components/CreatePost";
 import StoriesBar from "@/components/stories/StoriesBar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PostCardSkeleton from "@/components/PostCardSkeleton";
@@ -77,7 +76,6 @@ const Feed = () => {
 
       <main className="max-w-2xl mx-auto pt-20 pb-8 px-4">
         <StoriesBar userId={user.id} />
-        <CreatePost userId={user.id} onPostCreated={handleUpdate} />
         
         {isLoading ? (
           <div className="space-y-6">
@@ -94,7 +92,7 @@ const Feed = () => {
               <PostCard
                 key={post.id}
                 post={post}
-                currentUser={user.id}
+                currentUser={user}
                 onUpdate={handleUpdate}
               />
             ))}

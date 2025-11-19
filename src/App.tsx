@@ -9,6 +9,7 @@ import Group from "@/pages/Group";
 import Explore from "@/pages/Explore";
 import Videos from "@/pages/Videos";
 import Echoes from "@/pages/Echoes";
+import TicTacToe from "@/pages/TicTacToe";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/explore" element={<Explore />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/echoes" element={<Echoes />} />
+          <Route path="/tictactoe" element={<TicTacToe />} />
           <Route path="/:username" element={<Profile />} />
           <Route path="/post/:postId" element={<PostPage />} />
           <Route path="/messages" element={<Messages />} />

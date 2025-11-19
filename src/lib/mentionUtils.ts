@@ -13,7 +13,7 @@ export const createMentionNotifications = async (
   text: string,
   actorId: string,
   relatedId: string, // post_id or video_id
-  type: "post_mention" | "comment_mention" | "video_comment_mention" | "video_caption_mention",
+  type: "post_mention" | "comment_mention" | "video_comment_mention" | "video_caption_mention" | "echo_mention",
 ) => {
   const mentionedUsernames = extractMentions(text);
 

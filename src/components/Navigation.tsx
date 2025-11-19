@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, User, MessageSquare, Compass, Heart, PlusSquare, Users, Play, Feather } from "lucide-react";
+import { Home, User, MessageSquare, Compass, Heart, PlusSquare, Users, Play, Feather, Gamepad2 } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -35,6 +35,7 @@ const Navigation = ({ user }: NavigationProps) => {
     { path: "/echoes", icon: <Feather />, name: "Echoes" },
     { path: "/groups", icon: <Users />, name: "Groups" },
     { path: "/explore", icon: <Compass />, name: "Explore" },
+    { path: "/tictactoe", icon: <Gamepad2 />, name: "Tic-Tac-Toe" },
     { path: "/notifications", icon: <Heart />, name: "Notifications" },
   ];
 

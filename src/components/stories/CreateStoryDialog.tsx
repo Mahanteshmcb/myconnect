@@ -67,10 +67,14 @@ const CreateStoryDialog = ({ userId, open, onOpenChange, onCreated }: CreateStor
         data: { publicUrl },
       } = supabase.storage.from("stories").getPublicUrl(fileName);
 
+      const expires_at = new Date();
+      expires_at.setHours(expires_at.getHours() + 24);
+
       const { error: insertError } = await supabase.from("stories").insert({
         user_id: userId,
         media_url: publicUrl,
         media_type: file.type,
+        expires_at: expires_at.toISOString(),
       });
 
       if (insertError) throw insertError;
@@ -90,7 +94,7 @@ const CreateStoryDialog = ({ userId, open, onOpenChange, onCreated }: CreateStor
         variant: "destructive",
       });
     } finally {
-      setUpLoading(false);
+      setUploading(false);
     }
   };
 
