@@ -30,16 +30,16 @@ const CreateEcho = ({ userId, onEchoCreated }: CreateEchoProps) => {
 
     setLoading(true);
     try {
-      const { data: echoData, error } = await supabase.from("echoes").insert({
+      const { data: echoData, error } = await supabase.from("echoes" as any).insert({
         user_id: userId,
         content: content.trim(),
-      }).select('id').single();
+      } as any).select('id').single();
 
       if (error) throw error;
 
       if (echoData?.id) {
         await processHashtags(content, echoData.id, null);
-        await createMentionNotifications(content, userId, echoData.id, "echo_mention");
+        await createMentionNotifications(content, userId, echoData.id, "echo_mention" as any);
       }
 
       toast({ title: "Success!", description: "Your echo has been shared." });

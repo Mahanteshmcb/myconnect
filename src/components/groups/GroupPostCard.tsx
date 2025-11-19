@@ -20,9 +20,9 @@ const GroupPostCard = ({ post, currentUserId, onUpdate }: { post: any, currentUs
   const handleLike = async () => {
     try {
       if (isLiked) {
-        await supabase.from("group_post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId);
+        await supabase.from("group_post_likes" as any).delete().eq("post_id", post.id).eq("user_id", currentUserId);
       } else {
-        await supabase.from("group_post_likes").insert({ post_id: post.id, user_id: currentUserId });
+        await supabase.from("group_post_likes" as any).insert({ post_id: post.id, user_id: currentUserId });
       }
       onUpdate();
     } catch (error) {
@@ -34,7 +34,7 @@ const GroupPostCard = ({ post, currentUserId, onUpdate }: { post: any, currentUs
     e.preventDefault();
     if (!comment.trim()) return;
     try {
-      await supabase.from("group_post_comments").insert({
+      await supabase.from("group_post_comments" as any).insert({
         post_id: post.id,
         user_id: currentUserId,
         content: comment.trim(),

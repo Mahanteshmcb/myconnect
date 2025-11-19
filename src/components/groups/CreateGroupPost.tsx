@@ -56,7 +56,7 @@ const CreateGroupPost = ({ userId, groupId, onPostCreated }: CreateGroupPostProp
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from("group-media").getPublicUrl(fileName);
-      const { error: insertError } = await supabase.from("group_posts").insert({
+      const { error: insertError } = await supabase.from("group_posts" as any).insert({
         user_id: userId,
         group_id: groupId,
         caption,

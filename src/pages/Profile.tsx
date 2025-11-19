@@ -56,7 +56,7 @@ const Profile = () => {
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      setProfile(data as Profile);
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {

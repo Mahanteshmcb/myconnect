@@ -35,15 +35,15 @@ const EchoCard = ({ echo, currentUserId, onUpdate }: EchoCardProps) => {
     try {
       if (isLiked) {
         await supabase
-          .from("echo_likes")
+          .from("echo_likes" as any)
           .delete()
           .eq("echo_id", echo.id)
           .eq("user_id", currentUserId);
       } else {
-        await supabase.from("echo_likes").insert({
+        await supabase.from("echo_likes" as any).insert({
           echo_id: echo.id,
           user_id: currentUserId,
-        });
+        } as any);
       }
       onUpdate();
     } catch (error: any) {

@@ -6,15 +6,20 @@ import Navigation from "@/components/Navigation";
 import CreateEcho from "@/components/echoes/CreateEcho";
 import EchoCard from "@/components/echoes/EchoCard";
 import { Loader2 } from "lucide-react";
-import { Tables } from "@/integrations/supabase/types";
 
-type Echo = Tables<'echoes'> & {
-  profiles: Pick<Tables<'profiles'>, 'username' | 'avatar_url'>;
-  echo_likes: Pick<Tables<'echo_likes'>, 'user_id'>[];
+interface Echo {
+  id: string;
+  content: string;
+  created_at: string;
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+  };
+  echo_likes: { user_id: string }[];
   _count?: {
     echo_replies: number;
   };
-};
+}
 
 const Echoes = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -47,7 +52,7 @@ const Echoes = () => {
       ids.push(userId);
 
       const { data, error } = await supabase
-        .from("echoes")
+        .from("echoes" as any)
         .select(`
           *,
           profiles:user_id (username, avatar_url),
@@ -66,7 +71,7 @@ const Echoes = () => {
         }
       }));
 
-      setEchoes(formattedData as Echo[]);
+      setEchoes(formattedData as any);
     } catch (error) {
       console.error("Error fetching echoes:", error);
     } finally {

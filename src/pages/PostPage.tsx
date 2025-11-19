@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Post {
   id: string;
-  caption: string | null;
+  content: string | null;
   image_url: string | null;
   video_url: string | null;
   created_at: string;
@@ -73,12 +73,11 @@ const PostPage = () => {
       if (data) {
         const formattedPost = {
           ...data,
-          video_url: null, // Assuming posts don't have videos for now
           _count: {
             comments: data.comments.length,
           },
         };
-        setPost(formattedPost);
+        setPost(formattedPost as Post);
       }
     } catch (error: any) {
       toast({
@@ -107,7 +106,7 @@ const PostPage = () => {
           </div>
         ) : post ? (
           <div className="space-y-6">
-            <PostCard post={post} currentUser={user} onUpdate={fetchPost} />
+            <PostCard post={post} currentUser={user.id} onUpdate={fetchPost} />
             <CommentSection postId={post.id} currentUserId={user.id} />
           </div>
         ) : (

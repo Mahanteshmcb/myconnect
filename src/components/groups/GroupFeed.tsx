@@ -21,7 +21,7 @@ const GroupFeed = ({ groupId, userId, refreshFeed }: GroupFeedProps) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("group_posts")
+        .from("group_posts" as any)
         .select(`
           *,
           profiles:user_id (username, avatar_url),

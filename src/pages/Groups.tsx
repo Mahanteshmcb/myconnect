@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import CreateGroupDialog from "@/components/groups/CreateGroupDialog";
 
 interface Group {
   id: string;
@@ -28,6 +27,8 @@ const Groups = () => {
   const [publicGroups, setPublicGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [newGroup, setNewGroup] = useState({ name: "", description: "" });
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -47,24 +48,54 @@ const Groups = () => {
   const fetchGroups = async (userId: string) => {
     setLoading(true);
     try {
-      const { data: myGroupsData, error: myGroupsError } = await supabase.rpc('get_user_groups', { p_user_id: userId });
+      const { data: myGroupsData, error: myGroupsError } = await supabase.rpc('get_user_groups' as any, { p_user_id: userId });
       if (myGroupsError) throw myGroupsError;
-      setMyGroups(myGroupsData || []);
+      setMyGroups(myGroupsData as any);
 
       const { data: publicGroupsData, error: publicGroupsError } = await supabase
-        .from('groups')
+        .from('groups' as any)
         .select('*')
         .eq('is_private', false);
       if (publicGroupsError) throw publicGroupsError;
       
-      const myGroupIds = new Set((myGroupsData || []).map((g: Group) => g.id));
-      setPublicGroups((publicGroupsData || []).filter((g: Group) => !myGroupIds.has(g.id)));
+      const myGroupIds = new Set((myGroupsData as any[]).map((g: Group) => g.id));
+      setPublicGroups((publicGroupsData as any[]).filter((g: Group) => !myGroupIds.has(g.id)));
 
     } catch (error) {
       console.error("Error fetching groups:", error);
       toast({ title: "Error", description: "Could not fetch groups.", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsCreating(true);
+    try {
+      const { data: groupData, error } = await supabase
+        .from("groups" as any)
+        .insert({ name: newGroup.name, description: newGroup.description, created_by: user.id } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const { error: memberError } = await supabase
+        .from("group_members" as any)
+        .insert({ group_id: groupData.id, user_id: user.id, role: 'admin' } as any);
+
+      if (memberError) throw memberError;
+
+      toast({ title: "Success", description: "Group created successfully." });
+      setCreateOpen(false);
+      setNewGroup({ name: "", description: "" });
+      fetchGroups(user.id);
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -84,17 +115,41 @@ const Groups = () => {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Users className="w-8 h-8" /> Groups
           </h1>
-          <Button className="gradient-primary shadow-glow" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Create Group
-          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gradient-primary shadow-glow">
+                <Plus className="w-4 h-4 mr-2" /> Create Group
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create a new group</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateGroup} className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Group Name</Label>
+                  <Input
+                    id="name"
+                    value={newGroup.name}
+                    onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newGroup.description}
+                    onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+                  />
+                </div>
+                <Button type="submit" disabled={isCreating} className="w-full">
+                  {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
-
-        <CreateGroupDialog
-          userId={user.id}
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onGroupCreated={() => fetchGroups(user.id)}
-        />
 
         <div className="space-y-8">
           <section>

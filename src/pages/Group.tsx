@@ -38,8 +38,8 @@ const GroupPage = () => {
   const fetchGroupAndMembership = async () => {
     setLoading(true);
     try {
-      const groupPromise = supabase.from("groups").select("*, group_members(count)").eq("id", groupId).single();
-      const membershipPromise = supabase.from("group_members").select("*").eq("group_id", groupId).eq("user_id", user!.id).single();
+      const groupPromise = supabase.from("groups" as any).select("*, group_members(count)").eq("id", groupId).single();
+      const membershipPromise = supabase.from("group_members" as any).select("*").eq("group_id", groupId).eq("user_id", user!.id).single();
       
       const [{ data: groupData, error: groupError }, { data: membershipData }] = await Promise.all([groupPromise, membershipPromise]);
 

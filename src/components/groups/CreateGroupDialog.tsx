@@ -41,23 +41,23 @@ const CreateGroupDialog = ({ userId, open, onOpenChange, onGroupCreated }: Creat
       const { data: { publicUrl } } = supabase.storage.from("group-media").getPublicUrl(fileName);
 
       const { data: groupData, error: insertError } = await supabase
-        .from("groups")
+        .from("groups" as any)
         .insert({
           name,
           description,
           is_private: isPrivate,
           created_by: userId,
           avatar_url: publicUrl,
-        })
+        } as any)
         .select("id")
         .single();
       if (insertError) throw insertError;
 
-      await supabase.from("group_members").insert({
+      await supabase.from("group_members" as any).insert({
         group_id: groupData.id,
         user_id: userId,
         role: "admin",
-      });
+      } as any);
 
       toast({ title: "Group created!", description: `${name} is now live.` });
       onGroupCreated();

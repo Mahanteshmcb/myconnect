@@ -23,7 +23,7 @@ const GroupHeader = ({ group, userId, onUpdate }: GroupHeaderProps) => {
   const checkMembership = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from("group_members")
+      .from("group_members" as any)
       .select("*")
       .eq("group_id", group.id)
       .eq("user_id", userId)
@@ -35,11 +35,11 @@ const GroupHeader = ({ group, userId, onUpdate }: GroupHeaderProps) => {
   const handleJoin = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.from("group_members").insert({
+      const { error } = await supabase.from("group_members" as any).insert({
         group_id: group.id,
         user_id: userId,
-        role: "member",
-      });
+        role: "user",
+      } as any);
       if (error) throw error;
       toast({ title: `Welcome to ${group.name}!` });
       onUpdate();
@@ -56,7 +56,7 @@ const GroupHeader = ({ group, userId, onUpdate }: GroupHeaderProps) => {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from("group_members")
+        .from("group_members" as any)
         .delete()
         .eq("group_id", group.id)
         .eq("user_id", userId);
