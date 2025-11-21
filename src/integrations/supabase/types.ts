@@ -107,120 +107,6 @@ export type Database = {
         }
         Relationships: []
       }
-      echo_likes: {
-        Row: {
-          created_at: string
-          echo_id: string
-          id: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          echo_id: string
-          id?: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          echo_id?: string
-          id?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "echo_likes_echo_id_fkey"
-            columns: ["echo_id"]
-            isOneToOne: false
-            referencedRelation: "echoes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "echo_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      echo_replies: {
-        Row: {
-          content: string
-          created_at: string
-          echo_id: string
-          id: number
-          parent_reply_id: number | null
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          echo_id: string
-          id?: number
-          parent_reply_id?: number | null
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          echo_id?: string
-          id?: number
-          parent_reply_id?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "echo_replies_echo_id_fkey"
-            columns: ["echo_id"]
-            isOneToOne: false
-            referencedRelation: "echoes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "echo_replies_parent_reply_id_fkey"
-            columns: ["parent_reply_id"]
-            isOneToOne: false
-            referencedRelation: "echo_replies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "echo_replies_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      echoes: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "echoes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       follows: {
         Row: {
           created_at: string
@@ -251,200 +137,6 @@ export type Database = {
           {
             foreignKeyName: "follows_following_id_fkey"
             columns: ["following_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_members: {
-        Row: {
-          group_id: string
-          id: string
-          joined_at: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          group_id: string
-          id?: string
-          joined_at?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          group_id?: string
-          id?: string
-          joined_at?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_post_comments: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_post_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "group_posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_post_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_post_likes: {
-        Row: {
-          created_at: string
-          id: string
-          post_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          post_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          post_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "group_posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_post_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      group_posts: {
-        Row: {
-          caption: string | null
-          created_at: string
-          group_id: string
-          id: string
-          image_url: string
-          user_id: string
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string
-          group_id: string
-          id?: string
-          image_url: string
-          user_id: string
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string
-          group_id?: string
-          id?: string
-          image_url?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_posts_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "group_posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      groups: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          created_by: string
-          description: string | null
-          id: string
-          is_private: boolean
-          name: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          created_by: string
-          description?: string | null
-          id?: string
-          is_private?: boolean
-          name: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          id?: string
-          is_private?: boolean
-          name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "groups_created_by_fkey"
-            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -688,7 +380,6 @@ export type Database = {
           id: string
           updated_at: string
           username: string
-          website: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -698,7 +389,6 @@ export type Database = {
           id: string
           updated_at?: string
           username: string
-          website?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -708,7 +398,6 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string
-          website?: string | null
         }
         Relationships: []
       }
@@ -977,18 +666,6 @@ export type Database = {
     }
     Functions: {
       extract_hashtags: { Args: { content: string }; Returns: string[] }
-      get_user_groups: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: {
-          id: string
-          name: string
-          description: string
-          avatar_url: string
-          is_private: boolean
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
