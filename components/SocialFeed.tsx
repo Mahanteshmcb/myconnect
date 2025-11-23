@@ -1,14 +1,15 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon } from './Icons';
 import { TRENDING_TOPICS, SUGGESTED_USERS } from '../services/mockData';
-import { getPersonalizedFeed, searchContent, trackInteraction, formatCompactNumber } from '../services/coreEngine';
+import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
 interface SocialFeedProps {
   posts: Post[];
   currentUser: User;
-  onPostCreate: (content: string, media?: string, type?: 'image' | 'video') => void;
+  onPostCreate: (content: string, media?: string, type?: 'image' | 'video', communityId?: string) => void;
+  onAddComment: (postId: string, text: string) => void;
   onViewProfile: (user: User) => void;
   onUpdateUser?: (user: User) => void; 
   communities?: Community[];
@@ -104,11 +105,15 @@ const StoryViewer = ({ stories, initialIndex, onClose }: { stories: Story[], ini
 const CommunitiesSidebar = ({ 
     communities = [], 
     onJoin, 
-    onCreate 
+    onCreate,
+    selectedCommunityId,
+    onSelectCommunity
 }: { 
     communities: Community[], 
     onJoin: (id: string) => void, 
-    onCreate: (name: string, desc: string) => void 
+    onCreate: (name: string, desc: string) => void,
+    selectedCommunityId: string | null,
+    onSelectCommunity: (id: string | null) => void
 }) => {
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -143,13 +148,26 @@ const CommunitiesSidebar = ({
                         </div>
                     </div>
                 )}
+                
+                {selectedCommunityId && (
+                     <button 
+                        onClick={() => onSelectCommunity(null)} 
+                        className="mb-3 text-xs font-bold text-blue-500 hover:underline flex items-center gap-1"
+                     >
+                         ← Back to all communities
+                     </button>
+                )}
 
                 <div className="space-y-3">
                     {communities.map(c => (
-                        <div key={c.id} className="flex items-center gap-3 group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-xl transition">
+                        <div 
+                            key={c.id} 
+                            onClick={() => onSelectCommunity(c.id)}
+                            className={`flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition ${selectedCommunityId === c.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                        >
                             <img src={c.avatar} className="w-10 h-10 rounded-xl object-cover" />
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{c.name}</h4>
+                                <h4 className={`font-bold text-sm truncate ${selectedCommunityId === c.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>{c.name}</h4>
                                 <p className="text-xs text-gray-500">{formatCompactNumber(c.members)} members</p>
                             </div>
                             <button 
@@ -180,8 +198,6 @@ const RightSidebar = ({
 }) => {
     return (
         <div className="hidden xl:block w-[320px] sticky top-20 h-[calc(100vh-80px)] overflow-y-auto no-scrollbar pr-6 space-y-6">
-            {/* Search (if not in top bar) usually in top bar for this layout, but adding here as backup */}
-            
             {/* Trends */}
             <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
                 <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4">Trends for you</h2>
@@ -209,7 +225,7 @@ const RightSidebar = ({
                                  <h4 className="font-bold text-gray-900 dark:text-white text-sm truncate">{u.name}</h4>
                                  <p className="text-gray-500 text-xs truncate">{u.handle}</p>
                              </div>
-                             <button className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-4 py-1.5 rounded-full hover:opacity-80">
+                             <button onClick={() => onFollow(u)} className="bg-black dark:bg-white text-white dark:text-black text-xs font-bold px-4 py-1.5 rounded-full hover:opacity-80">
                                  Follow
                              </button>
                          </div>
@@ -225,7 +241,7 @@ const RightSidebar = ({
 };
 
 // --- Create Post Component ---
-const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: User, onPost: (content: string, media?: string, type?: 'image' | 'video') => void, onViewProfile: (user: User) => void, communities: Community[] }) => {
+const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: User, onPost: (content: string, media?: string, type?: 'image' | 'video', communityId?: string) => void, onViewProfile: (user: User) => void, communities: Community[] }) => {
   const [content, setContent] = useState('');
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -236,10 +252,16 @@ const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: U
 
   const handleSubmit = () => {
     if ((content.trim() || mediaPreview)) {
-      onPost(content, mediaPreview || undefined, mediaType || undefined);
+      onPost(
+        content, 
+        mediaPreview || undefined, 
+        mediaType || undefined, 
+        postTarget === 'public' ? undefined : postTarget
+      );
       setContent('');
       setMediaPreview(null);
       setMediaType(null);
+      setPostTarget('public');
     }
   };
 
@@ -259,14 +281,16 @@ const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: U
         <div className="flex-1">
           {/* Post Target Selector */}
           {joinedCommunities.length > 0 && (
-              <select 
-                value={postTarget} 
-                onChange={e => setPostTarget(e.target.value)}
-                className="mb-2 text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full outline-none border-none cursor-pointer"
-              >
-                  <option value="public">Everyone</option>
-                  {joinedCommunities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div className="mb-2">
+                <select 
+                    value={postTarget} 
+                    onChange={e => setPostTarget(e.target.value)}
+                    className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full outline-none border-none cursor-pointer appearance-none hover:bg-blue-100 transition"
+                >
+                    <option value="public">🌎 Everyone</option>
+                    {joinedCommunities.map(c => <option key={c.id} value={c.id}>👥 {c.name}</option>)}
+                </select>
+              </div>
           )}
 
           <textarea
@@ -314,8 +338,65 @@ const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: U
   );
 };
 
+// --- Feed Comment Modal ---
+const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: { post: Post | null, currentUser: User, isOpen: boolean, onClose: () => void, onAddComment: (postId: string, text: string) => void }) => {
+    const [text, setText] = useState('');
+
+    if (!isOpen || !post) return null;
+
+    const handleAdd = () => {
+        if (!text.trim()) return;
+        onAddComment(post.id, text);
+        setText('');
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+                 <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+                     <h3 className="font-bold text-gray-900 dark:text-white">Comments</h3>
+                     <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+                 </div>
+                 
+                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                     {post.commentsList && post.commentsList.length > 0 ? post.commentsList.map(c => (
+                         <div key={c.id} className="flex gap-3">
+                             <img src={c.author.avatar} className="w-8 h-8 rounded-full" />
+                             <div>
+                                 <div className="flex items-center gap-2">
+                                     <span className="font-bold text-sm text-gray-900 dark:text-white">{c.author.name}</span>
+                                     <span className="text-xs text-gray-500">{c.timestamp}</span>
+                                 </div>
+                                 <p className="text-sm text-gray-800 dark:text-gray-200">{c.text}</p>
+                             </div>
+                         </div>
+                     )) : (
+                         <div className="text-center py-10 text-gray-400">No comments yet. Be the first!</div>
+                     )}
+                 </div>
+
+                 <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2">
+                     <img src={currentUser.avatar} className="w-8 h-8 rounded-full" />
+                     <div className="flex-1 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-4">
+                         <input 
+                            value={text}
+                            onChange={e => setText(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                            placeholder="Add a comment..."
+                            className="flex-1 bg-transparent border-none outline-none text-sm py-2 dark:text-white"
+                         />
+                         <button onClick={handleAdd} disabled={!text.trim()} className="ml-2 text-blue-500 font-bold disabled:opacity-50">
+                             Post
+                         </button>
+                     </div>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Post Card ---
-const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void }> = ({ post, currentUser, onViewProfile }) => {
+const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void, onCommentClick: (post: Post) => void }> = ({ post, currentUser, onViewProfile, onCommentClick }) => {
     const [liked, setLiked] = useState(false);
     const [likes, setLikes] = useState(post.likes);
     const [retweeted, setRetweeted] = useState(false);
@@ -340,6 +421,11 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                             <span className="font-bold text-gray-900 dark:text-white hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }}>{post.author.name}</span>
                             {post.author.verified && <CheckIcon className="w-4 h-4 text-blue-500" />}
                             <span className="text-gray-500 text-sm">{post.author.handle} · {post.timestamp}</span>
+                            {post.communityId && (
+                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full ml-2">
+                                    Community Post
+                                </span>
+                            )}
                         </div>
                         <button className="text-gray-400 hover:text-blue-500">...</button>
                     </div>
@@ -360,9 +446,9 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
 
                     {/* Interactions */}
                     <div className="flex justify-between items-center mt-3 max-w-md text-gray-500">
-                        <button className="flex items-center gap-2 group hover:text-blue-500">
+                        <button onClick={(e) => { e.stopPropagation(); onCommentClick(post); }} className="flex items-center gap-2 group hover:text-blue-500">
                             <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20"><CommentIcon className="w-4 h-4" /></div>
-                            <span className="text-sm">{formatCompactNumber(post.comments)}</span>
+                            <span className="text-sm">{formatCompactNumber(post.commentsList?.length || post.comments)}</span>
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); setRetweeted(!retweeted); }} className={`flex items-center gap-2 group ${retweeted ? 'text-green-500' : 'hover:text-green-500'}`}>
                             <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20"><RepeatIcon className="w-4 h-4" /></div>
@@ -384,20 +470,40 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
 
 // --- Main Social Feed ---
 export const SocialFeed: React.FC<SocialFeedProps> = ({ 
-    posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity 
+    posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment 
 }) => {
   const [activeTab, setActiveTab] = useState<'For You' | 'Following' | 'Communities'>('For You');
   const [stories, setStories] = useState<Story[]>(generateMockStories(currentUser, SUGGESTED_USERS));
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [activePostForComments, setActivePostForComments] = useState<Post | null>(null);
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
 
   // Filter Posts
   const displayPosts = useMemo(() => {
       let filtered = posts;
-      if (activeTab === 'Following') filtered = posts.filter(p => currentUser.followingIds?.includes(p.author.id) || p.author.id === currentUser.id);
-      if (activeTab === 'Communities') filtered = posts.filter(p => !!p.communityId);
+      
+      if (activeTab === 'Following') {
+          filtered = posts.filter(p => currentUser.followingIds?.includes(p.author.id) || p.author.id === currentUser.id);
+      }
+      
+      if (activeTab === 'Communities') {
+          // If a specific community is selected, filter by that ID only
+          if (selectedCommunityId) {
+              filtered = posts.filter(p => p.communityId === selectedCommunityId);
+          } else {
+              // Otherwise show all community posts
+              filtered = posts.filter(p => !!p.communityId);
+          }
+      }
+
       return activeTab === 'For You' ? getPersonalizedFeed(filtered, currentUser) : filtered;
-  }, [posts, activeTab, currentUser]);
+  }, [posts, activeTab, currentUser, selectedCommunityId]);
+
+  const handleSelectCommunity = (id: string | null) => {
+      setSelectedCommunityId(id);
+      setActiveTab('Communities');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="h-full bg-white dark:bg-black overflow-y-auto">
@@ -408,6 +514,16 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 onClose={() => setViewingStoryIndex(null)} 
             />
         )}
+        
+        {activePostForComments && (
+            <FeedCommentModal 
+                post={activePostForComments}
+                currentUser={currentUser}
+                isOpen={!!activePostForComments}
+                onClose={() => setActivePostForComments(null)}
+                onAddComment={onAddComment}
+            />
+        )}
 
         <div className="max-w-[1300px] mx-auto flex justify-center min-h-screen">
             
@@ -416,6 +532,8 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 communities={communities} 
                 onJoin={onJoinCommunity || (() => {})} 
                 onCreate={onCreateCommunity || (() => {})} 
+                selectedCommunityId={selectedCommunityId}
+                onSelectCommunity={handleSelectCommunity}
             />
 
             {/* Main Feed */}
@@ -431,7 +549,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                         {['For You', 'Following', 'Communities'].map(tab => (
                             <button 
                                 key={tab}
-                                onClick={() => setActiveTab(tab as any)}
+                                onClick={() => { setActiveTab(tab as any); if(tab !== 'Communities') setSelectedCommunityId(null); }}
                                 className="flex-1 py-4 text-sm font-bold relative hover:bg-gray-50 dark:hover:bg-white/5 transition"
                             >
                                 <span className={activeTab === tab ? 'text-gray-900 dark:text-white' : 'text-gray-500'}>{tab}</span>
@@ -477,9 +595,29 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
 
                  {/* Feed */}
                  <div>
-                     {displayPosts.map(post => (
-                         <PostCard key={post.id} post={post} currentUser={currentUser} onViewProfile={onViewProfile} />
-                     ))}
+                     {selectedCommunityId && (
+                         <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+                             <span className="text-sm text-blue-800 dark:text-blue-300 font-bold">
+                                 Viewing: {communities.find(c => c.id === selectedCommunityId)?.name}
+                             </span>
+                             <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
+                         </div>
+                     )}
+                     
+                     {displayPosts.length > 0 ? displayPosts.map(post => (
+                         <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            currentUser={currentUser} 
+                            onViewProfile={onViewProfile} 
+                            onCommentClick={setActivePostForComments}
+                        />
+                     )) : (
+                         <div className="py-20 text-center text-gray-500">
+                             <h3 className="text-lg font-bold mb-2">No Posts Yet</h3>
+                             <p>Be the first to post something here!</p>
+                         </div>
+                     )}
                      <div className="py-10 text-center text-gray-500 text-sm">You've reached the end!</div>
                  </div>
             </div>

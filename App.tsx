@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community } from './types';
+import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community, Comment } from './types';
 import { SocialFeed } from './components/SocialFeed';
 import { VideoReels, CreateReel } from './components/VideoReels';
 import { ChatApp } from './components/ChatApp';
@@ -126,7 +126,7 @@ export default function App() {
   };
 
   // --- Feed Actions ---
-  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video') => {
+  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video', communityId?: string) => {
     const newPost: Post = {
       id: `new_p_${Date.now()}`,
       author: currentUser,
@@ -137,9 +137,30 @@ export default function App() {
       shares: 0,
       timestamp: 'Just now',
       type: type || 'text',
-      image: media
+      image: media,
+      communityId: communityId
     };
     setPosts([newPost, ...posts]);
+  };
+
+  const handleAddComment = (postId: string, text: string) => {
+      const newComment: Comment = {
+          id: `c_${Date.now()}`,
+          author: currentUser,
+          text: text,
+          timestamp: 'Just now'
+      };
+
+      setPosts(prevPosts => prevPosts.map(post => {
+          if (post.id === postId) {
+              return {
+                  ...post,
+                  comments: post.comments + 1,
+                  commentsList: [newComment, ...(post.commentsList || [])]
+              };
+          }
+          return post;
+      }));
   };
 
   // --- Community Actions ---
@@ -258,6 +279,7 @@ export default function App() {
                 posts={posts} 
                 currentUser={currentUser} 
                 onPostCreate={handleCreatePost} 
+                onAddComment={handleAddComment}
                 onViewProfile={handleViewProfile}
                 onUpdateUser={handleUpdateUser}
                 communities={communities}
@@ -318,7 +340,7 @@ export default function App() {
       case ViewMode.EXPLORE:
         return <Explore items={EXPLORE_ITEMS} />;
       default:
-        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
+        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
     }
   };
 

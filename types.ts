@@ -77,7 +77,7 @@ export interface Post {
   timestamp: string;
   unixTimestamp?: number; // Crucial for time-decay algorithms
   type: 'text' | 'image' | 'video';
-  communityId?: string;
+  communityId?: string; // Optional link to a community
   
   // Algorithmic Metadata
   viewCount?: number;
