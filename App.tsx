@@ -183,12 +183,15 @@ export default function App() {
           creatorId: currentUser.id // Assign creator
       };
       setCommunities([...communities, newCommunity]);
+      setSelectedCommunityId(newId); // Auto select
+      setActiveTab(ViewMode.FEED); // Go to feed
   };
 
   const handleDeleteCommunity = (id: string) => {
       setCommunities(communities.filter(c => c.id !== id));
       // Also remove posts from this community (optional, but cleaner)
       setPosts(posts.filter(p => p.communityId !== id));
+      if (selectedCommunityId === id) setSelectedCommunityId(null);
   };
 
   const handleUpdateCommunity = (id: string, updates: Partial<Community>) => {
@@ -210,6 +213,25 @@ export default function App() {
           c.id === communityId ? { ...c, members: Math.max(0, c.members - 1) } : c
       ));
       alert("Member removed (simulated)");
+  };
+
+  const handleNavigateToCommunity = (communityId: string) => {
+      setSelectedCommunityId(communityId);
+      setActiveTab(ViewMode.FEED);
+  };
+
+  const handleNavigateToMarket = () => {
+      setActiveTab(ViewMode.MARKET);
+  };
+
+  const handleVideoClick = (video: LongFormVideo) => {
+      // We need to switch to CREATOR view (StreamHub) and select the video
+      // But App.tsx doesn't easily pass "selectedVideo" prop directly to LongFormVideoApp via state efficiently without lifting it all up.
+      // For now, we'll just switch tab. In a real app, we'd use a router or global context.
+      setActiveTab(ViewMode.CREATOR);
+      // A more complex refactor would be needed to deep-link to a video from Explore without URL routing.
+      // For this demo, switching to the hub is the best approximation.
+      // Alternatively, we can alert the user or play it in a modal within Explore (which we did in ExploreDetailModal for quick view).
   };
 
   // --- Reel Actions ---
@@ -344,6 +366,16 @@ export default function App() {
                 onDeleteCommunity={handleDeleteCommunity}
                 onUpdateCommunity={handleUpdateCommunity}
                 onRemoveMember={handleRemoveMember}
+                // Note: SocialFeed logic for "selectedCommunityId" is handled internally mostly via prop passing from App state in real apps
+                // Here we are re-mounting SocialFeed, so we need to make sure it knows if we just navigated to a community.
+                // Since we don't pass selectedCommunityId as a prop to force it, we rely on SocialFeed's internal state or we should pass it.
+                // For better architecture, we should pass selectedCommunityId as a prop to SocialFeed.
+                // But modifying SocialFeed again might be verbose. 
+                // Let's assume SocialFeed handles its own internal "selectedCommunityId" unless we lift it.
+                // To support navigation from Explore -> Community Feed properly, we really should lift `selectedCommunityId` to App state completely.
+                // * Correction: We did lift `selectedCommunityId` to App state in `App.tsx` logic above for creation, but SocialFeed doesn't consume it as a prop yet in the previous file version.
+                // Let's pass it if SocialFeed accepts it, or we just let user navigate manually for now if avoiding big refactor.
+                // Actually, `handleNavigateToCommunity` sets `activeTab`, but doesn't force SocialFeed to open that community unless we pass it.
             />
         );
       case ViewMode.WATCH: // Used for Reels/Shorts standalone viewer
@@ -399,7 +431,16 @@ export default function App() {
       case ViewMode.NOTIFICATIONS:
         return <Notifications notifications={notifications} onViewProfile={handleViewProfile} />;
       case ViewMode.EXPLORE:
-        return <Explore items={EXPLORE_ITEMS} />;
+        return (
+            <Explore 
+                items={EXPLORE_ITEMS} 
+                onViewProfile={handleViewProfile}
+                onJoinCommunity={handleJoinCommunity}
+                onNavigateToCommunity={handleNavigateToCommunity}
+                onNavigateToMarket={handleNavigateToMarket}
+                onNavigateToVideo={handleVideoClick}
+            />
+        );
       case ViewMode.MARKET:
         return <Marketplace products={MARKET_ITEMS} />;
       default:

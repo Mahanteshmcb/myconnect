@@ -975,21 +975,27 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
           <div className="hidden md:flex flex-1 max-w-2xl items-center gap-4 ml-10">
               <div className="flex flex-1 items-center relative">
-                  <div className="flex flex-1 items-center px-4 bg-white dark:bg-[#121212] border border-gray-300 dark:border-[#303030] rounded-l-full h-10 shadow-inner focus-within:border-blue-500 ml-8">
-                      <input 
-                        type="text" 
-                        placeholder="Search" 
-                        className="w-full bg-transparent outline-none text-gray-900 dark:text-white text-base"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') setCurrentView('HOME');
-                        }}
-                      />
-                  </div>
-                  <button onClick={() => setCurrentView('HOME')} className="h-10 px-6 bg-gray-100 dark:bg-[#222222] border border-l-0 border-gray-300 dark:border-[#303030] rounded-r-full hover:bg-gray-200 dark:hover:bg-[#303030] flex items-center justify-center">
-                      <SearchIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  </button>
+                  <form 
+                    className="flex flex-1 items-center w-full"
+                    onSubmit={(e) => { e.preventDefault(); setCurrentView('HOME'); }}
+                  >
+                      <div className="flex flex-1 items-center px-4 bg-white dark:bg-[#121212] border border-gray-300 dark:border-[#303030] rounded-l-full h-10 shadow-inner focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all ml-8 group">
+                          {/* Search icon inside input shown only when focused/active style preference, otherwise hidden or ghosted */}
+                          <div className="md:hidden group-focus-within:block mr-2">
+                              <SearchIcon className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <input 
+                            type="text" 
+                            placeholder="Search" 
+                            className="w-full bg-transparent outline-none text-gray-900 dark:text-white text-base"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                      </div>
+                      <button type="submit" className="h-10 px-6 bg-gray-100 dark:bg-[#222222] border border-l-0 border-gray-300 dark:border-[#303030] rounded-r-full hover:bg-gray-200 dark:hover:bg-[#303030] flex items-center justify-center transition-colors" aria-label="Search">
+                          <SearchIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      </button>
+                  </form>
                   
                   {isListening && (
                       <div className="absolute top-12 left-0 right-0 bg-red-600 text-white p-2 rounded-lg text-center shadow-lg animate-pulse z-50">
@@ -1000,6 +1006,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
               <button 
                 onClick={startVoiceSearch}
                 className={`p-2.5 bg-gray-100 dark:bg-[#181818] rounded-full hover:bg-gray-200 dark:hover:bg-[#303030] transition ${isListening ? 'bg-red-100 text-red-600' : ''}`}
+                aria-label="Voice Search"
               >
                   {isListening ? <MicActiveIcon className="w-5 h-5" /> : <MicrophoneIcon className="w-5 h-5 text-gray-900 dark:text-white" />}
               </button>
