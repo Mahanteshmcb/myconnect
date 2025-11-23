@@ -62,7 +62,7 @@ export const CreateReel = ({ onBack, onPost, currentUser }: { onBack: () => void
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col animate-fade-in" role="dialog" aria-label="Create New Reel">
+        <div className="fixed inset-0 z-[150] bg-black flex flex-col animate-fade-in" role="dialog" aria-label="Create New Reel">
             {/* Header */}
             <div className="flex items-center justify-between p-4 z-10 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0">
                 <button onClick={onBack} className="p-2 rounded-full bg-black/40 text-white backdrop-blur-md" aria-label="Close creator">
@@ -405,7 +405,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
   };
 
   return (
-    <div className="relative w-full h-[calc(100vh-4rem)] md:h-full snap-start flex items-center justify-center bg-black overflow-hidden">
+    <div className="relative w-full h-full snap-start flex items-center justify-center bg-black overflow-hidden">
       {/* Video Layer */}
       <div className="relative w-full h-full md:max-w-[450px] cursor-pointer" onClick={handleTap}>
           <video
@@ -448,7 +448,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                     <div className="flex items-center gap-2 mb-3">
                         <img onClick={() => onViewProfile(video.author)} src={video.author.avatar} className="w-10 h-10 rounded-full border border-white cursor-pointer" alt="" />
                         <span onClick={() => onViewProfile(video.author)} className="font-bold text-shadow cursor-pointer hover:underline">{video.author.handle}</span>
-                        <button className="border border-white/50 bg-transparent text-xs px-3 py-1 rounded-lg font-semibold backdrop-blur-md hover:bg-white/20 transition">Follow</button>
+                        <button className="border border-white/50 bg-transparent text-xs px-3 py-1 rounded-lg font-semibold backdrop-blur-md hover:bg-white/20 transition">Subscribe</button>
                     </div>
                     <p className="text-sm mb-2 line-clamp-2 leading-snug text-shadow-sm">{video.description}</p>
                     <div 
@@ -563,14 +563,16 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleM
 
   return (
     <div className="relative h-full w-full">
-        {/* Creation Floating Action Button */}
-        <button 
-            onClick={onCreateReel}
-            className="absolute top-20 md:top-6 left-4 z-30 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-3 rounded-full text-white shadow-lg hover:scale-110 transition active:scale-95"
-            aria-label="Create Reel"
-        >
-            <PlusIcon className="w-6 h-6" />
-        </button>
+        {/* Creation Floating Action Button - Only show if not passed from LongFormVideo */}
+        {onCreateReel && (
+            <button 
+                onClick={onCreateReel}
+                className="absolute top-20 md:top-6 left-4 z-30 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-3 rounded-full text-white shadow-lg hover:scale-110 transition active:scale-95"
+                aria-label="Create Reel"
+            >
+                <PlusIcon className="w-6 h-6" />
+            </button>
+        )}
 
         <div 
             ref={containerRef}

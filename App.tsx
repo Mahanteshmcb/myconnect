@@ -10,7 +10,7 @@ import { Notifications } from './components/Notifications';
 import { Marketplace } from './components/Marketplace';
 import { Explore } from './components/Explore';
 import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES, MARKET_ITEMS } from './services/mockData';
-import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, YouTubeLogo, ShoppingBagIcon } from './components/Icons';
+import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, StreamHubIcon, ShoppingBagIcon } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
 // --- Mobile Menu Drawer Component ---
@@ -72,7 +72,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.7</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.8</p>
         </div>
       </div>
     </div>
@@ -346,7 +346,7 @@ export default function App() {
                 onRemoveMember={handleRemoveMember}
             />
         );
-      case ViewMode.WATCH:
+      case ViewMode.WATCH: // Used for Reels/Shorts standalone viewer
         return (
           <VideoReels 
             videos={reels} 
@@ -376,7 +376,7 @@ export default function App() {
             selectedSessionId={selectedChatId}
           />
         );
-      case ViewMode.CREATOR:
+      case ViewMode.CREATOR: // Main Video Hub
         return (
           <LongFormVideoApp 
             videos={longFormVideos} 
@@ -433,11 +433,8 @@ export default function App() {
           <button onClick={() => setActiveTab(ViewMode.FEED)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.FEED ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Feed">
             <HomeIcon className="w-6 h-6" />
           </button>
-          <button onClick={() => setActiveTab(ViewMode.CREATOR)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CREATOR ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Videos">
-            <YouTubeLogo className="w-8 h-8" />
-          </button>
-          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Reels">
-            <VideoIcon className="w-6 h-6" />
+          <button onClick={() => setActiveTab(ViewMode.CREATOR)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CREATOR ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="StreamHub">
+            <StreamHubIcon className="w-6 h-6" />
           </button>
           <button onClick={() => setActiveTab(ViewMode.EXPLORE)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.EXPLORE ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Explore">
             <ExploreIcon className="w-6 h-6" />
@@ -478,12 +475,12 @@ export default function App() {
             <span className="text-[10px] font-medium">Home</span>
           </button>
           <button onClick={() => setActiveTab(ViewMode.CREATOR)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.CREATOR ? 'text-red-600' : 'text-gray-400 dark:text-gray-500'}`}>
-            <YouTubeLogo className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Video</span>
+            <StreamHubIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Videos</span>
           </button>
-          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}>
-            <VideoIcon className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Reels</span>
+          <button onClick={() => setActiveTab(ViewMode.EXPLORE)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.EXPLORE ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
+            <ExploreIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Explore</span>
           </button>
           <button onClick={() => setActiveTab(ViewMode.CHAT)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.CHAT ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
             <ChatIcon className="w-6 h-6" />
