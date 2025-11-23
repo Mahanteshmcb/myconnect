@@ -60,23 +60,6 @@ const LiveStudio = ({ onClose, currentUser }: { onClose: () => void, currentUser
     const [title, setTitle] = useState('');
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    useEffect(() => {
-        // Mock camera access
-        const startCamera = async () => {
-            try {
-                if (videoRef.current) {
-                    videoRef.current.src = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; 
-                    videoRef.current.loop = true;
-                    videoRef.current.muted = true;
-                    videoRef.current.play();
-                }
-            } catch (e) {
-                console.error("Camera error", e);
-            }
-        };
-        startCamera();
-    }, []);
-
     return (
         <div className="flex-1 flex flex-col h-full bg-[#181818] text-white">
             <div className="flex justify-between items-center p-4 border-b border-[#303030]">
@@ -91,7 +74,15 @@ const LiveStudio = ({ onClose, currentUser }: { onClose: () => void, currentUser
                 {/* Main Preview Area */}
                 <div className="flex-1 p-6 flex flex-col gap-6">
                     <div className="bg-black aspect-video rounded-xl overflow-hidden relative border border-[#303030] flex items-center justify-center">
-                        <video ref={videoRef} className="w-full h-full object-cover opacity-50" />
+                        <video 
+                            ref={videoRef} 
+                            className="w-full h-full object-cover opacity-50" 
+                            src="https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                        />
                         {!isLive && (
                              <div className="absolute inset-0 flex items-center justify-center">
                                  <p className="text-gray-400">Camera Preview (Simulated)</p>

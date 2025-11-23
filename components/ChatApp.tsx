@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, User, Message } from '../types';
-import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon } from './Icons';
+import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon } from './Icons';
 import { MOCK_USERS } from '../services/mockData';
 
 interface ChatAppProps {
@@ -9,6 +9,7 @@ interface ChatAppProps {
   currentUser: User;
   onSendMessage: (sessionId: string, text: string, type?: 'text' | 'image' | 'video' | 'audio' | 'document', mediaUrl?: string, customId?: string, fileName?: string, fileSize?: string, replyToId?: string) => void;
   onCreateGroup: (name: string) => void;
+  onAddContact: (contact: User) => void;
   isAiThinking?: boolean;
   onViewProfile: (user?: User) => void;
   selectedSessionId?: string | null;
@@ -62,6 +63,120 @@ const EncryptionBadge = () => (
         </div>
     </div>
 );
+
+// --- Image Viewer Modal ---
+const ImageViewer = ({ src, onClose }: { src: string, onClose: () => void }) => (
+    <div className="fixed inset-0 z-[120] bg-black/95 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition">
+            <CloseIcon className="w-8 h-8" />
+        </button>
+        <img 
+            src={src} 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+        />
+    </div>
+);
+
+// --- Audio Player Component ---
+const AudioPlayer = ({ src }: { src: string }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        if (!src) return;
+        
+        const audio = new Audio(src);
+        audioRef.current = audio;
+
+        const onLoadedMetadata = () => setDuration(audio.duration);
+        const onTimeUpdate = () => {
+            if (audio.duration) {
+                setProgress((audio.currentTime / audio.duration) * 100);
+            }
+        };
+        const onEnded = () => {
+            setIsPlaying(false);
+            setProgress(0);
+        };
+        const onError = (e: Event) => {
+            console.error("Audio playback error:", e);
+            setIsPlaying(false);
+        };
+
+        audio.addEventListener('loadedmetadata', onLoadedMetadata);
+        audio.addEventListener('timeupdate', onTimeUpdate);
+        audio.addEventListener('ended', onEnded);
+        audio.addEventListener('error', onError);
+
+        return () => {
+            audio.pause();
+            audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+            audio.removeEventListener('timeupdate', onTimeUpdate);
+            audio.removeEventListener('ended', onEnded);
+            audio.removeEventListener('error', onError);
+            audioRef.current = null;
+        };
+    }, [src]);
+
+    const togglePlay = () => {
+        if (!audioRef.current) return;
+        
+        if (isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+        } else {
+            const playPromise = audioRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => setIsPlaying(true))
+                    .catch(error => {
+                        console.error("Audio play failed:", error);
+                        setIsPlaying(false);
+                    });
+            }
+        }
+    };
+
+    const formatTime = (time: number) => {
+        if (isNaN(time) || !isFinite(time)) return "0:00";
+        const min = Math.floor(time / 60);
+        const sec = Math.floor(time % 60);
+        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+    };
+
+    return (
+        <div className="flex items-center gap-3 min-w-[220px] py-2 px-1">
+            <button 
+                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500 transition flex-shrink-0"
+            >
+                {isPlaying ? (
+                    <div className="w-3 h-3 bg-current rounded-sm" /> // Pause Icon
+                ) : (
+                    <PlayCircleIcon className="w-6 h-6 ml-0.5" />
+                )}
+            </button>
+            <div className="flex-1 flex flex-col justify-center gap-1">
+                <div className="h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden w-full">
+                    <div 
+                        className="h-full bg-blue-500 transition-all duration-100 ease-linear" 
+                        style={{ width: `${progress}%` }}
+                    ></div>
+                </div>
+                <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                    <span>{isPlaying && audioRef.current ? formatTime(audioRef.current.currentTime) : formatTime(0)}</span>
+                    <span>{formatTime(duration || 0)}</span>
+                </div>
+            </div>
+            <div className="relative">
+                 <MicrophoneIcon className={`w-12 h-12 text-gray-100 dark:text-gray-700 absolute -top-4 -right-2 -z-10 opacity-20`} />
+            </div>
+        </div>
+    );
+};
 
 // --- Call Overlay Component ---
 const CallOverlay = ({ 
@@ -143,6 +258,128 @@ const CallOverlay = ({
                         {isVideoOff ? <VideoOffIcon className="w-7 h-7" /> : <VideoIcon className="w-7 h-7" />}
                     </button>
                 )}
+            </div>
+        </div>
+    );
+};
+
+// --- Contact Modal (Add New) ---
+const ContactModal = ({ 
+    isOpen, 
+    onClose, 
+    onAdd 
+}: { 
+    isOpen: boolean, 
+    onClose: () => void, 
+    onAdd: (name: string, phone: string) => void 
+}) => {
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-lg dark:text-white">Add New Contact</h3>
+                    <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+                </div>
+                <div className="space-y-4">
+                    <input 
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="Contact Name"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500"
+                        autoFocus
+                    />
+                    <input 
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder="Phone Number"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500"
+                    />
+                    <button 
+                        onClick={() => { if(name.trim()) onAdd(name, phone); }}
+                        disabled={!name.trim()}
+                        className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
+                    >
+                        Save Contact
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- My Profile Edit Modal ---
+const MyProfileEditModal = ({
+    isOpen,
+    onClose,
+    user,
+    onSave
+}: {
+    isOpen: boolean,
+    onClose: () => void,
+    user: User,
+    onSave: (u: Partial<User>) => void
+}) => {
+    const [name, setName] = useState(user.name);
+    const [bio, setBio] = useState(user.bio || '');
+    const [avatar, setAvatar] = useState(user.avatar);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    if (!isOpen) return null;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.[0]) {
+            setAvatar(URL.createObjectURL(e.target.files[0]));
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-bold text-lg dark:text-white">Edit Profile</h3>
+                    <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+                </div>
+                
+                <div className="flex justify-center mb-6">
+                    <div className="relative group w-24 h-24 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                        <img src={avatar} className="w-full h-full rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
+                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                            <CameraIcon className="w-8 h-8 text-white" />
+                        </div>
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Name</label>
+                        <input 
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">About</label>
+                        <textarea 
+                            value={bio}
+                            onChange={e => setBio(e.target.value)}
+                            className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500 resize-none"
+                            rows={3}
+                        />
+                    </div>
+                    <button 
+                        onClick={() => { onSave({ name, bio, avatar }); onClose(); }}
+                        className="w-full py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition"
+                    >
+                        Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -256,8 +493,70 @@ const GroupModal = ({
     );
 };
 
+// --- File Preview Modal ---
+const FilePreviewModal = ({ 
+    file, 
+    url, 
+    type, 
+    onClose, 
+    onSend 
+}: { 
+    file: File, 
+    url: string, 
+    type: 'image' | 'video' | 'document' | 'audio', 
+    onClose: () => void, 
+    onSend: (caption: string) => void 
+}) => {
+    const [caption, setCaption] = useState('');
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col justify-center items-center p-4 animate-fade-in">
+            <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-gray-800 rounded-full text-white hover:bg-gray-700">
+                <CloseIcon className="w-6 h-6" />
+            </button>
+
+            <div className="flex-1 flex items-center justify-center w-full max-w-3xl relative">
+                {type === 'image' && <img src={url} className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-2xl" />}
+                {type === 'video' && <video src={url} controls className="max-h-[70vh] max-w-full rounded-lg shadow-2xl" />}
+                {type === 'audio' && (
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl flex flex-col items-center gap-4 w-full max-w-md">
+                        <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                            <MicrophoneIcon className="w-12 h-12 text-gray-500" />
+                        </div>
+                        <audio src={url} controls className="w-full" />
+                        <p className="text-gray-800 dark:text-white font-mono text-sm">{file.name}</p>
+                    </div>
+                )}
+                {type === 'document' && (
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl flex flex-col items-center gap-4">
+                        <DocumentIcon className="w-24 h-24 text-gray-500" />
+                        <p className="text-xl font-bold text-gray-800 dark:text-white">{file.name}</p>
+                        <p className="text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                )}
+            </div>
+
+            <div className="w-full max-w-2xl mt-6 flex gap-4">
+                <input 
+                    value={caption}
+                    onChange={e => setCaption(e.target.value)}
+                    placeholder="Add a caption..."
+                    className="flex-1 bg-gray-800 text-white p-4 rounded-xl outline-none focus:ring-2 ring-blue-500"
+                    autoFocus
+                />
+                <button 
+                    onClick={() => onSend(caption)} 
+                    className="bg-blue-600 text-white p-4 rounded-full hover:bg-blue-700 transition shadow-lg hover:scale-105"
+                >
+                    <SendIcon className="w-6 h-6" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Chat Component ---
-export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, currentUser, onSendMessage, onCreateGroup, isAiThinking, onViewProfile, selectedSessionId }) => {
+export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, currentUser, onSendMessage, onCreateGroup, onAddContact, isAiThinking, onViewProfile, selectedSessionId }) => {
   const [sessions, setSessions] = useState<ChatSession[]>(initialSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(selectedSessionId || null);
   const [inputText, setInputText] = useState('');
@@ -265,24 +564,38 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [chatSearchTerm, setChatSearchTerm] = useState(''); // Search inside chat
-  const [filterType, setFilterType] = useState<'all' | 'groups' | 'unread'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'groups' | 'unread' | 'docs' | 'links' | 'audio'>('all');
   const [localMessageStatuses, setLocalMessageStatuses] = useState<Record<string, string>>({});
+  
+  // Recording State
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingIntervalRef = useRef<any>(null);
+
+  // Modals
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [groupModalMode, setGroupModalMode] = useState<'create' | 'add_member'>('create');
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   
   // Call & Reply State
   const [callState, setCallState] = useState<{active: boolean, type: 'audio' | 'video'}>({ active: false, type: 'audio' });
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [contextMenuMsgId, setContextMenuMsgId] = useState<string | null>(null);
   
+  // File Preview State
+  const [filePreview, setFilePreview] = useState<{ file: File, url: string, type: 'image' | 'video' | 'document' | 'audio' } | null>(null);
+
   // Group Editing State
   const [isEditingGroup, setIsEditingGroup] = useState(false);
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupDesc, setEditGroupDesc] = useState('');
+  const [editGroupAvatar, setEditGroupAvatar] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const groupAvatarInputRef = useRef<HTMLInputElement>(null);
 
   // Update sessions when prop changes
   useEffect(() => {
@@ -307,7 +620,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       if (!chatSearchTerm) {
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }
-  }, [activeSessionId, sessions, isAiThinking, chatSearchTerm]);
+  }, [activeSessionId, sessions, isAiThinking, chatSearchTerm, replyingTo]);
 
   // When entering chat info, prep edit state
   useEffect(() => {
@@ -316,6 +629,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
           if (s && s.isGroup) {
               setEditGroupName(s.groupName || '');
               setEditGroupDesc(s.groupDescription || '');
+              setEditGroupAvatar(s.groupAvatar || '');
           }
       }
   }, [activeSessionId, sessions]);
@@ -335,36 +649,30 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
     if (type === 'text') setInputText('');
     setShowAttachments(false);
     setReplyingTo(null);
+    setFilePreview(null); // Clear preview
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document' | 'audio') => {
       const file = e.target.files?.[0];
       if (file && activeSessionId) {
           const url = URL.createObjectURL(file);
-          const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-          handleSend(file.name, type, url, file.name, size);
+          setFilePreview({ file, url, type });
       }
-      // Reset input
+      // Reset input so same file can be selected again if cancelled
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handlePreviewSend = (caption: string) => {
+      if (filePreview) {
+          const size = (filePreview.file.size / 1024 / 1024).toFixed(2) + ' MB';
+          handleSend(caption, filePreview.type, filePreview.url, filePreview.file.name, size);
+      }
+  };
+
   const handleCreateGroupSubmit = (data: { name: string, members: User[] }) => {
-      const newGroupId = `g_${Date.now()}`;
-      const newGroup: ChatSession = {
-          id: newGroupId,
-          isGroup: true,
-          groupName: data.name,
-          groupAvatar: `https://ui-avatars.com/api/?name=${data.name.replace(' ','+')}&background=random`,
-          user: { ...currentUser, id: 'group_placeholder' },
-          lastMessage: 'Group created',
-          unread: 0,
-          timestamp: 'Just now',
-          messages: [],
-          participants: [currentUser, ...data.members],
-          admins: [currentUser.id]
-      };
-      setSessions([newGroup, ...sessions]);
-      setActiveSessionId(newGroupId);
+      onCreateGroup(data.name);
+      // Note: In a real app, we'd pass members too. Mock implementation in App.tsx handles it simply.
+      setGroupModalOpen(false);
   };
 
   const handleAddMembersSubmit = (data: { members: User[] }) => {
@@ -388,7 +696,8 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
               return {
                   ...s,
                   groupName: editGroupName,
-                  groupDescription: editGroupDesc
+                  groupDescription: editGroupDesc,
+                  groupAvatar: editGroupAvatar
               };
           }
           return s;
@@ -397,9 +706,15 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       setIsEditingGroup(false);
   };
 
+  const handleGroupAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files?.[0]) {
+          setEditGroupAvatar(URL.createObjectURL(e.target.files[0]));
+      }
+  };
+
   const handleRemoveMember = (userId: string) => {
       if (!activeSessionId) return;
-      if (!confirm("Remove this user?")) return;
+      if (!confirm("Remove this user from the group?")) return;
       const updatedSessions = sessions.map(s => {
           if (s.id === activeSessionId) {
               return {
@@ -412,14 +727,30 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       setSessions(updatedSessions);
   };
 
+  // Handle Voice Recording Logic
   const handleVoiceRecord = () => {
       if (isRecording) {
+          // STOP Recording
+          clearInterval(recordingIntervalRef.current);
           setIsRecording(false);
-          // Simulate sending an audio file
-          handleSend("Voice Message", "audio", "https://www2.cs.uic.edu/~i101/SoundFiles/StarWars3.wav"); 
+          setRecordingDuration(0);
+          // Send a mock audio file (Reliable MP3)
+          const mockAudioUrl = "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"; 
+          handleSend("", "audio", mockAudioUrl, "Voice Message", "0:15"); 
       } else {
+          // START Recording
           setIsRecording(true);
+          setRecordingDuration(0);
+          recordingIntervalRef.current = setInterval(() => {
+              setRecordingDuration(prev => prev + 1);
+          }, 1000);
       }
+  };
+
+  const formatDuration = (sec: number) => {
+      const min = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${min}:${s < 10 ? '0' : ''}${s}`;
   };
 
   const handleCopyMessage = (text: string) => {
@@ -428,7 +759,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   };
 
   const handleDeleteMessage = (msgId: string) => {
-      // In a real app this would call API
       if (!activeSessionId) return;
       const updatedSessions = sessions.map(s => {
           if (s.id === activeSessionId) {
@@ -440,14 +770,66 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       setContextMenuMsgId(null);
   };
 
+  const handleBlockOrLeave = (isGroup: boolean) => {
+      if (isGroup) {
+          if(confirm("Are you sure you want to leave this group?")) {
+              setSessions(sessions.filter(s => s.id !== activeSessionId));
+              setActiveSessionId(null);
+          }
+      } else {
+          if(confirm("Block this contact?")) {
+              alert("Contact blocked.");
+          }
+      }
+  };
+
+  const handleCreateContact = (name: string, phone: string) => {
+      const newUser: User = {
+          id: `u_${Date.now()}`,
+          name: name,
+          handle: phone,
+          avatar: `https://ui-avatars.com/api/?name=${name.replace(' ','+')}&background=random`,
+          isOnline: false,
+          phoneNumber: phone
+      };
+      onAddContact(newUser);
+      setContactModalOpen(false);
+  };
+
+  // Search & Filter Logic
   const filteredSessions = sessions.filter(s => {
-      const matchesSearch = (s.isGroup ? s.groupName : s.user.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            s.lastMessage.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (filterType === 'groups') return matchesSearch && s.isGroup;
-      if (filterType === 'unread') return matchesSearch && s.unread > 0;
-      return matchesSearch;
+      // Basic text filter for sessions
+      if (['all', 'groups', 'unread'].includes(filterType)) {
+          const matchesSearch = (s.isGroup ? s.groupName : s.user.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                s.lastMessage.toLowerCase().includes(searchTerm.toLowerCase());
+          
+          if (filterType === 'groups') return matchesSearch && s.isGroup;
+          if (filterType === 'unread') return matchesSearch && s.unread > 0;
+          return matchesSearch;
+      }
+      return true; // If filtering by content type, we handle display differently
   });
+
+  // Global content search results
+  const contentSearchResults = React.useMemo(() => {
+      if (['all', 'groups', 'unread'].includes(filterType)) return null;
+      
+      const results: { session: ChatSession, msg: Message }[] = [];
+      sessions.forEach(s => {
+          s.messages.forEach(m => {
+              let match = false;
+              if (filterType === 'docs' && m.type === 'document') match = true;
+              if (filterType === 'audio' && m.type === 'audio') match = true;
+              if (filterType === 'links' && (m.text.includes('http') || m.text.includes('www'))) match = true;
+              
+              if (match && (!searchTerm || m.text.toLowerCase().includes(searchTerm.toLowerCase()) || m.fileName?.toLowerCase().includes(searchTerm.toLowerCase()))) {
+                  results.push({ session: s, msg: m });
+              }
+          });
+      });
+      return results;
+  }, [sessions, filterType, searchTerm]);
+
 
   const renderMessageBubble = (msg: Message) => {
       const isMe = msg.senderId === currentUser.id;
@@ -458,7 +840,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       const repliedMsg = activeSession?.messages.find(m => m.id === msg.replyToId);
 
       return (
-          <div className={`max-w-[80%] relative group ${isHighlighted ? 'opacity-100' : (chatSearchTerm ? 'opacity-30' : 'opacity-100')}`}>
+          <div className={`max-w-[80%] relative group ${isHighlighted ? 'opacity-100' : (chatSearchTerm ? 'opacity-30' : 'opacity-100')}`} id={msg.id}>
               {/* Context Menu Trigger */}
               <button 
                   onClick={(e) => { e.stopPropagation(); setContextMenuMsgId(isContextOpen ? null : msg.id); }}
@@ -485,7 +867,10 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
               <div className={`rounded-lg px-3 py-2 shadow-md text-sm mb-1 relative ${isMe ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-black dark:text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-black dark:text-white rounded-tl-none'}`}>
                   {/* Reply Context Bubble */}
                   {repliedMsg && (
-                      <div className={`mb-2 rounded-md p-2 text-xs border-l-4 border-blue-500 bg-black/5 dark:bg-black/20 opacity-80 flex flex-col cursor-pointer`}>
+                      <div 
+                        onClick={() => document.getElementById(repliedMsg.id)?.scrollIntoView({behavior: 'smooth', block: 'center'})}
+                        className={`mb-2 rounded-md p-2 text-xs border-l-4 border-blue-500 bg-black/5 dark:bg-black/20 opacity-80 flex flex-col cursor-pointer hover:opacity-100 transition`}
+                      >
                           <span className="font-bold text-blue-600 dark:text-blue-400 mb-0.5">
                               {repliedMsg.senderId === currentUser.id ? 'You' : (activeSession?.participants?.find(p => p.id === repliedMsg.senderId)?.name || 'User')}
                           </span>
@@ -497,7 +882,11 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                   {(msg.type === 'image' || msg.type === 'video') && msg.mediaUrl && (
                       <div className="mb-1">
                           {msg.type === 'image' ? (
-                              <img src={msg.mediaUrl} className="rounded-lg max-h-60 object-cover w-full" />
+                              <img 
+                                src={msg.mediaUrl} 
+                                className="rounded-lg max-h-60 object-cover w-full cursor-pointer" 
+                                onClick={() => setViewingImage(msg.mediaUrl || '')}
+                              />
                           ) : (
                               <video src={msg.mediaUrl} controls className="rounded-lg max-h-60 w-full" />
                           )}
@@ -505,23 +894,13 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                   )}
 
                   {/* Audio */}
-                  {msg.type === 'audio' && (
-                      <div className="flex items-center gap-3 min-w-[200px] py-2">
-                          <button className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-600 dark:text-white">
-                              <PlayCircleIcon className="w-5 h-5" />
-                          </button>
-                          <div className="flex-1">
-                              <div className="h-1 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
-                                  <div className="w-1/3 h-full bg-blue-500"></div>
-                              </div>
-                              <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 block">0:15</span>
-                          </div>
-                      </div>
+                  {msg.type === 'audio' && msg.mediaUrl && (
+                      <AudioPlayer src={msg.mediaUrl} />
                   )}
 
                   {/* Document */}
                   {msg.type === 'document' && (
-                      <div className="flex items-center gap-3 bg-black/5 dark:bg-white/10 p-2 rounded-lg mb-1">
+                      <div className="flex items-center gap-3 bg-black/5 dark:bg-white/10 p-2 rounded-lg mb-1 cursor-pointer hover:bg-black/10 transition">
                           <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center text-red-500">
                               <DocumentIcon className="w-6 h-6" />
                           </div>
@@ -529,13 +908,18 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                               <p className="font-bold truncate text-sm">{msg.fileName || 'Document'}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{msg.fileSize || 'PDF'}</p>
                           </div>
-                          <button className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full">
+                          <a 
+                            href={msg.mediaUrl} 
+                            download={msg.fileName || 'document'}
+                            className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                               <DownloadIcon className="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                          </button>
+                          </a>
                       </div>
                   )}
 
-                  <p className="whitespace-pre-wrap break-words">{msg.type !== 'audio' && msg.type !== 'document' ? msg.text : ''}</p>
+                  <p className="whitespace-pre-wrap break-words">{msg.type !== 'audio' && msg.type !== 'document' ? msg.text : (msg.text && msg.text !== msg.fileName ? msg.text : '')}</p>
                   
                   <div className="flex justify-end items-center gap-1 mt-1">
                       <span className="text-[10px] opacity-70 min-w-[45px] text-right">
@@ -558,6 +942,33 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
         existingMembers={activeSession?.participants}
       />
 
+      <ContactModal 
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        onAdd={handleCreateContact}
+      />
+
+      <MyProfileEditModal 
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        user={currentUser}
+        onSave={(updated) => {
+            console.log("Updating user", updated);
+        }}
+      />
+
+      {viewingImage && <ImageViewer src={viewingImage} onClose={() => setViewingImage(null)} />}
+
+      {filePreview && (
+          <FilePreviewModal 
+              file={filePreview.file}
+              url={filePreview.url}
+              type={filePreview.type}
+              onClose={() => { setFilePreview(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}
+              onSend={handlePreviewSend}
+          />
+      )}
+
       <input type="file" ref={fileInputRef} className="hidden" />
 
       {activeSession && (
@@ -572,17 +983,24 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       {/* Sidebar */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 dark:border-gray-800 flex flex-col ${activeSessionId ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chats</h2>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setProfileModalOpen(true)}>
+                <img src={currentUser.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 hover:opacity-80 transition" />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chats</h2>
+            </div>
             <div className="flex gap-2">
+                <button 
+                    onClick={() => setContactModalOpen(true)} 
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300" 
+                    title="New Contact"
+                >
+                   <UserPlusIcon className="w-5 h-5" />
+                </button>
                 <button 
                     onClick={() => { setGroupModalMode('create'); setGroupModalOpen(true); }} 
                     className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300" 
                     title="New Group"
                 >
                    <UsersIcon className="w-5 h-5" />
-                </button>
-                <button className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300" title="New Chat">
-                   <PlusIcon className="w-5 h-5" />
                 </button>
             </div>
         </div>
@@ -598,7 +1016,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                 />
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                {['All', 'Unread', 'Groups'].map(f => (
+                {['All', 'Unread', 'Groups', 'Docs', 'Links', 'Audio'].map(f => (
                     <button 
                         key={f}
                         onClick={() => setFilterType(f.toLowerCase() as any)}
@@ -611,32 +1029,55 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
         </div>
         
         <div className="overflow-y-auto flex-1 bg-white dark:bg-gray-900">
-            {filteredSessions.map(session => (
-                <div 
-                    key={session.id}
-                    onClick={() => setActiveSessionId(session.id)}
-                    className={`p-3 flex gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition ${activeSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800 border-l-4 border-green-500' : 'border-l-4 border-transparent'}`}
-                >
-                    <div className="relative">
-                        <img src={session.isGroup ? session.groupAvatar : session.user.avatar} className="w-12 h-12 rounded-full object-cover" />
-                        {session.user.isOnline && !session.isGroup && (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
-                        )}
-                    </div>
-                    <div className="flex-1 border-b border-gray-50 dark:border-gray-800 pb-3 min-w-0">
-                        <div className="flex justify-between items-baseline mb-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-white truncate">{session.isGroup ? session.groupName : session.user.name}</h3>
-                            <span className="text-xs text-gray-400 flex-shrink-0">{session.timestamp}</span>
+            {contentSearchResults ? (
+                <div className="p-2 space-y-2">
+                    <div className="px-2 text-xs font-bold text-gray-500 uppercase mb-2">Found Messages</div>
+                    {contentSearchResults.map((item, idx) => (
+                        <div 
+                            key={idx} 
+                            onClick={() => setActiveSessionId(item.session.id)}
+                            className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer flex gap-3"
+                        >
+                            <img src={item.session.isGroup ? item.session.groupAvatar : item.session.user.avatar} className="w-10 h-10 rounded-full" />
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between">
+                                    <h4 className="font-bold text-sm dark:text-white">{item.session.isGroup ? item.session.groupName : item.session.user.name}</h4>
+                                    <span className="text-xs text-gray-400">{new Date(item.msg.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 truncate">{item.msg.text || item.msg.fileName || 'Media'}</p>
+                            </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[180px]">{session.lastMessage}</p>
-                            {session.unread > 0 && (
-                                <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{session.unread}</span>
+                    ))}
+                    {contentSearchResults.length === 0 && <div className="text-center text-gray-500 text-sm mt-10">No results found.</div>}
+                </div>
+            ) : (
+                filteredSessions.map(session => (
+                    <div 
+                        key={session.id}
+                        onClick={() => setActiveSessionId(session.id)}
+                        className={`p-3 flex gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition ${activeSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800 border-l-4 border-green-500' : 'border-l-4 border-transparent'}`}
+                    >
+                        <div className="relative">
+                            <img src={session.isGroup ? session.groupAvatar : session.user.avatar} className="w-12 h-12 rounded-full object-cover" />
+                            {session.user.isOnline && !session.isGroup && (
+                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
                             )}
                         </div>
+                        <div className="flex-1 border-b border-gray-50 dark:border-gray-800 pb-3 min-w-0">
+                            <div className="flex justify-between items-baseline mb-1">
+                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">{session.isGroup ? session.groupName : session.user.name}</h3>
+                                <span className="text-xs text-gray-400 flex-shrink-0">{session.timestamp}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[180px]">{session.lastMessage}</p>
+                                {session.unread > 0 && (
+                                    <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{session.unread}</span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))
+            )}
         </div>
       </div>
 
@@ -646,10 +1087,10 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
           <>
             <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 shadow-sm z-10">
               <button onClick={() => setActiveSessionId(null)} className="md:hidden"><BackIcon className="w-6 h-6 dark:text-white" /></button>
-              <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => setShowChatInfo(!showChatInfo)}>
+              <div className="flex items-center gap-3 flex-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-1 rounded-lg transition" onClick={() => setShowChatInfo(true)}>
                   <img src={activeSession.isGroup ? activeSession.groupAvatar : activeSession.user.avatar} className="w-10 h-10 rounded-full" />
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">{activeSession.isGroup ? activeSession.groupName : activeSession.user.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">{activeSession.isGroup ? activeSession.groupName : activeSession.user.name}</h3>
                     <p className="text-xs text-gray-500 truncate">
                         {activeSession.isGroup 
                             ? activeSession.participants?.map(p => p.name.split(' ')[0]).join(', ') 
@@ -735,6 +1176,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                                { icon: <DocumentIcon className="w-5 h-5" />, bg: 'bg-purple-500', label: 'Document', type: 'document' },
                                { icon: <CameraIcon className="w-5 h-5" />, bg: 'bg-red-500', label: 'Camera', type: 'image' },
                                { icon: <VideoIcon className="w-5 h-5" />, bg: 'bg-pink-500', label: 'Gallery', type: 'video' },
+                               { icon: <PlayCircleIcon className="w-5 h-5" />, bg: 'bg-orange-500', label: 'Audio', type: 'audio' },
                            ].map((item) => (
                                <button 
                                     key={item.label}
@@ -751,28 +1193,41 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                                        {item.icon}
                                    </div>
                                    <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs shadow opacity-0 group-hover:opacity-100 transition dark:text-white font-bold">{item.label}</span>
-                               </button>
+                                </button>
                            ))}
                        </div>
                    )}
                </div>
 
                <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl px-4 py-2 border border-transparent focus-within:border-gray-300 dark:focus-within:border-gray-700 transition flex items-center mb-1">
-                   <input 
-                     type="text" 
-                     value={inputText}
-                     onChange={(e) => setInputText(e.target.value)}
-                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                     placeholder="Type a message"
-                     className="flex-1 bg-transparent outline-none dark:text-white max-h-32 overflow-y-auto py-1"
-                   />
+                   {isRecording ? (
+                       <div className="flex-1 flex items-center gap-2 text-red-500 font-mono">
+                           <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                           {formatDuration(recordingDuration)}
+                           <span className="text-gray-400 text-xs ml-2">Release to send</span>
+                       </div>
+                   ) : (
+                       <input 
+                         type="text" 
+                         value={inputText}
+                         onChange={(e) => setInputText(e.target.value)}
+                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                         placeholder="Type a message"
+                         className="flex-1 bg-transparent outline-none dark:text-white max-h-32 overflow-y-auto py-1"
+                       />
+                   )}
                </div>
 
                <button 
-                    onClick={() => inputText ? handleSend() : handleVoiceRecord()}
+                    onMouseDown={!inputText ? handleVoiceRecord : undefined}
+                    onMouseUp={!inputText && isRecording ? handleVoiceRecord : undefined}
+                    onClick={inputText ? () => handleSend() : undefined}
+                    // Touch support for mobile
+                    onTouchStart={!inputText ? handleVoiceRecord : undefined}
+                    onTouchEnd={!inputText && isRecording ? handleVoiceRecord : undefined}
                     className={`p-3 rounded-full shadow-md mb-1 transition-all active:scale-95 flex items-center justify-center ${inputText || isRecording ? 'bg-[#00a884] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-white'}`}
                >
-                   {inputText ? <SendIcon className="w-5 h-5" /> : (isRecording ? <div className="w-5 h-5 bg-white rounded animate-pulse" /> : <MicrophoneIcon className="w-5 h-5" />)}
+                   {inputText ? <SendIcon className="w-5 h-5" /> : (isRecording ? <SendIcon className="w-5 h-5" /> : <MicrophoneIcon className="w-5 h-5" />)}
                </button>
             </div>
           </>
@@ -793,116 +1248,145 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
 
       {/* Right Info Panel (Conditional) */}
       {showChatInfo && activeSession && (
-          <div className="w-80 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hidden lg:flex flex-col h-full overflow-y-auto animate-slide-in-right">
-              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
-                  <button onClick={() => setShowChatInfo(false)}><CloseIcon className="w-5 h-5 text-gray-500" /></button>
-                  <h3 className="font-bold dark:text-white">{activeSession.isGroup ? 'Group Info' : 'Contact Info'}</h3>
+          <div className="w-full md:w-80 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 absolute inset-0 md:relative z-20 flex flex-col h-full overflow-y-auto animate-slide-in-right">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
+                  <button onClick={() => setShowChatInfo(false)} className="hover:bg-gray-200 dark:hover:bg-gray-800 p-1 rounded-full"><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+                  <h3 className="font-bold dark:text-white text-lg">{activeSession.isGroup ? 'Group Info' : 'Contact Info'}</h3>
               </div>
 
-              <div className="p-6 flex flex-col items-center text-center border-b border-gray-100 dark:border-gray-800">
-                  <img src={activeSession.isGroup ? activeSession.groupAvatar : activeSession.user.avatar} className="w-24 h-24 rounded-full object-cover mb-3 shadow-lg" />
+              <div className="p-6 flex flex-col items-center text-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                  <div className="relative group">
+                      <img 
+                        src={isEditingGroup ? editGroupAvatar : (activeSession.isGroup ? activeSession.groupAvatar : activeSession.user.avatar)} 
+                        className="w-32 h-32 rounded-full object-cover mb-4 shadow-lg border-4 border-gray-100 dark:border-gray-800" 
+                      />
+                      {isEditingGroup && activeSession.isGroup && (
+                          <>
+                            <div 
+                                onClick={() => groupAvatarInputRef.current?.click()}
+                                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition mb-4"
+                            >
+                                <CameraIcon className="w-8 h-8 text-white" />
+                            </div>
+                            <input type="file" ref={groupAvatarInputRef} className="hidden" accept="image/*" onChange={handleGroupAvatarChange} />
+                          </>
+                      )}
+                  </div>
+
                   {isEditingGroup ? (
                       <div className="w-full space-y-2">
                           <input 
                             value={editGroupName} 
                             onChange={(e) => setEditGroupName(e.target.value)} 
-                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded border border-blue-500 outline-none text-center font-bold"
+                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded border border-blue-500 outline-none text-center font-bold text-xl dark:text-white"
                           />
                       </div>
                   ) : (
-                      <h2 className="text-xl font-bold dark:text-white flex items-center justify-center gap-2">
+                      <h2 className="text-2xl font-bold dark:text-white flex items-center justify-center gap-2">
                           {activeSession.isGroup ? activeSession.groupName : activeSession.user.name}
                           {activeSession.isGroup && activeSession.admins?.includes(currentUser.id) && (
-                              <button onClick={() => setIsEditingGroup(true)} className="text-gray-400 hover:text-blue-500"><PencilIcon className="w-4 h-4" /></button>
+                              <button onClick={() => setIsEditingGroup(true)} className="text-gray-400 hover:text-blue-500"><PencilIcon className="w-5 h-5" /></button>
                           )}
                       </h2>
                   )}
-                  <p className="text-gray-500 text-sm mt-1">{activeSession.isGroup ? `Group • ${activeSession.participants?.length} participants` : activeSession.user.phoneNumber || '+1 555 019 2834'}</p>
+                  <p className="text-gray-500 text-lg mt-2 font-mono">
+                      {activeSession.isGroup 
+                        ? `Group • ${activeSession.participants?.length} participants` 
+                        : activeSession.user.phoneNumber || '+1 (555) 019-2834'}
+                  </p>
               </div>
 
               <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-4">
                   <div className="flex flex-col gap-1">
-                      <span className="text-xs font-bold text-gray-500 uppercase">About</span>
+                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">About</span>
                       {isEditingGroup ? (
                           <textarea 
                             value={editGroupDesc} 
                             onChange={(e) => setEditGroupDesc(e.target.value)} 
-                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded border border-blue-500 outline-none text-sm resize-none"
-                            rows={2}
+                            className="w-full p-3 bg-gray-100 dark:bg-gray-800 rounded border border-blue-500 outline-none text-sm resize-none dark:text-white"
+                            rows={3}
                           />
                       ) : (
-                          <p className="text-sm dark:text-gray-300">{activeSession.isGroup ? activeSession.groupDescription || "No description" : activeSession.user.bio || "Available"}</p>
+                          <p className="text-sm dark:text-gray-300 leading-relaxed">{activeSession.isGroup ? activeSession.groupDescription || "No description" : activeSession.user.bio || "Available"}</p>
                       )}
                   </div>
                   
                   {isEditingGroup && (
                       <div className="flex gap-2">
-                          <button onClick={handleSaveGroupInfo} className="flex-1 bg-blue-600 text-white py-1.5 rounded font-bold text-sm">Save</button>
-                          <button onClick={() => setIsEditingGroup(false)} className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-1.5 rounded font-bold text-sm">Cancel</button>
+                          <button onClick={handleSaveGroupInfo} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold text-sm">Save</button>
+                          <button onClick={() => setIsEditingGroup(false)} className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 rounded-lg font-bold text-sm">Cancel</button>
                       </div>
                   )}
 
                   {!activeSession.isGroup && (
-                      <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold text-gray-500 uppercase">Media, Links and Docs</span>
-                          <div className="flex gap-2 mt-2">
-                              {[1,2,3].map(i => <div key={i} className="w-16 h-16 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>)}
+                      <div className="flex flex-col gap-2 pt-2">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Media, Links and Docs</span>
+                          <div className="flex gap-2 mt-1 overflow-hidden rounded-lg">
+                              {[1,2,3].map(i => <div key={i} className="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg flex-shrink-0"></div>)}
+                              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 font-bold">+12</div>
                           </div>
                       </div>
                   )}
               </div>
 
               {activeSession.isGroup && (
-                  <div className="flex-1 p-4">
-                      <div className="flex justify-between items-center mb-3">
-                          <span className="text-xs font-bold text-gray-500 uppercase">{activeSession.participants?.length} Participants</span>
-                          <div className="flex gap-1">
+                  <div className="flex-1 p-0">
+                      <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900/50 sticky top-0">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{activeSession.participants?.length} Participants</span>
+                          <div className="flex gap-2">
                               <button 
                                 onClick={() => {
                                     navigator.clipboard.writeText(`https://myconnect.app/join/${activeSession.id}`);
                                     alert("Group invite link copied!");
                                 }} 
-                                className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-full hover:scale-110 transition text-gray-600 dark:text-gray-300"
+                                className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
                                 title="Copy Invite Link"
                               >
                                   <LinkIcon className="w-4 h-4" />
                               </button>
-                              <button onClick={() => { setGroupModalMode('add_member'); setGroupModalOpen(true); }} className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 hover:scale-110 transition">
+                              <button onClick={() => { setGroupModalMode('add_member'); setGroupModalOpen(true); }} className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition">
                                   <UserPlusIcon className="w-4 h-4" />
                               </button>
                           </div>
                       </div>
-                      <div className="space-y-3">
+                      <div className="divide-y divide-gray-100 dark:divide-gray-800">
                           {activeSession.participants?.map(p => (
-                              <div key={p.id} className="flex items-center gap-3 group cursor-pointer" onClick={() => onViewProfile(p)}>
-                                  <img src={p.avatar} className="w-8 h-8 rounded-full object-cover" />
+                              <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition" onClick={() => onViewProfile(p)}>
+                                  <img src={p.avatar} className="w-10 h-10 rounded-full object-cover" />
                                   <div className="flex-1 min-w-0">
                                       <h4 className="text-sm font-bold dark:text-white truncate">{p.id === currentUser.id ? 'You' : p.name}</h4>
                                       <p className="text-xs text-gray-500 truncate">{p.handle}</p>
                                   </div>
+                                  {activeSession.admins?.includes(p.id) && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 rounded border border-green-200 dark:border-green-900">Admin</span>}
+                                  
                                   {activeSession.admins?.includes(currentUser.id) && p.id !== currentUser.id && (
                                       <button 
                                         onClick={(e) => { e.stopPropagation(); handleRemoveMember(p.id); }}
-                                        className="text-red-500 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-red-50 rounded"
+                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition"
                                         title="Remove"
                                       >
                                           <UserMinusIcon className="w-4 h-4" />
                                       </button>
                                   )}
-                                  {activeSession.admins?.includes(p.id) && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded border border-green-200">Admin</span>}
                               </div>
                           ))}
                       </div>
                   </div>
               )}
 
-              <div className="p-4 mt-auto border-t border-gray-100 dark:border-gray-800">
+              <div className="p-4 mt-auto border-t border-gray-100 dark:border-gray-800 space-y-2 bg-white dark:bg-gray-900">
                   {activeSession.isGroup ? (
-                      <button className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition">
+                      <button 
+                        onClick={() => handleBlockOrLeave(true)}
+                        className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition"
+                      >
                           <ExitIcon className="w-5 h-5" /> Exit Group
                       </button>
                   ) : (
-                      <button className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition">
+                      <button 
+                        onClick={() => handleBlockOrLeave(false)}
+                        className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition"
+                      >
                           <ExitIcon className="w-5 h-5" /> Block {activeSession.user.name}
                       </button>
                   )}

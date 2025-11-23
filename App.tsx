@@ -255,7 +255,31 @@ export default function App() {
       setActiveTab(ViewMode.CHAT);
   };
 
-  const handleSendMessage = async (sessionId: string, text: string, type: 'text' | 'image' | 'video' | 'audio' = 'text', mediaUrl?: string, customId?: string) => {
+  const handleAddContact = (contact: User) => {
+      const newChatId = `c_${Date.now()}`;
+      const newChat: ChatSession = {
+          id: newChatId,
+          user: contact,
+          lastMessage: '',
+          unread: 0,
+          timestamp: 'Now',
+          messages: []
+      };
+      setChats([newChat, ...chats]);
+      setSelectedChatId(newChatId);
+      setActiveTab(ViewMode.CHAT);
+  };
+
+  const handleSendMessage = async (
+      sessionId: string, 
+      text: string, 
+      type: 'text' | 'image' | 'video' | 'audio' | 'document' = 'text', 
+      mediaUrl?: string, 
+      customId?: string,
+      fileName?: string,
+      fileSize?: string,
+      replyToId?: string
+  ) => {
     const sessionIndex = chats.findIndex(c => c.id === sessionId);
     if (sessionIndex === -1) return;
 
@@ -266,6 +290,9 @@ export default function App() {
       timestamp: new Date(),
       type: type,
       mediaUrl: mediaUrl,
+      fileName: fileName,
+      fileSize: fileSize,
+      replyToId: replyToId,
       status: 'sending'
     };
 
@@ -361,6 +388,7 @@ export default function App() {
             currentUser={currentUser} 
             onSendMessage={handleSendMessage}
             onCreateGroup={handleCreateGroup}
+            onAddContact={handleAddContact}
             isAiThinking={isAiThinking}
             onViewProfile={handleViewProfile}
             selectedSessionId={selectedChatId}

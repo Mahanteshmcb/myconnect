@@ -430,20 +430,26 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
     <div className="relative w-full h-full snap-start flex items-center justify-center bg-black overflow-hidden">
       {/* Video Layer */}
       <div className="relative w-full h-full md:max-w-[450px] cursor-pointer" onClick={handleTap}>
-          <video
-            ref={videoRef}
-            src={video.url}
-            poster={video.thumbnail}
-            className="w-full h-full object-cover"
-            style={{ filter: video.filter || 'none' }}
-            loop
-            playsInline
-            muted={isMuted}
-            onTimeUpdate={handleTimeUpdate}
-          />
+          {video.url ? (
+              <video
+                ref={videoRef}
+                src={video.url}
+                poster={video.thumbnail}
+                className="w-full h-full object-cover"
+                style={{ filter: video.filter || 'none' }}
+                loop
+                playsInline
+                muted={isMuted}
+                onTimeUpdate={handleTimeUpdate}
+              />
+          ) : (
+              <div className="flex items-center justify-center h-full text-white bg-gray-800">
+                  Video unavailable
+              </div>
+          )}
           
           {/* Pause Indicator */}
-          {!isPlaying && !showComments && !showShare && !showAudioInfo && (
+          {!isPlaying && !showComments && !showShare && !showAudioInfo && video.url && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none">
                   <PlayCircleIcon className="w-16 h-16 text-white/50 animate-pulse" />
               </div>
