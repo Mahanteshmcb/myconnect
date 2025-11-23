@@ -748,6 +748,12 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   // View Community Members
   const [showMembersModal, setShowMembersModal] = useState(false);
 
+  // Pull to refresh state
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+
   // Derived active post for modal
   const activePostForComments = useMemo(() => 
      posts.find(p => p.id === activePostIdForComments) || null
@@ -843,6 +849,45 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
 
   const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId && !searchQuery;
 
+  // Touch Handlers for Pull to Refresh
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only enable pull to refresh if at the very top
+    if (containerRef.current && containerRef.current.scrollTop <= 0) {
+        touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartY.current) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+    
+    // Only handle pull down (diff > 0) and at top
+    if (diff > 0 && containerRef.current && containerRef.current.scrollTop <= 0) {
+        // Damping factor to make it feel resistant
+        const damped = Math.min(diff * 0.4, 150); 
+        setPullDistance(damped);
+    } else {
+        setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 70) { // Threshold
+        setIsRefreshing(true);
+        setPullDistance(70); // Stay visible
+        
+        // Simulate refresh
+        setTimeout(() => {
+            setIsRefreshing(false);
+            setPullDistance(0);
+        }, 2000);
+    } else {
+        setPullDistance(0); // Snap back
+    }
+    touchStartY.current = 0;
+  };
+
   // Render Search Results Helper
   const renderSearchResults = () => {
       if (!searchResults) return null;
@@ -932,7 +977,29 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   };
 
   return (
-    <div className="h-full bg-white dark:bg-black overflow-y-auto">
+    <div 
+        ref={containerRef}
+        className="h-full bg-white dark:bg-black overflow-y-auto overscroll-y-contain relative"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+    >
+        {/* Refresh Spinner */}
+        <div 
+            className="absolute left-0 right-0 flex justify-center z-[60] pointer-events-none transition-all duration-300 ease-out"
+            style={{ 
+                top: `${pullDistance > 0 ? pullDistance - 40 : -50}px`,
+                opacity: pullDistance > 0 ? 1 : 0
+            }}
+        >
+             <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg border border-gray-100 dark:border-gray-700">
+                <div 
+                    className={`w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full ${isRefreshing ? 'animate-spin' : ''}`}
+                    style={{ transform: isRefreshing ? 'none' : `rotate(${pullDistance * 3}deg)` }}
+                />
+             </div>
+        </div>
+
         {viewingStoryIndex !== null && (
             <StoryViewer 
                 stories={stories} 
