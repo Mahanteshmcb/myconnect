@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification } from './types';
+import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community } from './types';
 import { SocialFeed } from './components/SocialFeed';
 import { VideoReels, CreateReel } from './components/VideoReels';
 import { ChatApp } from './components/ChatApp';
@@ -8,8 +8,8 @@ import { LongFormVideoApp } from './components/LongFormVideo';
 import { UserProfile } from './components/UserProfile';
 import { Notifications } from './components/Notifications';
 import { Explore } from './components/Explore';
-import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS } from './services/mockData';
-import { HomeIcon, VideoIcon, ChatIcon, PlayCircleIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, YouTubeLogo } from './components/Icons';
+import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES } from './services/mockData';
+import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, YouTubeLogo } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
 // --- Mobile Menu Drawer Component ---
@@ -71,7 +71,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.5</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.6</p>
         </div>
       </div>
     </div>
@@ -92,6 +92,8 @@ export default function App() {
   const [longFormVideos, setLongFormVideos] = useState<LongFormVideo[]>(LONG_FORM_VIDEOS);
   const [reels, setReels] = useState<Video[]>(REELS_VIDEOS);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [communities, setCommunities] = useState<Community[]>(MOCK_COMMUNITIES);
+
   const [isAiThinking, setIsAiThinking] = useState(false);
   
   // Reels Global Mute State (False = Sound On by default)
@@ -140,6 +142,29 @@ export default function App() {
     setPosts([newPost, ...posts]);
   };
 
+  // --- Community Actions ---
+  const handleCreateCommunity = (name: string, description: string) => {
+      const newCommunity: Community = {
+          id: `c_${Date.now()}`,
+          name,
+          description,
+          avatar: `https://ui-avatars.com/api/?name=${name.replace(' ','+')}&background=random`,
+          members: 1,
+          isJoined: true,
+          tags: [],
+          trendingScore: 0
+      };
+      setCommunities([...communities, newCommunity]);
+  };
+
+  const handleJoinCommunity = (communityId: string) => {
+      setCommunities(communities.map(c => 
+          c.id === communityId 
+            ? { ...c, isJoined: !c.isJoined, members: c.isJoined ? c.members - 1 : c.members + 1 }
+            : c
+      ));
+  };
+
   // --- Reel Actions ---
   const handlePostReel = (video: Video) => {
       setReels([video, ...reels]);
@@ -147,7 +172,22 @@ export default function App() {
   };
 
   // --- Chat Actions ---
-  const handleSendMessage = async (sessionId: string, text: string) => {
+  const handleCreateGroup = (name: string) => {
+      const newGroup: ChatSession = {
+          id: `g_${Date.now()}`,
+          isGroup: true,
+          groupName: name,
+          groupAvatar: `https://ui-avatars.com/api/?name=${name.replace(' ','+')}&background=random`,
+          user: { ...currentUser, id: 'group_placeholder' }, // Placeholder
+          lastMessage: 'Group created',
+          unread: 0,
+          timestamp: 'Just now',
+          messages: []
+      };
+      setChats([newGroup, ...chats]);
+  };
+
+  const handleSendMessage = async (sessionId: string, text: string, type: 'text' | 'image' | 'video' | 'audio' = 'text', mediaUrl?: string) => {
     const sessionIndex = chats.findIndex(c => c.id === sessionId);
     if (sessionIndex === -1) return;
 
@@ -156,20 +196,22 @@ export default function App() {
       senderId: currentUser.id,
       text: text,
       timestamp: new Date(),
+      type: type,
+      mediaUrl: mediaUrl
     };
 
     const updatedChats = [...chats];
     updatedChats[sessionIndex] = {
       ...updatedChats[sessionIndex],
       messages: [...updatedChats[sessionIndex].messages, newMessage],
-      lastMessage: text,
+      lastMessage: type === 'text' ? text : `Sent a ${type}`,
       timestamp: 'Now'
     };
     setChats(updatedChats);
 
-    // AI Logic
+    // AI Logic (Only triggers if chatting with AI and it's a text message)
     const currentSession = updatedChats[sessionIndex];
-    if (currentSession.user.id === 'u3') { // u3 is the AI
+    if (currentSession.user.id === 'u3' && type === 'text') { // u3 is the AI
       setIsAiThinking(true);
       try {
         const aiResponseText = await getAIResponse(text);
@@ -179,7 +221,8 @@ export default function App() {
           senderId: 'u3',
           text: aiResponseText,
           timestamp: new Date(),
-          isAi: true
+          isAi: true,
+          type: 'text'
         };
 
         setChats(prevChats => {
@@ -217,6 +260,9 @@ export default function App() {
                 onPostCreate={handleCreatePost} 
                 onViewProfile={handleViewProfile}
                 onUpdateUser={handleUpdateUser}
+                communities={communities}
+                onJoinCommunity={handleJoinCommunity}
+                onCreateCommunity={handleCreateCommunity}
             />
         );
       case ViewMode.WATCH:
@@ -243,6 +289,7 @@ export default function App() {
             sessions={chats} 
             currentUser={currentUser} 
             onSendMessage={handleSendMessage}
+            onCreateGroup={handleCreateGroup}
             isAiThinking={isAiThinking}
             onViewProfile={handleViewProfile}
           />

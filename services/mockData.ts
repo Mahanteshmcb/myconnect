@@ -323,11 +323,15 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
   { id: 'n7', type: 'follow', user: MOCK_USERS['u2'], content: 'started following you.', timestamp: '1d ago', read: true },
 ];
 
-export const EXPLORE_ITEMS: ExploreItem[] = Array.from({ length: 20 }).map((_, i) => ({
+const EXPLORE_CATEGORIES = ['Decor', 'Travel', 'Architecture', 'Food', 'Art', 'Style', 'Music', 'DIY', 'Beauty'];
+
+export const EXPLORE_ITEMS: ExploreItem[] = Array.from({ length: 60 }).map((_, i) => ({
   id: `e${i}`,
-  image: `https://picsum.photos/id/${100 + i}/400/${i % 3 === 0 ? 600 : 400}`,
+  // Generate different aspect ratios for masonry feel by changing height
+  image: `https://picsum.photos/id/${10 + i}/400/${[400, 500, 600, 300][i % 4]}`,
   likes: Math.floor(Math.random() * 5000) + 100,
-  type: i % 5 === 0 ? 'video' : 'image'
+  type: i % 5 === 0 ? 'video' : 'image',
+  category: EXPLORE_CATEGORIES[i % EXPLORE_CATEGORIES.length]
 }));
 
 export const TRENDING_TOPICS = [

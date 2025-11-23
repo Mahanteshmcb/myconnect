@@ -17,32 +17,43 @@ export interface User {
   avatar: string;
   verified?: boolean;
   subscribers?: string;
+  subscriberCount?: number; // Numeric for algos
   bio?: string;
   coverImage?: string;
   following?: string;
-  followingIds?: string[]; // Added for following logic
+  followingIds?: string[]; 
   postsCount?: number;
   isOnline?: boolean;
+  lastActive?: number; // Timestamp
+  affinityScore?: number; // Dynamic score relative to current user
+  
   // Extended Profile Details
   website?: string;
   location?: string;
   joinedDate?: string;
   email?: string;
-  statusMessage?: string; // For Chat
-  phoneNumber?: string; // For Chat profile
+  statusMessage?: string;
+  phoneNumber?: string;
+  
   // Social Links
   twitter?: string;
   linkedin?: string;
   github?: string;
+  
+  // Preferences
+  themePreference?: 'light' | 'dark' | 'system';
+  contentPreferences?: string[]; // e.g. ['tech', 'art']
 }
 
 export interface Community {
   id: string;
   name: string;
   description: string;
-  avatar: string; // Group icon
+  avatar: string;
   members: number;
   isJoined?: boolean;
+  tags?: string[];
+  trendingScore?: number;
 }
 
 export interface Comment {
@@ -50,6 +61,7 @@ export interface Comment {
   author: User;
   text: string;
   timestamp: string;
+  unixTimestamp?: number; // For sorting
   likes?: number;
 }
 
@@ -63,19 +75,29 @@ export interface Post {
   commentsList?: Comment[];
   shares: number;
   timestamp: string;
+  unixTimestamp?: number; // Crucial for time-decay algorithms
   type: 'text' | 'image' | 'video';
-  communityId?: string; // If posted in a community
+  communityId?: string;
+  
+  // Algorithmic Metadata
+  viewCount?: number;
+  engagementScore?: number; // Calculated dynamically
+  tags?: string[];
+  category?: string;
 }
 
 export interface Video {
   id: string;
   url: string;
   thumbnail: string;
-  likes: string;
+  likes: string; // Display string "12K"
+  likeCount?: number; // Numeric for sorting
   comments: string;
   author: User;
   description: string;
-  filter?: string; // CSS filter string
+  filter?: string;
+  duration?: number;
+  bufferStatus?: 'unloaded' | 'loading' | 'ready'; // For player optimization
 }
 
 export interface LongFormVideo {
@@ -85,12 +107,15 @@ export interface LongFormVideo {
   url: string;
   duration: string;
   views: string;
+  viewCount?: number; // Numeric
   uploadedAt: string;
+  unixUploadedAt?: number;
   author: User;
   description: string;
   category: string;
   likes?: string;
-  type?: 'video' | 'short' | 'live'; // Added for filtering
+  type?: 'video' | 'short' | 'live';
+  tags?: string[];
 }
 
 export interface Message {
@@ -99,21 +124,26 @@ export interface Message {
   text: string;
   timestamp: Date;
   isAi?: boolean;
-  status?: 'sent' | 'delivered' | 'read';
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   type?: 'text' | 'image' | 'video' | 'audio';
   mediaUrl?: string;
+  encryptionHash?: string; // Simulating E2EE
+  replyToId?: string;
 }
 
 export interface ChatSession {
   id: string;
-  user: User; // For DM, this is the other user. For Group, this is a placeholder or null
+  user: User; 
   isGroup?: boolean;
   groupName?: string;
   groupAvatar?: string;
   lastMessage: string;
   unread: number;
   timestamp: string;
+  lastActiveTimestamp?: number;
   messages: Message[];
+  participants?: User[]; // For groups
+  typingUsers?: string[]; // IDs of users typing
 }
 
 export interface Product {
@@ -122,6 +152,8 @@ export interface Product {
   price: string;
   image: string;
   location: string;
+  sellerId?: string;
+  category?: string;
 }
 
 export interface Notification {
@@ -130,8 +162,11 @@ export interface Notification {
   user?: User;
   content: string;
   timestamp: string;
+  unixTimestamp?: number;
   read: boolean;
   targetImage?: string;
+  targetId?: string; // Link to post/video
+  priority?: 'high' | 'low';
 }
 
 export interface ExploreItem {
@@ -139,4 +174,6 @@ export interface ExploreItem {
   image: string;
   likes: number;
   type: 'image' | 'video';
+  category?: string;
+  trendingScore?: number;
 }
