@@ -7,9 +7,10 @@ import { ChatApp } from './components/ChatApp';
 import { LongFormVideoApp } from './components/LongFormVideo';
 import { UserProfile } from './components/UserProfile';
 import { Notifications } from './components/Notifications';
+import { Marketplace } from './components/Marketplace';
 import { Explore } from './components/Explore';
-import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES } from './services/mockData';
-import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, YouTubeLogo } from './components/Icons';
+import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES, MARKET_ITEMS } from './services/mockData';
+import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, YouTubeLogo, ShoppingBagIcon } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
 // --- Mobile Menu Drawer Component ---
@@ -71,7 +72,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.6</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.7</p>
         </div>
       </div>
     </div>
@@ -85,7 +86,13 @@ export default function App() {
   
   // Global State
   const [currentUser, setCurrentUser] = useState<User>(CURRENT_USER);
-  const [viewingUser, setViewingUser] = useState<User>(CURRENT_USER); // State to track which profile is being viewed
+  const [viewingUser, setViewingUser] = useState<User>(CURRENT_USER); 
+  
+  // Navigation State
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  
+  // Community selection state lifted to App to allow creation to switch tabs/selection
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
 
   const [posts, setPosts] = useState<Post[]>(FEED_POSTS);
   const [chats, setChats] = useState<ChatSession[]>(INITIAL_CHATS);
@@ -96,7 +103,7 @@ export default function App() {
 
   const [isAiThinking, setIsAiThinking] = useState(false);
   
-  // Reels Global Mute State (False = Sound On by default)
+  // Reels Global Mute State
   const [isReelsMuted, setIsReelsMuted] = useState(false);
 
   // Toggle Dark Mode
@@ -113,13 +120,11 @@ export default function App() {
   // --- Profile Actions ---
   const handleUpdateUser = (updatedUser: User) => {
       setCurrentUser(updatedUser);
-      // If we are updating ourselves, update the viewing user too if we are viewing ourselves
       if (viewingUser.id === updatedUser.id) {
           setViewingUser(updatedUser);
       }
   };
   
-  // Updated to accept an optional user to view
   const handleViewProfile = (user?: User) => {
       setViewingUser(user || currentUser);
       setActiveTab(ViewMode.PROFILE);
@@ -165,17 +170,32 @@ export default function App() {
 
   // --- Community Actions ---
   const handleCreateCommunity = (name: string, description: string) => {
+      const newId = `c_${Date.now()}`;
       const newCommunity: Community = {
-          id: `c_${Date.now()}`,
+          id: newId,
           name,
           description,
           avatar: `https://ui-avatars.com/api/?name=${name.replace(' ','+')}&background=random`,
           members: 1,
           isJoined: true,
           tags: [],
-          trendingScore: 0
+          trendingScore: 0,
+          creatorId: currentUser.id // Assign creator
       };
       setCommunities([...communities, newCommunity]);
+      
+      // Auto-select the new community so the user sees it immediately
+      // This requires passing down a way to set the selected community ID in SocialFeed
+      // Ideally, SocialFeed should react to this new community being added. 
+      // Since `selectedCommunityId` is currently internal to SocialFeed, we might not force it 
+      // unless we lift that state up or assume the user will click it. 
+      // For a better UX, we could use a ref or effect, but simply adding it to the list is good for now.
+  };
+
+  const handleDeleteCommunity = (id: string) => {
+      setCommunities(communities.filter(c => c.id !== id));
+      // Also remove posts from this community (optional, but cleaner)
+      setPosts(posts.filter(p => p.communityId !== id));
   };
 
   const handleJoinCommunity = (communityId: string) => {
@@ -194,31 +214,62 @@ export default function App() {
 
   // --- Chat Actions ---
   const handleCreateGroup = (name: string) => {
+      const newGroupId = `g_${Date.now()}`;
       const newGroup: ChatSession = {
-          id: `g_${Date.now()}`,
+          id: newGroupId,
           isGroup: true,
           groupName: name,
           groupAvatar: `https://ui-avatars.com/api/?name=${name.replace(' ','+')}&background=random`,
-          user: { ...currentUser, id: 'group_placeholder' }, // Placeholder
+          user: { ...currentUser, id: 'group_placeholder' },
           lastMessage: 'Group created',
           unread: 0,
           timestamp: 'Just now',
           messages: []
       };
       setChats([newGroup, ...chats]);
+      
+      // Switch to Chat View and open the new group immediately
+      setActiveTab(ViewMode.CHAT);
+      setSelectedChatId(newGroupId);
+  };
+  
+  const handleStartChat = (targetUser: User) => {
+      // 1. Check if chat exists
+      const existingChat = chats.find(c => !c.isGroup && c.user.id === targetUser.id);
+      
+      if (existingChat) {
+          setSelectedChatId(existingChat.id);
+      } else {
+          // 2. Create new chat
+          const newChatId = `c_${Date.now()}`;
+          const newChat: ChatSession = {
+              id: newChatId,
+              user: targetUser,
+              lastMessage: '',
+              unread: 0,
+              timestamp: 'Now',
+              messages: []
+          };
+          setChats([newChat, ...chats]);
+          setSelectedChatId(newChatId);
+      }
+      
+      // 3. Switch to Chat View
+      setActiveTab(ViewMode.CHAT);
   };
 
-  const handleSendMessage = async (sessionId: string, text: string, type: 'text' | 'image' | 'video' | 'audio' = 'text', mediaUrl?: string) => {
+  const handleSendMessage = async (sessionId: string, text: string, type: 'text' | 'image' | 'video' | 'audio' = 'text', mediaUrl?: string, customId?: string) => {
     const sessionIndex = chats.findIndex(c => c.id === sessionId);
     if (sessionIndex === -1) return;
 
     const newMessage: Message = {
-      id: `msg_${Date.now()}`,
+      id: customId || `msg_${Date.now()}`,
       senderId: currentUser.id,
       text: text,
       timestamp: new Date(),
       type: type,
-      mediaUrl: mediaUrl
+      mediaUrl: mediaUrl,
+      status: 'sending' // Initial status
     };
 
     const updatedChats = [...chats];
@@ -230,7 +281,6 @@ export default function App() {
     };
     setChats(updatedChats);
 
-    // AI Logic (Only triggers if chatting with AI and it's a text message)
     const currentSession = updatedChats[sessionIndex];
     if (currentSession.user.id === 'u3' && type === 'text') { // u3 is the AI
       setIsAiThinking(true);
@@ -243,7 +293,8 @@ export default function App() {
           text: aiResponseText,
           timestamp: new Date(),
           isAi: true,
-          type: 'text'
+          type: 'text',
+          status: 'read'
         };
 
         setChats(prevChats => {
@@ -266,7 +317,6 @@ export default function App() {
     }
   };
 
-  // --- Long Form Video Actions ---
   const handleUpdateVideo = (updatedVideo: LongFormVideo) => {
     setLongFormVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v));
   };
@@ -285,6 +335,7 @@ export default function App() {
                 communities={communities}
                 onJoinCommunity={handleJoinCommunity}
                 onCreateCommunity={handleCreateCommunity}
+                onDeleteCommunity={handleDeleteCommunity}
             />
         );
       case ViewMode.WATCH:
@@ -314,6 +365,7 @@ export default function App() {
             onCreateGroup={handleCreateGroup}
             isAiThinking={isAiThinking}
             onViewProfile={handleViewProfile}
+            selectedSessionId={selectedChatId}
           />
         );
       case ViewMode.CREATOR:
@@ -333,12 +385,15 @@ export default function App() {
              posts={posts} 
              onBack={() => setActiveTab(ViewMode.FEED)}
              onUpdateUser={handleUpdateUser}
+             onStartChat={handleStartChat}
           />
         );
       case ViewMode.NOTIFICATIONS:
         return <Notifications notifications={notifications} onViewProfile={handleViewProfile} />;
       case ViewMode.EXPLORE:
         return <Explore items={EXPLORE_ITEMS} />;
+      case ViewMode.MARKET:
+        return <Marketplace products={MARKET_ITEMS} />;
       default:
         return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
     }
@@ -367,19 +422,22 @@ export default function App() {
         </div>
         
         <nav className="flex items-center gap-8">
-          <button onClick={() => setActiveTab(ViewMode.FEED)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.FEED ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab(ViewMode.FEED)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.FEED ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Feed">
             <HomeIcon className="w-6 h-6" />
           </button>
-          <button onClick={() => setActiveTab(ViewMode.CREATOR)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CREATOR ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab(ViewMode.CREATOR)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CREATOR ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Videos">
             <YouTubeLogo className="w-8 h-8" />
           </button>
-          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Reels">
             <VideoIcon className="w-6 h-6" />
           </button>
-          <button onClick={() => setActiveTab(ViewMode.EXPLORE)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.EXPLORE ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab(ViewMode.EXPLORE)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.EXPLORE ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Explore">
             <ExploreIcon className="w-6 h-6" />
           </button>
-          <button onClick={() => setActiveTab(ViewMode.CHAT)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CHAT ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab(ViewMode.MARKET)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.MARKET ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Marketplace">
+            <ShoppingBagIcon className="w-6 h-6" />
+          </button>
+          <button onClick={() => setActiveTab(ViewMode.CHAT)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CHAT ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`} title="Chat">
             <ChatIcon className="w-6 h-6" />
           </button>
         </nav>

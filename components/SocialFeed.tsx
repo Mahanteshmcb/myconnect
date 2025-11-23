@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon } from './Icons';
 import { TRENDING_TOPICS, SUGGESTED_USERS } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
@@ -15,6 +15,7 @@ interface SocialFeedProps {
   communities?: Community[];
   onJoinCommunity?: (id: string) => void;
   onCreateCommunity?: (name: string, description: string) => void;
+  onDeleteCommunity?: (id: string) => void;
 }
 
 // --- Stories Logic ---
@@ -101,19 +102,170 @@ const StoryViewer = ({ stories, initialIndex, onClose }: { stories: Story[], ini
     );
 };
 
+// --- Community Dashboard (New) ---
+const CommunityDashboard = ({ 
+    joinedCommunities, 
+    unjoinedCommunities,
+    onJoin,
+    onSelect,
+    onCreate,
+    currentUserId,
+    onDelete
+}: { 
+    joinedCommunities: Community[], 
+    unjoinedCommunities: Community[],
+    onJoin: (id: string) => void,
+    onSelect: (id: string) => void,
+    onCreate: (name: string, desc: string) => void,
+    currentUserId: string,
+    onDelete: (id: string) => void
+}) => {
+    const [isCreating, setIsCreating] = useState(false);
+    const [name, setName] = useState('');
+    const [desc, setDesc] = useState('');
+
+    const handleCreate = () => {
+        if(name.trim()) {
+            onCreate(name, desc);
+            setIsCreating(false);
+            setName('');
+            setDesc('');
+        }
+    };
+
+    return (
+        <div className="p-4 space-y-6 pb-20">
+            {/* Creator */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-full text-blue-600 dark:text-blue-300">
+                        <UsersIcon className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">Create a Community</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Connect with like-minded people.</p>
+                    </div>
+                </div>
+                
+                {isCreating ? (
+                    <div className="space-y-3 animate-fade-in">
+                        <input 
+                            value={name} onChange={e => setName(e.target.value)}
+                            placeholder="Community Name (e.g. 'Hiking Club')"
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white text-sm outline-none focus:ring-2 ring-blue-500"
+                            autoFocus
+                        />
+                        <input 
+                            value={desc} onChange={e => setDesc(e.target.value)}
+                            placeholder="Description (Optional)"
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white text-sm outline-none focus:ring-2 ring-blue-500"
+                        />
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={handleCreate}
+                                disabled={!name.trim()}
+                                className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm disabled:opacity-50"
+                            >
+                                Create
+                            </button>
+                            <button 
+                                onClick={() => setIsCreating(false)}
+                                className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-xl font-bold text-sm"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={() => setIsCreating(true)}
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                    >
+                        + Start a New Group
+                    </button>
+                )}
+            </div>
+
+            {/* Your Communities */}
+            {joinedCommunities.length > 0 && (
+                <div>
+                    <h3 className="font-extrabold text-xl dark:text-white mb-4 flex items-center gap-2">
+                        Your Groups <span className="text-sm font-normal text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{joinedCommunities.length}</span>
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {joinedCommunities.map(c => (
+                            <div key={c.id} onClick={() => onSelect(c.id)} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl cursor-pointer hover:shadow-md transition group">
+                                <img src={c.avatar} className="w-12 h-12 rounded-xl object-cover" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-500 transition">{c.name}</h4>
+                                    <p className="text-xs text-gray-500">{formatCompactNumber(c.members)} members</p>
+                                </div>
+                                {c.creatorId === currentUserId && (
+                                    <button onClick={(e) => { e.stopPropagation(); if(confirm('Delete community?')) onDelete(c.id); }} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition">
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Discover */}
+            <div>
+                <h3 className="font-extrabold text-xl dark:text-white mb-4">Discover</h3>
+                <div className="space-y-4">
+                    {unjoinedCommunities.map(c => (
+                        <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
+                            <div className="flex items-center gap-4 flex-1">
+                                <img src={c.avatar} className="w-16 h-16 rounded-2xl object-cover" />
+                                <div>
+                                    <h4 className="font-bold text-gray-900 dark:text-white text-lg">{c.name}</h4>
+                                    <p className="text-sm text-gray-500 line-clamp-2">{c.description || "A community for like-minded people."}</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <div className="flex -space-x-2">
+                                            {[1,2,3].map(i => <div key={i} className="w-5 h-5 rounded-full bg-gray-200 border border-white dark:border-gray-900"></div>)}
+                                        </div>
+                                        <span className="text-xs font-bold text-gray-500">{formatCompactNumber(c.members)} members</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => onJoin(c.id)}
+                                className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-80 transition"
+                            >
+                                Join Community
+                            </button>
+                        </div>
+                    ))}
+                    {unjoinedCommunities.length === 0 && (
+                        <div className="text-center py-10 text-gray-500">
+                            You've joined all available communities!
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // --- Left Sidebar: Communities ---
 const CommunitiesSidebar = ({ 
     communities = [], 
     onJoin, 
     onCreate,
+    onDelete,
     selectedCommunityId,
-    onSelectCommunity
+    onSelectCommunity,
+    currentUserId
 }: { 
     communities: Community[], 
     onJoin: (id: string) => void, 
     onCreate: (name: string, desc: string) => void,
+    onDelete: (id: string) => void,
     selectedCommunityId: string | null,
-    onSelectCommunity: (id: string | null) => void
+    onSelectCommunity: (id: string | null) => void,
+    currentUserId: string
 }) => {
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -133,17 +285,18 @@ const CommunitiesSidebar = ({
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="font-bold text-xl text-gray-900 dark:text-white">Communities</h2>
-                    <button onClick={() => setIsCreating(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-blue-500">
+                    <button onClick={() => setIsCreating(true)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-blue-500" title="Create Community">
                         <PlusIcon className="w-5 h-5" />
                     </button>
                 </div>
                 
                 {isCreating && (
-                    <div className="mb-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg animate-fade-in">
-                        <input className="w-full p-2 text-sm rounded border dark:border-gray-700 bg-white dark:bg-gray-900 dark:text-white mb-2" placeholder="Name" value={newName} onChange={e => setNewName(e.target.value)} />
-                        <input className="w-full p-2 text-sm rounded border dark:border-gray-700 bg-white dark:bg-gray-900 dark:text-white mb-2" placeholder="Description" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
+                    <div className="mb-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg animate-fade-in border border-blue-100 dark:border-blue-900">
+                        <h3 className="text-xs font-bold text-blue-600 mb-2 uppercase">New Community</h3>
+                        <input className="w-full p-2 text-sm rounded border dark:border-gray-700 bg-white dark:bg-gray-900 dark:text-white mb-2" placeholder="Name" value={newName} onChange={e => setNewName(e.target.value)} autoFocus />
+                        <input className="w-full p-2 text-sm rounded border dark:border-gray-700 bg-white dark:bg-gray-900 dark:text-white mb-2" placeholder="Description (Optional)" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
                         <div className="flex gap-2">
-                            <button onClick={handleCreate} className="flex-1 bg-blue-500 text-white text-xs py-1.5 rounded font-bold">Create</button>
+                            <button onClick={handleCreate} disabled={!newName.trim()} className="flex-1 bg-blue-500 text-white text-xs py-1.5 rounded font-bold disabled:opacity-50">Create</button>
                             <button onClick={() => setIsCreating(false)} className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs py-1.5 rounded font-bold">Cancel</button>
                         </div>
                     </div>
@@ -170,21 +323,38 @@ const CommunitiesSidebar = ({
                                 <h4 className={`font-bold text-sm truncate ${selectedCommunityId === c.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>{c.name}</h4>
                                 <p className="text-xs text-gray-500">{formatCompactNumber(c.members)} members</p>
                             </div>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
-                                className={`text-xs px-3 py-1.5 rounded-full font-bold transition ${c.isJoined ? 'bg-transparent border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400' : 'bg-blue-500 text-white'}`}
-                            >
-                                {c.isJoined ? 'Joined' : 'Join'}
-                            </button>
+                            
+                            {/* Delete button for creator, Join button for others */}
+                            {c.creatorId === currentUserId ? (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); if(confirm(`Delete community "${c.name}"?`)) onDelete(c.id); }}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition z-10"
+                                    title="Delete Community"
+                                >
+                                    <TrashIcon className="w-4 h-4" />
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
+                                    className={`text-xs px-3 py-1.5 rounded-full font-bold transition z-10 ${c.isJoined ? 'bg-transparent border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                                >
+                                    {c.isJoined ? 'Joined' : 'Join'}
+                                </button>
+                            )}
                         </div>
                     ))}
+                    {communities.length === 0 && (
+                        <div className="text-center py-6 text-gray-400 text-sm">
+                            No communities found. Create one!
+                        </div>
+                    )}
                 </div>
             </div>
             
             <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg">
                 <h3 className="font-bold text-lg mb-1">Premium</h3>
                 <p className="text-xs opacity-90 mb-3">Unlock exclusive badges, analytics, and more.</p>
-                <button className="w-full py-2 bg-white text-blue-600 font-bold rounded-lg text-sm">Upgrade</button>
+                <button className="w-full py-2 bg-white text-blue-600 font-bold rounded-lg text-sm hover:bg-gray-50 transition">Upgrade</button>
             </div>
         </div>
     );
@@ -192,12 +362,34 @@ const CommunitiesSidebar = ({
 
 // --- Right Sidebar: Trends & Suggestions ---
 const RightSidebar = ({ 
-    onFollow 
+    onFollow,
+    searchQuery,
+    setSearchQuery
 }: { 
-    onFollow: (user: User) => void 
+    onFollow: (user: User) => void,
+    searchQuery: string,
+    setSearchQuery: (q: string) => void
 }) => {
     return (
         <div className="hidden xl:block w-[320px] sticky top-20 h-[calc(100vh-80px)] overflow-y-auto no-scrollbar pr-6 space-y-6">
+            
+            {/* Search Box */}
+            <div className="bg-white dark:bg-gray-900 rounded-full px-4 py-2.5 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-2 group focus-within:ring-2 ring-blue-500/50 transition-all">
+                <SearchIcon className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500" />
+                <input 
+                    type="text" 
+                    placeholder="Search posts, people, tags..." 
+                    className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-500"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+                        <CloseIcon className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
+
             {/* Trends */}
             <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
                 <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4">Trends for you</h2>
@@ -341,6 +533,14 @@ const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: U
 // --- Feed Comment Modal ---
 const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: { post: Post | null, currentUser: User, isOpen: boolean, onClose: () => void, onAddComment: (postId: string, text: string) => void }) => {
     const [text, setText] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Focus input on open
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isOpen]);
 
     if (!isOpen || !post) return null;
 
@@ -354,31 +554,37 @@ const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: 
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
             <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
                  <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-                     <h3 className="font-bold text-gray-900 dark:text-white">Comments</h3>
+                     <h3 className="font-bold text-gray-900 dark:text-white">Comments ({post.commentsList?.length || 0})</h3>
                      <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
                  </div>
                  
                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
                      {post.commentsList && post.commentsList.length > 0 ? post.commentsList.map(c => (
-                         <div key={c.id} className="flex gap-3">
-                             <img src={c.author.avatar} className="w-8 h-8 rounded-full" />
+                         <div key={c.id} className="flex gap-3 animate-fade-in">
+                             <img src={c.author.avatar} className="w-8 h-8 rounded-full object-cover" />
                              <div>
                                  <div className="flex items-center gap-2">
                                      <span className="font-bold text-sm text-gray-900 dark:text-white">{c.author.name}</span>
                                      <span className="text-xs text-gray-500">{c.timestamp}</span>
                                  </div>
-                                 <p className="text-sm text-gray-800 dark:text-gray-200">{c.text}</p>
+                                 <p className="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-r-xl rounded-bl-xl mt-1">{c.text}</p>
                              </div>
                          </div>
                      )) : (
-                         <div className="text-center py-10 text-gray-400">No comments yet. Be the first!</div>
+                         <div className="text-center py-10 text-gray-400">
+                             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-2">
+                                 <CommentIcon className="w-6 h-6 text-gray-300" />
+                             </div>
+                             No comments yet. Be the first!
+                         </div>
                      )}
                  </div>
 
-                 <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2">
-                     <img src={currentUser.avatar} className="w-8 h-8 rounded-full" />
-                     <div className="flex-1 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-4">
+                 <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex gap-2 bg-white dark:bg-gray-900">
+                     <img src={currentUser.avatar} className="w-8 h-8 rounded-full object-cover" />
+                     <div className="flex-1 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full px-4 border border-transparent focus-within:border-blue-500 transition-colors">
                          <input 
+                            ref={inputRef}
                             value={text}
                             onChange={e => setText(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleAdd()}
@@ -386,7 +592,7 @@ const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: 
                             className="flex-1 bg-transparent border-none outline-none text-sm py-2 dark:text-white"
                          />
                          <button onClick={handleAdd} disabled={!text.trim()} className="ml-2 text-blue-500 font-bold disabled:opacity-50">
-                             Post
+                             <SendIcon className="w-5 h-5" />
                          </button>
                      </div>
                  </div>
@@ -396,7 +602,7 @@ const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: 
 };
 
 // --- Post Card ---
-const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void, onCommentClick: (post: Post) => void }> = ({ post, currentUser, onViewProfile, onCommentClick }) => {
+const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void, onCommentClick: (postId: string) => void }> = ({ post, currentUser, onViewProfile, onCommentClick }) => {
     const [liked, setLiked] = useState(false);
     const [likes, setLikes] = useState(post.likes);
     const [retweeted, setRetweeted] = useState(false);
@@ -422,8 +628,8 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                             {post.author.verified && <CheckIcon className="w-4 h-4 text-blue-500" />}
                             <span className="text-gray-500 text-sm">{post.author.handle} · {post.timestamp}</span>
                             {post.communityId && (
-                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full ml-2">
-                                    Community Post
+                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 uppercase tracking-wide">
+                                    Community
                                 </span>
                             )}
                         </div>
@@ -446,7 +652,7 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
 
                     {/* Interactions */}
                     <div className="flex justify-between items-center mt-3 max-w-md text-gray-500">
-                        <button onClick={(e) => { e.stopPropagation(); onCommentClick(post); }} className="flex items-center gap-2 group hover:text-blue-500">
+                        <button onClick={(e) => { e.stopPropagation(); onCommentClick(post.id); }} className="flex items-center gap-2 group hover:text-blue-500">
                             <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20"><CommentIcon className="w-4 h-4" /></div>
                             <span className="text-sm">{formatCompactNumber(post.commentsList?.length || post.comments)}</span>
                         </button>
@@ -470,40 +676,69 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
 
 // --- Main Social Feed ---
 export const SocialFeed: React.FC<SocialFeedProps> = ({ 
-    posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment 
+    posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment, onDeleteCommunity 
 }) => {
   const [activeTab, setActiveTab] = useState<'For You' | 'Following' | 'Communities'>('For You');
   const [stories, setStories] = useState<Story[]>(generateMockStories(currentUser, SUGGESTED_USERS));
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
-  const [activePostForComments, setActivePostForComments] = useState<Post | null>(null);
+  
+  // Use Post ID instead of Post object to ensure reactivity when comments are added
+  const [activePostIdForComments, setActivePostIdForComments] = useState<string | null>(null);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter Posts
+  // Derived active post for modal
+  const activePostForComments = useMemo(() => 
+     posts.find(p => p.id === activePostIdForComments) || null
+  , [posts, activePostIdForComments]);
+
+  // Filter Posts Logic
   const displayPosts = useMemo(() => {
       let filtered = posts;
-      
-      if (activeTab === 'Following') {
-          filtered = posts.filter(p => currentUser.followingIds?.includes(p.author.id) || p.author.id === currentUser.id);
+
+      // 1. Search Filter
+      if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter(p => 
+              p.content.toLowerCase().includes(q) || 
+              p.author.name.toLowerCase().includes(q) || 
+              p.author.handle.toLowerCase().includes(q)
+          );
       }
       
-      if (activeTab === 'Communities') {
+      // 2. Tab Filter
+      if (activeTab === 'Following') {
+          // Strictly show posts from authors in the following list OR the current user's own posts
+          filtered = filtered.filter(p => (currentUser.followingIds?.includes(p.author.id) || p.author.id === currentUser.id));
+      } else if (activeTab === 'Communities') {
           // If a specific community is selected, filter by that ID only
           if (selectedCommunityId) {
-              filtered = posts.filter(p => p.communityId === selectedCommunityId);
+              filtered = filtered.filter(p => p.communityId === selectedCommunityId);
           } else {
-              // Otherwise show all community posts
-              filtered = posts.filter(p => !!p.communityId);
+              // If no community is selected (Dashboard mode), we usually show nothing here or mixed posts.
+              // But we are rendering a dashboard instead. If we wanted mixed posts, we'd do:
+              filtered = filtered.filter(p => !!p.communityId);
           }
+      } else if (activeTab === 'For You' && !searchQuery) {
+          // Only apply algorithm if not searching
+          return getPersonalizedFeed(filtered, currentUser);
       }
 
-      return activeTab === 'For You' ? getPersonalizedFeed(filtered, currentUser) : filtered;
-  }, [posts, activeTab, currentUser, selectedCommunityId]);
+      return filtered;
+  }, [posts, activeTab, currentUser, selectedCommunityId, searchQuery]);
+
+  // Derived Community Lists for Dashboard
+  const joinedCommunities = communities.filter(c => c.isJoined);
+  const unjoinedCommunities = communities.filter(c => !c.isJoined);
 
   const handleSelectCommunity = (id: string | null) => {
       setSelectedCommunityId(id);
       setActiveTab('Communities');
+      setSearchQuery(''); // Clear search when switching context
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId;
 
   return (
     <div className="h-full bg-white dark:bg-black overflow-y-auto">
@@ -520,7 +755,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 post={activePostForComments}
                 currentUser={currentUser}
                 isOpen={!!activePostForComments}
-                onClose={() => setActivePostForComments(null)}
+                onClose={() => setActivePostIdForComments(null)}
                 onAddComment={onAddComment}
             />
         )}
@@ -531,9 +766,11 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
             <CommunitiesSidebar 
                 communities={communities} 
                 onJoin={onJoinCommunity || (() => {})} 
-                onCreate={onCreateCommunity || (() => {})} 
+                onCreate={onCreateCommunity || (() => {})}
+                onDelete={onDeleteCommunity || (() => {})}
                 selectedCommunityId={selectedCommunityId}
                 onSelectCommunity={handleSelectCommunity}
+                currentUserId={currentUser.id}
             />
 
             {/* Main Feed */}
@@ -549,7 +786,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                         {['For You', 'Following', 'Communities'].map(tab => (
                             <button 
                                 key={tab}
-                                onClick={() => { setActiveTab(tab as any); if(tab !== 'Communities') setSelectedCommunityId(null); }}
+                                onClick={() => { setActiveTab(tab as any); if(tab !== 'Communities') setSelectedCommunityId(null); setSearchQuery(''); }}
                                 className="flex-1 py-4 text-sm font-bold relative hover:bg-gray-50 dark:hover:bg-white/5 transition"
                             >
                                 <span className={activeTab === tab ? 'text-gray-900 dark:text-white' : 'text-gray-500'}>{tab}</span>
@@ -559,71 +796,118 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                      </div>
                  </div>
 
-                 {/* Stories Tray */}
-                 <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex gap-4 overflow-x-auto no-scrollbar">
-                     {/* Create Story */}
-                     <div className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
-                         <div className="relative w-16 h-16">
-                             <img src={currentUser.avatar} className="w-full h-full rounded-full border-2 border-gray-200 dark:border-gray-800 opacity-80" />
-                             <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white dark:border-black">
-                                 <PlusIcon className="w-4 h-4" />
+                 {/* Stories Tray - Only on 'For You' or 'Following' */}
+                 {activeTab !== 'Communities' && (
+                     <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex gap-4 overflow-x-auto no-scrollbar">
+                         {/* Create Story */}
+                         <div className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
+                             <div className="relative w-16 h-16">
+                                 <img src={currentUser.avatar} className="w-full h-full rounded-full border-2 border-gray-200 dark:border-gray-800 opacity-80" />
+                                 <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white dark:border-black">
+                                     <PlusIcon className="w-4 h-4" />
+                                 </div>
                              </div>
+                             <span className="text-xs text-gray-500 truncate w-full text-center">Your Story</span>
                          </div>
-                         <span className="text-xs text-gray-500 truncate w-full text-center">Your Story</span>
+
+                         {/* Other Stories */}
+                         {stories.slice(1).map((story, idx) => (
+                             <div key={story.id} onClick={() => setViewingStoryIndex(idx + 1)} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer">
+                                 <div className={`w-16 h-16 rounded-full p-[2px] ${story.isViewed ? 'bg-gray-300 dark:bg-gray-700' : 'bg-gradient-to-tr from-yellow-400 to-fuchsia-600'}`}>
+                                     <img src={story.img} className="w-full h-full rounded-full border-2 border-white dark:border-black object-cover" />
+                                 </div>
+                                 <span className="text-xs text-gray-700 dark:text-gray-300 truncate w-16 text-center">{story.user.name.split(' ')[0]}</span>
+                             </div>
+                         ))}
                      </div>
+                 )}
 
-                     {/* Other Stories */}
-                     {stories.slice(1).map((story, idx) => (
-                         <div key={story.id} onClick={() => setViewingStoryIndex(idx + 1)} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer">
-                             <div className={`w-16 h-16 rounded-full p-[2px] ${story.isViewed ? 'bg-gray-300 dark:bg-gray-700' : 'bg-gradient-to-tr from-yellow-400 to-fuchsia-600'}`}>
-                                 <img src={story.img} className="w-full h-full rounded-full border-2 border-white dark:border-black object-cover" />
-                             </div>
-                             <span className="text-xs text-gray-700 dark:text-gray-300 truncate w-16 text-center">{story.user.name.split(' ')[0]}</span>
-                         </div>
-                     ))}
-                 </div>
-
-                 {/* Create Post */}
-                 <div className="px-4 mt-4">
-                     <CreatePost 
-                        user={currentUser} 
-                        onPost={onPostCreate} 
-                        onViewProfile={onViewProfile} 
-                        communities={communities} 
+                 {/* COMMUNITY DASHBOARD VIEW */}
+                 {showCommunityDashboard ? (
+                     <CommunityDashboard 
+                        joinedCommunities={joinedCommunities}
+                        unjoinedCommunities={unjoinedCommunities}
+                        onJoin={onJoinCommunity || (() => {})}
+                        onSelect={handleSelectCommunity}
+                        onCreate={onCreateCommunity || (() => {})}
+                        currentUserId={currentUser.id}
+                        onDelete={onDeleteCommunity || (() => {})}
                      />
-                 </div>
+                 ) : (
+                     /* STANDARD FEED VIEW */
+                     <>
+                        {/* Create Post */}
+                         <div className="px-4 mt-4">
+                             <CreatePost 
+                                user={currentUser} 
+                                onPost={onPostCreate} 
+                                onViewProfile={onViewProfile} 
+                                communities={communities} 
+                             />
+                         </div>
 
-                 {/* Feed */}
-                 <div>
-                     {selectedCommunityId && (
-                         <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
-                             <span className="text-sm text-blue-800 dark:text-blue-300 font-bold">
-                                 Viewing: {communities.find(c => c.id === selectedCommunityId)?.name}
-                             </span>
-                             <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
+                         {/* Feed Content */}
+                         <div>
+                             {/* Context Filter Banner */}
+                             {selectedCommunityId && (
+                                 <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+                                     <span className="text-sm text-blue-800 dark:text-blue-300 font-bold flex items-center gap-2">
+                                         <UsersIcon className="w-4 h-4" />
+                                         {communities.find(c => c.id === selectedCommunityId)?.name}
+                                     </span>
+                                     <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
+                                 </div>
+                             )}
+                             
+                             {searchQuery && (
+                                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                                     <h3 className="text-sm font-bold text-gray-500">Search results for "{searchQuery}"</h3>
+                                 </div>
+                             )}
+                             
+                             {displayPosts.length > 0 ? displayPosts.map(post => (
+                                 <PostCard 
+                                    key={post.id} 
+                                    post={post} 
+                                    currentUser={currentUser} 
+                                    onViewProfile={onViewProfile} 
+                                    onCommentClick={setActivePostIdForComments}
+                                />
+                             )) : (
+                                 <div className="py-20 text-center text-gray-500">
+                                     {searchQuery ? (
+                                         <>
+                                             <SearchIcon className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                                             <h3 className="text-lg font-bold">No matches found</h3>
+                                             <p className="text-sm">Try searching for something else.</p>
+                                         </>
+                                     ) : (
+                                         <>
+                                            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <UsersIcon className="w-8 h-8 text-gray-300" />
+                                            </div>
+                                             <h3 className="text-lg font-bold mb-2">No Posts Yet</h3>
+                                             <p>
+                                                {activeTab === 'Following' 
+                                                    ? "Follow more people to see their posts here!" 
+                                                    : "Be the first to post something here!"}
+                                             </p>
+                                         </>
+                                     )}
+                                 </div>
+                             )}
+                             <div className="py-10 text-center text-gray-500 text-sm">You've reached the end!</div>
                          </div>
-                     )}
-                     
-                     {displayPosts.length > 0 ? displayPosts.map(post => (
-                         <PostCard 
-                            key={post.id} 
-                            post={post} 
-                            currentUser={currentUser} 
-                            onViewProfile={onViewProfile} 
-                            onCommentClick={setActivePostForComments}
-                        />
-                     )) : (
-                         <div className="py-20 text-center text-gray-500">
-                             <h3 className="text-lg font-bold mb-2">No Posts Yet</h3>
-                             <p>Be the first to post something here!</p>
-                         </div>
-                     )}
-                     <div className="py-10 text-center text-gray-500 text-sm">You've reached the end!</div>
-                 </div>
+                     </>
+                 )}
             </div>
 
             {/* Right Sidebar - Desktop Only */}
-            <RightSidebar onFollow={onViewProfile} />
+            <RightSidebar 
+                onFollow={onViewProfile} 
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+            />
 
         </div>
     </div>

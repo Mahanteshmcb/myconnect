@@ -35,10 +35,12 @@ export const CURRENT_USER: User = {
 };
 
 export const MOCK_COMMUNITIES: Community[] = [
-  { id: 'g1', name: 'React Developers', members: 15400, avatar: 'https://picsum.photos/id/0/200/200', description: 'Everything React.js, Next.js and more.', isJoined: true },
-  { id: 'g2', name: 'Digital Art Hub', members: 8200, avatar: 'https://picsum.photos/id/106/200/200', description: 'Share your art and get feedback.', isJoined: false },
-  { id: 'g3', name: 'Startup Founders', members: 5300, avatar: 'https://picsum.photos/id/20/200/200', description: 'Advice and networking for founders.', isJoined: true },
-  { id: 'g4', name: 'Photography Lovers', members: 22000, avatar: 'https://picsum.photos/id/250/200/200', description: 'Shots from around the world.', isJoined: false },
+  { id: 'g1', name: 'React Developers', members: 15400, avatar: 'https://picsum.photos/id/0/200/200', description: 'Everything React.js, Next.js and more.', isJoined: true, creatorId: 'u2' },
+  { id: 'g2', name: 'Digital Art Hub', members: 8200, avatar: 'https://picsum.photos/id/106/200/200', description: 'Share your art and get feedback.', isJoined: false, creatorId: 'u4' },
+  { id: 'g3', name: 'Startup Founders', members: 5300, avatar: 'https://picsum.photos/id/20/200/200', description: 'Advice and networking for founders.', isJoined: true, creatorId: 'me' },
+  { id: 'g4', name: 'Photography Lovers', members: 22000, avatar: 'https://picsum.photos/id/250/200/200', description: 'Shots from around the world.', isJoined: false, creatorId: 'u1' },
+  { id: 'g5', name: 'Gaming Lounge', members: 45000, avatar: 'https://picsum.photos/id/96/200/200', description: 'Discussion for PC and Console gamers.', isJoined: false, creatorId: 'u5' },
+  { id: 'g6', name: 'Music Producers', members: 1200, avatar: 'https://picsum.photos/id/145/200/200', description: 'Share your beats and tracks.', isJoined: true, creatorId: 'u6' },
 ];
 
 export const FEED_POSTS: Post[] = [
@@ -48,7 +50,7 @@ export const FEED_POSTS: Post[] = [
     content: 'Just deployed the new architecture for the cloud cluster. Performance improved by 40%! 🚀 #tech #devlife @sarahj',
     image: 'https://picsum.photos/id/0/800/400',
     likes: 245,
-    comments: 42,
+    comments: 2,
     commentsList: [
         { id: 'c1', author: MOCK_USERS['u1'], text: 'This is huge! Great work David.', timestamp: '1h ago' },
         { id: 'c2', author: MOCK_USERS['u5'], text: 'Are you writing a blog post about this?', timestamp: '30m ago' }
@@ -63,7 +65,7 @@ export const FEED_POSTS: Post[] = [
     author: MOCK_USERS['u1'],
     content: 'Does anyone know a good hiking trail near the bay area for this weekend? #hiking #bayarea',
     likes: 89,
-    comments: 23,
+    comments: 1,
     commentsList: [
         { id: 'c3', author: MOCK_USERS['u4'], text: 'Check out Mount Tamalpais! The views are insane.', timestamp: '3h ago' },
     ],
@@ -77,7 +79,7 @@ export const FEED_POSTS: Post[] = [
     content: 'Working on a new commissioned piece. The lighting in my studio is perfect today. #art #studio',
     image: 'https://picsum.photos/id/106/800/500',
     likes: 1204,
-    comments: 89,
+    comments: 0,
     commentsList: [],
     shares: 145,
     timestamp: '6h ago',
@@ -89,7 +91,7 @@ export const FEED_POSTS: Post[] = [
     author: MOCK_USERS['u5'],
     content: 'Breaking: New AI model released today promises to revolutionize coding workflows. Read our full analysis below. 🤖⚡️',
     likes: 5400,
-    comments: 320,
+    comments: 0,
     commentsList: [],
     shares: 1200,
     timestamp: '1h ago',
@@ -101,7 +103,7 @@ export const FEED_POSTS: Post[] = [
     content: 'Fresh homemade pasta! Who wants the recipe? 🍝',
     image: 'https://picsum.photos/id/493/800/600',
     likes: 850,
-    comments: 150,
+    comments: 0,
     commentsList: [],
     shares: 45,
     timestamp: '30m ago',
@@ -113,7 +115,8 @@ export const FEED_POSTS: Post[] = [
     author: MOCK_USERS['u3'], // AI Assistant
     content: 'Tip of the day: You can now summarize long threads using the new AI features in MyConnect! Just mention me. ✨',
     likes: 12000,
-    comments: 50,
+    comments: 0,
+    commentsList: [],
     shares: 300,
     timestamp: '5h ago',
     type: 'text'
@@ -348,4 +351,10 @@ export const SUGGESTED_USERS = [
   MOCK_USERS['u6']
 ];
 
-export const MARKET_ITEMS: Product[] = [];
+export const MARKET_ITEMS: Product[] = [
+    { id: 'p1', title: 'Vintage Camera', price: '$120', image: 'https://picsum.photos/id/250/300/300', location: 'New York, NY', category: 'Electronics' },
+    { id: 'p2', title: 'MacBook Pro M1', price: '$900', image: 'https://picsum.photos/id/0/300/300', location: 'San Francisco, CA', category: 'Electronics' },
+    { id: 'p3', title: 'Leather Jacket', price: '$85', image: 'https://picsum.photos/id/445/300/300', location: 'Chicago, IL', category: 'Clothing' },
+    { id: 'p4', title: 'Mountain Bike', price: '$350', image: 'https://picsum.photos/id/191/300/300', location: 'Denver, CO', category: 'Sports' },
+    { id: 'p5', title: 'Gaming Monitor', price: '$200', image: 'https://picsum.photos/id/20/300/300', location: 'Austin, TX', category: 'Electronics' },
+];

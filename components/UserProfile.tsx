@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Post, Video } from '../types';
 import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, PlusIcon } from './Icons';
+import { MOCK_USERS } from '../services/mockData';
 
 interface UserProfileProps {
   user: User; // The user profile being viewed
@@ -9,7 +10,55 @@ interface UserProfileProps {
   posts: Post[];
   onBack: () => void;
   onUpdateUser?: (updatedUser: User) => void;
+  onStartChat?: (user: User) => void; // New Prop
 }
+
+// --- User List Modal (Followers/Following) ---
+const UserListModal = ({ 
+    title, 
+    users, 
+    onClose, 
+    onFollow 
+}: { 
+    title: string, 
+    users: User[], 
+    onClose: () => void, 
+    onFollow?: (u: User) => void 
+}) => {
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[70vh] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800">
+                    <h3 className="font-bold text-lg dark:text-white">{title}</h3>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                        <CloseIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2">
+                    {users.map(u => (
+                        <div key={u.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition cursor-pointer">
+                            <img src={u.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{u.name}</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{u.handle}</p>
+                            </div>
+                            {onFollow && (
+                                <button className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-xs font-bold rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition text-gray-800 dark:text-white">
+                                    View
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                    {users.length === 0 && (
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                            No users found.
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // --- Advanced Settings Modal (formerly EditProfileModal) ---
 // Kept for settings not available inline (Channel, Chat, etc.)
@@ -163,7 +212,7 @@ const StoryHighlights = () => {
     );
 };
 
-export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, posts, onBack, onUpdateUser }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, posts, onBack, onUpdateUser, onStartChat }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -171,6 +220,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
   // Inline Edit State
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<User>(user);
+
+  // List Modal State
+  const [listModalType, setListModalType] = useState<'followers' | 'following' | null>(null);
 
   useEffect(() => {
       if (!isEditing) setEditData(user);
@@ -190,6 +242,21 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
       id: `t${i}`,
       thumbnail: `https://picsum.photos/id/${300 + i}/400/400`,
   }));
+
+  // Resolve Follow Lists
+  const getFollowList = (type: 'followers' | 'following'): User[] => {
+      if (type === 'following') {
+          // If viewing my profile, show who I follow using my real IDs
+          if (isOwnProfile && currentUser.followingIds) {
+              return currentUser.followingIds.map(id => MOCK_USERS[id]).filter(Boolean);
+          }
+          // For other users, mock a list of 5-10 users
+          return Object.values(MOCK_USERS).filter(u => u.id !== user.id).slice(0, 8);
+      } else {
+           // Followers: Mock logic for demo
+           return Object.values(MOCK_USERS).filter(u => u.id !== user.id).slice(0, 12);
+      }
+  };
 
   const handleSaveProfile = () => {
       if (onUpdateUser) onUpdateUser(editData);
@@ -222,6 +289,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
             if (onUpdateUser) onUpdateUser(updatedUser);
         }}
       />
+      
+      {listModalType && (
+          <UserListModal 
+              title={listModalType === 'followers' ? 'Followers' : 'Following'}
+              users={getFollowList(listModalType)}
+              onClose={() => setListModalType(null)}
+          />
+      )}
 
       {/* Header */}
       <div className="relative">
@@ -341,7 +416,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                            >
                                {isFollowing ? 'Following' : 'Follow'}
                            </button>
-                           <button className="flex-1 md:flex-none px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                           <button 
+                                onClick={() => onStartChat && onStartChat(user)}
+                                className="flex-1 md:flex-none px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                           >
                                Message
                            </button>
                            <button className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
@@ -471,17 +549,25 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                 )}
             </div>
             
-            {/* Stats */}
+            {/* Stats - Now Clickable */}
             <div className="flex gap-8 mt-6 border-b border-gray-100 dark:border-gray-800 pb-6">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 cursor-default">
                     <span className="font-bold text-gray-900 dark:text-white">{userPosts.length}</span>
                     <span className="text-gray-500 dark:text-gray-400 text-sm">Posts</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div 
+                    onClick={() => setListModalType('followers')}
+                    className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition"
+                    title="View Followers"
+                >
                     <span className="font-bold text-gray-900 dark:text-white">{user.subscribers || '0'}</span>
                     <span className="text-gray-500 dark:text-gray-400 text-sm">Followers</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div 
+                    onClick={() => setListModalType('following')}
+                    className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition"
+                    title="View Following"
+                >
                     <span className="font-bold text-gray-900 dark:text-white">{user.following || '0'}</span>
                     <span className="text-gray-500 dark:text-gray-400 text-sm">Following</span>
                 </div>

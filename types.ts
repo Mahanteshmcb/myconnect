@@ -7,7 +7,8 @@ export enum ViewMode {
   PROFILE = 'PROFILE',
   NOTIFICATIONS = 'NOTIFICATIONS',
   EXPLORE = 'EXPLORE',
-  CREATE_REEL = 'CREATE_REEL'
+  CREATE_REEL = 'CREATE_REEL',
+  MARKET = 'MARKET'
 }
 
 export interface User {
@@ -54,6 +55,7 @@ export interface Community {
   isJoined?: boolean;
   tags?: string[];
   trendingScore?: number;
+  creatorId?: string; // ID of the user who created it
 }
 
 export interface Comment {
