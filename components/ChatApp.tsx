@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, User, Message } from '../types';
-import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon, ShieldCheckIcon } from './Icons';
+import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon, ShieldCheckIcon, MoreVerticalIcon } from './Icons';
 import { MOCK_USERS } from '../services/mockData';
 
 interface ChatAppProps {
@@ -59,9 +59,9 @@ const MessageStatus = ({ status }: { status?: string }) => {
 
 const EncryptionBadge = () => (
     <div className="flex justify-center my-4">
-        <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm max-w-[85%] text-center border border-yellow-200 dark:border-yellow-900/50">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 text-[10px] font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm border border-yellow-100 dark:border-yellow-900/30 backdrop-blur-sm">
             <LockIcon className="w-3 h-3 flex-shrink-0" />
-            <span>Messages are end-to-end encrypted. No one outside of this chat, not even MyConnect, can read or listen to them.</span>
+            <span>End-to-end encrypted. Only participants can read this.</span>
         </div>
     </div>
 );
@@ -119,8 +119,6 @@ const AudioPlayer = ({ src }: { src: string }) => {
             audio.removeEventListener('timeupdate', onTimeUpdate);
             audio.removeEventListener('ended', onEnded);
             audio.removeEventListener('error', onError);
-            // Safely clear src if needed, but standard cleanup is usually removing listeners and pausing.
-            // audio.src = ''; // Removing this to avoid "The element has no supported sources" in some browsers
             audioRef.current = null;
         };
     }, [src]);
@@ -152,31 +150,28 @@ const AudioPlayer = ({ src }: { src: string }) => {
     };
 
     return (
-        <div className="flex items-center gap-3 min-w-[220px] py-2 px-1">
+        <div className="flex items-center gap-3 min-w-[240px] py-2 px-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl backdrop-blur-sm">
             <button 
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-600 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500 transition flex-shrink-0"
+                className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-md hover:bg-blue-600 transition flex-shrink-0"
             >
                 {isPlaying ? (
-                    <div className="w-3 h-3 bg-current rounded-sm" /> // Pause Icon
+                    <div className="w-3 h-3 bg-white rounded-sm" /> 
                 ) : (
                     <PlayCircleIcon className="w-6 h-6 ml-0.5" />
                 )}
             </button>
-            <div className="flex-1 flex flex-col justify-center gap-1">
-                <div className="h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden w-full">
+            <div className="flex-1 flex flex-col justify-center gap-1.5">
+                <div className="h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden w-full cursor-pointer">
                     <div 
                         className="h-full bg-blue-500 transition-all duration-100 ease-linear" 
                         style={{ width: `${progress}%` }}
                     ></div>
                 </div>
-                <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-300 font-mono font-bold">
                     <span>{isPlaying && audioRef.current ? formatTime(audioRef.current.currentTime) : formatTime(0)}</span>
                     <span>{formatTime(duration || 0)}</span>
                 </div>
-            </div>
-            <div className="relative">
-                 <MicrophoneIcon className={`w-12 h-12 text-gray-100 dark:text-gray-700 absolute -top-4 -right-2 -z-10 opacity-20`} />
             </div>
         </div>
     );
@@ -284,104 +279,37 @@ const ContactModal = ({
 
     return (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl p-6 animate-slide-up border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-lg dark:text-white">Add New Contact</h3>
-                    <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+                    <h3 className="font-extrabold text-xl dark:text-white">New Contact</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"><CloseIcon className="w-5 h-5 text-gray-500" /></button>
                 </div>
-                <div className="space-y-4">
-                    <input 
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Contact Name"
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500"
-                        autoFocus
-                    />
-                    <input 
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        placeholder="Phone Number"
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500"
-                    />
-                    <button 
-                        onClick={() => { if(name.trim()) onAdd(name, phone); }}
-                        disabled={!name.trim()}
-                        className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
-                    >
-                        Save Contact
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- My Profile Edit Modal ---
-const MyProfileEditModal = ({
-    isOpen,
-    onClose,
-    user,
-    onSave
-}: {
-    isOpen: boolean,
-    onClose: () => void,
-    user: User,
-    onSave: (u: Partial<User>) => void
-}) => {
-    const [name, setName] = useState(user.name);
-    const [bio, setBio] = useState(user.bio || '');
-    const [avatar, setAvatar] = useState(user.avatar);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    if (!isOpen) return null;
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.[0]) {
-            setAvatar(URL.createObjectURL(e.target.files[0]));
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-lg dark:text-white">Edit Profile</h3>
-                    <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
-                </div>
-                
-                <div className="flex justify-center mb-6">
-                    <div className="relative group w-24 h-24 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                        <img src={avatar} className="w-full h-full rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
-                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                            <CameraIcon className="w-8 h-8 text-white" />
-                        </div>
-                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                    </div>
-                </div>
-
-                <div className="space-y-4">
+                <div className="space-y-5">
                     <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Name</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Name</label>
                         <input 
                             value={name}
                             onChange={e => setName(e.target.value)}
-                            className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500"
+                            placeholder="e.g. John Doe"
+                            className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl outline-none dark:text-white border border-transparent focus:border-blue-500 transition font-medium"
+                            autoFocus
                         />
                     </div>
                     <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">About</label>
-                        <textarea 
-                            value={bio}
-                            onChange={e => setBio(e.target.value)}
-                            className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border border-transparent focus:border-blue-500 resize-none"
-                            rows={3}
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Phone</label>
+                        <input 
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            placeholder="+1 (555) 000-0000"
+                            className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl outline-none dark:text-white border border-transparent focus:border-blue-500 transition font-medium"
                         />
                     </div>
                     <button 
-                        onClick={() => { onSave({ name, bio, avatar }); onClose(); }}
-                        className="w-full py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition"
+                        onClick={() => { if(name.trim()) onAdd(name, phone); }}
+                        disabled={!name.trim()}
+                        className="w-full py-3.5 bg-black dark:bg-white text-white dark:text-black font-bold rounded-2xl hover:opacity-80 disabled:opacity-50 transition shadow-lg active:scale-95"
                     >
-                        Save Changes
+                        Save Contact
                     </button>
                 </div>
             </div>
@@ -433,66 +361,87 @@ const GroupModal = ({
 
     return (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                    <h3 className="font-bold text-lg dark:text-white">{mode === 'create' ? 'New Group' : 'Add Members'}</h3>
-                    <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-[2rem] shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-slide-up border border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
+                <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                    <h3 className="font-extrabold text-xl dark:text-white">{mode === 'create' ? 'Create New Group' : 'Add Participants'}</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"><CloseIcon className="w-5 h-5 text-gray-500" /></button>
                 </div>
                 
-                <div className="p-4 flex-1 overflow-y-auto">
+                <div className="p-5 flex-1 overflow-y-auto">
                     {mode === 'create' && (
-                        <div className="mb-4">
-                            <input 
-                                value={groupName}
-                                onChange={e => setGroupName(e.target.value)}
-                                placeholder="Group Subject" 
-                                className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border-b-2 border-transparent focus:border-blue-500 transition"
-                            />
+                        <div className="mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center border border-dashed border-gray-300 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                    <CameraIcon className="w-6 h-6 text-gray-400" />
+                                </div>
+                                <input 
+                                    value={groupName}
+                                    onChange={e => setGroupName(e.target.value)}
+                                    placeholder="Group Name" 
+                                    className="flex-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none dark:text-white border-2 border-transparent focus:border-blue-500 transition font-bold"
+                                />
+                            </div>
                         </div>
                     )}
 
-                    <div className="mb-2 relative">
-                        <SearchIcon className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    {/* Selected Chips */}
+                    {selectedUsers.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {selectedUsers.map(u => (
+                                <div key={u.id} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-bold">
+                                    <img src={u.avatar} className="w-4 h-4 rounded-full" />
+                                    {u.name.split(' ')[0]}
+                                    <button onClick={(e) => { e.stopPropagation(); toggleUser(u); }}><CloseIcon className="w-3 h-3 hover:text-blue-900" /></button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="mb-4 relative">
+                        <SearchIcon className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                         <input 
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            placeholder="Search people..." 
-                            className="w-full pl-10 p-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg outline-none dark:text-white text-sm"
+                            placeholder="Search people to add..." 
+                            className="w-full pl-10 p-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none dark:text-white text-sm font-medium transition focus:bg-white dark:focus:bg-black focus:ring-2 ring-blue-500"
                         />
                     </div>
 
-                    <div className="space-y-2 mt-2">
-                        {availableUsers.map(user => (
-                            <div 
-                                key={user.id} 
-                                onClick={() => toggleUser(user)}
-                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${selectedUsers.find(u => u.id === user.id) ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                            >
-                                <div className="relative">
-                                    <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" />
-                                    {selectedUsers.find(u => u.id === user.id) && (
-                                        <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 border-2 border-white dark:border-gray-900">
-                                            <CheckIcon className="w-3 h-3 text-white" />
-                                        </div>
-                                    )}
+                    <div className="space-y-2">
+                        {availableUsers.map(user => {
+                            const isSelected = !!selectedUsers.find(u => u.id === user.id);
+                            return (
+                                <div 
+                                    key={user.id} 
+                                    onClick={() => toggleUser(user)}
+                                    className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition border ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-transparent border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                >
+                                    <div className="relative">
+                                        <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" />
+                                        {isSelected && (
+                                            <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-0.5 border-2 border-white dark:border-gray-900 animate-bounce-short">
+                                                <CheckIcon className="w-3 h-3 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className={`font-bold text-sm ${isSelected ? 'text-blue-700 dark:text-blue-300' : 'dark:text-white'}`}>{user.name}</h4>
+                                        <p className="text-xs text-gray-500">@{user.handle}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-sm dark:text-white">{user.name}</h4>
-                                    <p className="text-xs text-gray-500">@{user.handle}</p>
-                                </div>
-                            </div>
-                        ))}
-                        {availableUsers.length === 0 && <p className="text-center text-gray-500 text-xs p-4">No more users found.</p>}
+                            );
+                        })}
+                        {availableUsers.length === 0 && <div className="text-center text-gray-400 py-8 text-sm">No more contacts found.</div>}
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                <div className="p-5 border-t border-gray-100 dark:border-gray-800">
                     <button 
                         onClick={handleSubmit}
                         disabled={(mode === 'create' && !groupName) || selectedUsers.length === 0}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 transition active:scale-95"
                     >
-                        {mode === 'create' ? 'Create Group' : 'Add'}
+                        {mode === 'create' ? `Create Group (${selectedUsers.length})` : `Add ${selectedUsers.length} Members`}
                     </button>
                 </div>
             </div>
@@ -517,43 +466,45 @@ const FilePreviewModal = ({
     const [caption, setCaption] = useState('');
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col justify-center items-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col justify-center items-center p-4 animate-fade-in">
             <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-gray-800 rounded-full text-white hover:bg-gray-700">
                 <CloseIcon className="w-6 h-6" />
             </button>
 
-            <div className="flex-1 flex items-center justify-center w-full max-w-3xl relative">
-                {type === 'image' && <img src={url} className="max-h-[70vh] max-w-full object-contain rounded-lg shadow-2xl" />}
-                {type === 'video' && <video src={url} controls className="max-h-[70vh] max-w-full rounded-lg shadow-2xl" />}
+            <div className="flex-1 flex items-center justify-center w-full max-w-3xl relative p-4">
+                {type === 'image' && <img src={url} className="max-h-[60vh] max-w-full object-contain rounded-xl shadow-2xl" />}
+                {type === 'video' && <video src={url} controls className="max-h-[60vh] max-w-full rounded-xl shadow-2xl" />}
                 {type === 'audio' && (
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl flex flex-col items-center gap-4 w-full max-w-md">
-                        <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                            <MicrophoneIcon className="w-12 h-12 text-gray-500" />
+                    <div className="bg-gray-900 p-8 rounded-3xl flex flex-col items-center gap-6 w-full max-w-md border border-gray-800">
+                        <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center animate-pulse">
+                            <MicrophoneIcon className="w-10 h-10 text-blue-500" />
                         </div>
-                        <audio src={url} controls className="w-full" />
-                        <p className="text-gray-800 dark:text-white font-mono text-sm">{file.name}</p>
+                        <audio src={url} controls className="w-full accent-blue-500" />
+                        <p className="text-white font-mono text-sm opacity-70">{file.name}</p>
                     </div>
                 )}
                 {type === 'document' && (
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl flex flex-col items-center gap-4">
+                    <div className="bg-gray-900 p-8 rounded-3xl flex flex-col items-center gap-6 border border-gray-800">
                         <DocumentIcon className="w-24 h-24 text-gray-500" />
-                        <p className="text-xl font-bold text-gray-800 dark:text-white">{file.name}</p>
-                        <p className="text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        <div className="text-center">
+                            <p className="text-xl font-bold text-white mb-1">{file.name}</p>
+                            <p className="text-gray-400 text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
                     </div>
                 )}
             </div>
 
-            <div className="w-full max-w-2xl mt-6 flex gap-4">
+            <div className="w-full max-w-xl mb-8 flex gap-3">
                 <input 
                     value={caption}
                     onChange={e => setCaption(e.target.value)}
                     placeholder="Add a caption..."
-                    className="flex-1 bg-gray-800 text-white p-4 rounded-xl outline-none focus:ring-2 ring-blue-500"
+                    className="flex-1 bg-gray-800 text-white p-4 rounded-2xl outline-none focus:ring-2 ring-blue-500 transition placeholder-gray-500"
                     autoFocus
                 />
                 <button 
                     onClick={() => onSend(caption)} 
-                    className="bg-blue-600 text-white p-4 rounded-full hover:bg-blue-700 transition shadow-lg hover:scale-105"
+                    className="bg-blue-600 text-white p-4 rounded-2xl hover:bg-blue-700 transition shadow-lg hover:scale-105 flex items-center justify-center aspect-square"
                 >
                     <SendIcon className="w-6 h-6" />
                 </button>
@@ -570,9 +521,10 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   const [showAttachments, setShowAttachments] = useState(false);
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [chatSearchTerm, setChatSearchTerm] = useState(''); // Search inside chat
+  const [chatSearchTerm, setChatSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'groups' | 'unread' | 'docs' | 'links' | 'audio'>('all');
   const [localMessageStatuses, setLocalMessageStatuses] = useState<Record<string, string>>({});
+  const [activeMemberMenuId, setActiveMemberMenuId] = useState<string | null>(null);
   
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -583,7 +535,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [groupModalMode, setGroupModalMode] = useState<'create' | 'add_member'>('create');
   const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   
   // Call & Reply State
@@ -604,7 +555,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   const fileInputRef = useRef<HTMLInputElement>(null);
   const groupAvatarInputRef = useRef<HTMLInputElement>(null);
 
-  // Update sessions when prop changes
   useEffect(() => {
       setSessions(initialSessions);
   }, [initialSessions]);
@@ -629,7 +579,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       }
   }, [activeSessionId, sessions, isAiThinking, chatSearchTerm, replyingTo]);
 
-  // When entering chat info, prep edit state
   useEffect(() => {
       if (activeSessionId) {
           const s = sessions.find(s => s.id === activeSessionId);
@@ -649,14 +598,13 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
     const newMsgId = `msg_${Date.now()}`;
     setLocalMessageStatuses(prev => ({ ...prev, [newMsgId]: 'sending' }));
     
-    // Update local session state immediately for responsiveness
     onSendMessage(activeSessionId, text, type, mediaUrl, newMsgId, fileName, fileSize, replyingTo?.id);
     socket.emit('sendMessage', { id: newMsgId, text: text });
     
     if (type === 'text') setInputText('');
     setShowAttachments(false);
     setReplyingTo(null);
-    setFilePreview(null); // Clear preview
+    setFilePreview(null);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'document' | 'audio') => {
@@ -665,7 +613,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
           const url = URL.createObjectURL(file);
           setFilePreview({ file, url, type });
       }
-      // Reset input so same file can be selected again if cancelled
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -678,15 +625,19 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
 
   const handleCreateGroupSubmit = (data: { name: string, members: User[] }) => {
       onCreateGroup(data.name);
-      // Note: In a real app, we'd pass members too. Mock implementation in App.tsx handles it simply.
       setGroupModalOpen(false);
   };
 
   const handleAddMembersSubmit = (data: { members: User[] }) => {
       if (!activeSessionId || !activeSession) return;
-      if (onUpdateGroup) {
+      
+      // Only add members that aren't already in
+      const currentIds = activeSession.participants?.map(p => p.id) || [];
+      const newMembers = data.members.filter(m => !currentIds.includes(m.id));
+      
+      if (newMembers.length > 0 && onUpdateGroup) {
           onUpdateGroup(activeSessionId, {
-              participants: [...(activeSession.participants || []), ...data.members]
+              participants: [...(activeSession.participants || []), ...newMembers]
           });
       }
       setGroupModalOpen(false);
@@ -712,11 +663,14 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
 
   const handleRemoveMember = (userId: string) => {
       if (!activeSessionId || !activeSession) return;
-      if (!confirm("Remove this user from the group?")) return;
       
       if (onUpdateGroup) {
+          const newParticipants = activeSession.participants?.filter(p => p.id !== userId) || [];
+          const newAdmins = activeSession.admins?.filter(id => id !== userId) || []; // Remove admin rights if removed
+          
           onUpdateGroup(activeSessionId, {
-              participants: activeSession.participants?.filter(p => p.id !== userId)
+              participants: newParticipants,
+              admins: newAdmins
           });
       }
   };
@@ -728,28 +682,22 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       if (onUpdateGroup) {
           let newAdmins = activeSession.admins || [];
           if (isAdmin) {
-              if(!confirm("Dismiss this user as Admin?")) return;
               newAdmins = newAdmins.filter(id => id !== userId);
           } else {
-              if(!confirm("Promote this user to Admin?")) return;
               newAdmins = [...newAdmins, userId];
           }
           onUpdateGroup(activeSessionId, { admins: newAdmins });
       }
   };
 
-  // Handle Voice Recording Logic
   const handleVoiceRecord = () => {
       if (isRecording) {
-          // STOP Recording
           clearInterval(recordingIntervalRef.current);
           setIsRecording(false);
           setRecordingDuration(0);
-          // Send a mock audio file (Reliable MP3)
           const mockAudioUrl = "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3"; 
           handleSend("", "audio", mockAudioUrl, "Voice Message", "0:15"); 
       } else {
-          // START Recording
           setIsRecording(true);
           setRecordingDuration(0);
           recordingIntervalRef.current = setInterval(() => {
@@ -771,8 +719,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
 
   const handleDeleteMessage = (msgId: string) => {
       if (!activeSessionId) return;
-      // Simulating deletion by updating parent state (if prop available) or local session state
-      // For now, local update until onUpdateGroup handles messages deep merge or we add onDeleteMessage prop
       const updatedSessions = sessions.map(s => {
           if (s.id === activeSessionId) {
               return { ...s, messages: s.messages.filter(m => m.id !== msgId) };
@@ -815,9 +761,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       setContactModalOpen(false);
   };
 
-  // Search & Filter Logic
   const filteredSessions = sessions.filter(s => {
-      // Basic text filter for sessions
       if (['all', 'groups', 'unread'].includes(filterType)) {
           const matchesSearch = (s.isGroup ? s.groupName : s.user.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                 s.lastMessage.toLowerCase().includes(searchTerm.toLowerCase());
@@ -826,13 +770,11 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
           if (filterType === 'unread') return matchesSearch && s.unread > 0;
           return matchesSearch;
       }
-      return true; // If filtering by content type, we handle display differently
+      return true;
   });
 
-  // Global content search results
   const contentSearchResults = React.useMemo(() => {
       if (['all', 'groups', 'unread'].includes(filterType)) return null;
-      
       const results: { session: ChatSession, msg: Message }[] = [];
       sessions.forEach(s => {
           s.messages.forEach(m => {
@@ -840,7 +782,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
               if (filterType === 'docs' && m.type === 'document') match = true;
               if (filterType === 'audio' && m.type === 'audio') match = true;
               if (filterType === 'links' && (m.text.includes('http') || m.text.includes('www'))) match = true;
-              
               if (match && (!searchTerm || m.text.toLowerCase().includes(searchTerm.toLowerCase()) || m.fileName?.toLowerCase().includes(searchTerm.toLowerCase()))) {
                   results.push({ session: s, msg: m });
               }
@@ -849,18 +790,28 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       return results;
   }, [sessions, filterType, searchTerm]);
 
-
   const renderMessageBubble = (msg: Message) => {
       const isMe = msg.senderId === currentUser.id;
       const isContextOpen = contextMenuMsgId === msg.id;
       const isHighlighted = chatSearchTerm && msg.text.toLowerCase().includes(chatSearchTerm.toLowerCase());
-      
-      // Resolve replying to message
       const repliedMsg = activeSession?.messages.find(m => m.id === msg.replyToId);
+      const hasMedia = (msg.type === 'image' || msg.type === 'video') && msg.mediaUrl;
+
+      // Dynamic classes based on content type
+      let containerClasses = `max-w-[80%] relative group ${isHighlighted ? 'opacity-100' : (chatSearchTerm ? 'opacity-30' : 'opacity-100')}`;
+      
+      let bubbleClasses = `relative shadow-sm text-sm mb-1.5 border border-transparent `;
+      
+      if (hasMedia) {
+          // Media specific styling (Transparent)
+          bubbleClasses += "bg-transparent p-0 shadow-none border-none"; 
+      } else {
+          // Text/Doc/Audio styling (Standard)
+          bubbleClasses += `rounded-2xl px-4 py-2.5 ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none border-gray-100 dark:border-gray-700'}`;
+      }
 
       return (
-          <div className={`max-w-[80%] relative group ${isHighlighted ? 'opacity-100' : (chatSearchTerm ? 'opacity-30' : 'opacity-100')}`} id={msg.id}>
-              {/* Context Menu Trigger */}
+          <div className={containerClasses} id={msg.id}>
               <button 
                   onClick={(e) => { e.stopPropagation(); setContextMenuMsgId(isContextOpen ? null : msg.id); }}
                   className={`absolute top-0 ${isMe ? '-left-8' : '-right-8'} p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition`}
@@ -868,7 +819,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                   <div className="rotate-90"><MenuIcon className="w-4 h-4" /></div>
               </button>
 
-              {/* Context Menu */}
               {isContextOpen && (
                   <div className={`absolute top-6 ${isMe ? 'right-0' : 'left-0'} z-20 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 py-1 min-w-[120px] animate-fade-in`}>
                       <button onClick={() => { setReplyingTo(msg); setContextMenuMsgId(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white flex items-center gap-2">
@@ -883,65 +833,85 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                   </div>
               )}
 
-              <div className={`rounded-lg px-3 py-2 shadow-md text-sm mb-1 relative ${isMe ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-black dark:text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-black dark:text-white rounded-tl-none'}`}>
-                  {/* Reply Context Bubble */}
-                  {repliedMsg && (
+              <div className={bubbleClasses}>
+                  {/* Reply context specifically for media messages (above the image) */}
+                  {repliedMsg && hasMedia && (
                       <div 
                         onClick={() => document.getElementById(repliedMsg.id)?.scrollIntoView({behavior: 'smooth', block: 'center'})}
-                        className={`mb-2 rounded-md p-2 text-xs border-l-4 border-blue-500 bg-black/5 dark:bg-black/20 opacity-80 flex flex-col cursor-pointer hover:opacity-100 transition`}
+                        className={`mb-1 rounded-xl p-2 text-xs border-l-4 shadow-sm cursor-pointer hover:opacity-90 transition ${isMe ? 'bg-blue-600 text-white border-white/50' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-blue-500'}`}
                       >
-                          <span className="font-bold text-blue-600 dark:text-blue-400 mb-0.5">
-                              {repliedMsg.senderId === currentUser.id ? 'You' : (activeSession?.participants?.find(p => p.id === repliedMsg.senderId)?.name || 'User')}
-                          </span>
-                          <span className="truncate">{repliedMsg.type === 'text' ? repliedMsg.text : `[${repliedMsg.type}]`}</span>
+                          <span className="font-bold mb-0.5 block">Replying to {repliedMsg.senderId === currentUser.id ? 'You' : (activeSession?.participants?.find(p => p.id === repliedMsg.senderId)?.name || 'User')}</span>
+                          <span className="truncate block">{repliedMsg.type === 'text' ? repliedMsg.text : `[${repliedMsg.type}]`}</span>
                       </div>
                   )}
 
-                  {/* Image/Video */}
-                  {(msg.type === 'image' || msg.type === 'video') && msg.mediaUrl && (
+                  {/* If Media, render it directly in the transparent container */}
+                  {hasMedia && (
                       <div className="mb-1">
                           {msg.type === 'image' ? (
                               <img 
                                 src={msg.mediaUrl} 
-                                className="rounded-lg max-h-60 object-cover w-full cursor-pointer" 
+                                className={`rounded-2xl max-h-72 object-cover w-full cursor-pointer hover:brightness-90 transition ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'}`} 
                                 onClick={() => setViewingImage(msg.mediaUrl || '')}
                               />
                           ) : (
-                              <video src={msg.mediaUrl} controls className="rounded-lg max-h-60 w-full" />
+                              <video src={msg.mediaUrl} controls className={`rounded-2xl max-h-72 w-full ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'}`} />
                           )}
                       </div>
                   )}
 
-                  {/* Audio */}
-                  {msg.type === 'audio' && msg.mediaUrl && (
-                      <AudioPlayer src={msg.mediaUrl} />
-                  )}
-
-                  {/* Document */}
-                  {msg.type === 'document' && (
-                      <div className="flex items-center gap-3 bg-black/5 dark:bg-white/10 p-2 rounded-lg mb-1 cursor-pointer hover:bg-black/10 transition">
-                          <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center text-red-500">
-                              <DocumentIcon className="w-6 h-6" />
-                          </div>
-                          <div className="flex-1 overflow-hidden">
-                              <p className="font-bold truncate text-sm">{msg.fileName || 'Document'}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{msg.fileSize || 'PDF'}</p>
-                          </div>
-                          <a 
-                            href={msg.mediaUrl} 
-                            download={msg.fileName || 'document'}
-                            className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                              <DownloadIcon className="w-5 h-5 text-gray-500 dark:text-gray-300" />
-                          </a>
+                  {/* If Text exists with media, it needs its own bubble now because the parent is transparent */}
+                  {msg.text && hasMedia && (
+                      <div className={`rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none'}`}>
+                          <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
                       </div>
                   )}
 
-                  <p className="whitespace-pre-wrap break-words">{msg.type !== 'audio' && msg.type !== 'document' ? msg.text : (msg.text && msg.text !== msg.fileName ? msg.text : '')}</p>
+                  {/* Standard Text Only Message */}
+                  {!hasMedia && (
+                      <>
+                          {repliedMsg && (
+                              <div 
+                                onClick={() => document.getElementById(repliedMsg.id)?.scrollIntoView({behavior: 'smooth', block: 'center'})}
+                                className={`mb-2 rounded-lg p-2 text-xs border-l-4 ${isMe ? 'border-white/50 bg-white/10' : 'border-blue-500 bg-gray-100 dark:bg-gray-700'} opacity-90 flex flex-col cursor-pointer hover:opacity-100 transition`}
+                              >
+                                  <span className={`font-bold mb-0.5 ${isMe ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`}>
+                                      {repliedMsg.senderId === currentUser.id ? 'You' : (activeSession?.participants?.find(p => p.id === repliedMsg.senderId)?.name || 'User')}
+                                  </span>
+                                  <span className="truncate">{repliedMsg.type === 'text' ? repliedMsg.text : `[${repliedMsg.type}]`}</span>
+                              </div>
+                          )}
+                          {msg.type === 'audio' && msg.mediaUrl && (
+                              <div className={isMe ? 'brightness-200 contrast-125' : ''}>
+                                  <AudioPlayer src={msg.mediaUrl} />
+                              </div>
+                          )}
+                          {msg.type === 'document' && (
+                              <div className={`flex items-center gap-3 p-3 rounded-xl mb-1 cursor-pointer transition ${isMe ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                  <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center text-red-500">
+                                      <DocumentIcon className="w-6 h-6" />
+                                  </div>
+                                  <div className="flex-1 overflow-hidden">
+                                      <p className="font-bold truncate text-sm">{msg.fileName || 'Document'}</p>
+                                      <p className={`text-xs uppercase ${isMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>{msg.fileSize || 'FILE'}</p>
+                                  </div>
+                                  <a 
+                                    href={msg.mediaUrl} 
+                                    download={msg.fileName || 'document'}
+                                    className={`p-2 rounded-full ${isMe ? 'hover:bg-white/20' : 'hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                      <DownloadIcon className="w-5 h-5" />
+                                  </a>
+                              </div>
+                          )}
+                          
+                          <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.type !== 'audio' && msg.type !== 'document' ? msg.text : (msg.text && msg.text !== msg.fileName ? msg.text : '')}</p>
+                      </>
+                  )}
                   
-                  <div className="flex justify-end items-center gap-1 mt-1">
-                      <span className="text-[10px] opacity-70 min-w-[45px] text-right">
+                  <div className={`flex justify-end items-center gap-1 mt-1 ${hasMedia && !msg.text ? 'mr-1' : ''}`}>
+                      <span className={`text-[10px] min-w-[45px] text-right font-medium ${hasMedia && !msg.text ? (isMe ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500') : (isMe ? 'text-blue-100' : 'text-gray-400')}`}>
                           {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
                       {isMe && <MessageStatus status={localMessageStatuses[msg.id] || msg.status} />}
@@ -952,7 +922,8 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   };
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm mx-auto max-w-[1600px] transition-colors pb-16 md:pb-0 relative" onClick={() => setContextMenuMsgId(null)}>
+    <div className="flex h-full bg-white dark:bg-[#0f0f0f] rounded-2xl overflow-hidden border border-gray-200 dark:border-[#1f1f1f] shadow-lg mx-auto max-w-[1600px] transition-colors pb-16 md:pb-0 relative" onClick={() => { setContextMenuMsgId(null); setActiveMemberMenuId(null); }}>
+      
       <GroupModal 
         isOpen={groupModalOpen} 
         onClose={() => setGroupModalOpen(false)} 
@@ -965,15 +936,6 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
         isOpen={contactModalOpen}
         onClose={() => setContactModalOpen(false)}
         onAdd={handleCreateContact}
-      />
-
-      <MyProfileEditModal 
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        user={currentUser}
-        onSave={(updated) => {
-            console.log("Updating user", updated);
-        }}
       />
 
       {viewingImage && <ImageViewer src={viewingImage} onClose={() => setViewingImage(null)} />}
@@ -1000,98 +962,59 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       )}
 
       {/* Sidebar */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 dark:border-gray-800 flex flex-col ${activeSessionId ? 'hidden md:flex' : 'flex'}`}>
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setProfileModalOpen(true)}>
-                <img src={currentUser.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 hover:opacity-80 transition" />
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chats</h2>
-            </div>
+      <div className={`w-full md:w-80 lg:w-96 border-r border-gray-200 dark:border-[#1f1f1f] flex flex-col ${activeSessionId ? 'hidden md:flex' : 'flex'} bg-white dark:bg-[#0f0f0f]`}>
+        <div className="p-5 flex justify-between items-center">
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Chats</h2>
             <div className="flex gap-2">
-                <button 
-                    onClick={() => setContactModalOpen(true)} 
-                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300" 
-                    title="New Contact"
-                >
-                   <UserPlusIcon className="w-5 h-5" />
-                </button>
-                <button 
-                    onClick={() => { setGroupModalMode('create'); setGroupModalOpen(true); }} 
-                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300" 
-                    title="New Group"
-                >
-                   <UsersIcon className="w-5 h-5" />
-                </button>
+                <button onClick={() => setContactModalOpen(true)} className="p-2.5 bg-gray-100 dark:bg-[#1f1f1f] hover:bg-gray-200 dark:hover:bg-[#2f2f2f] rounded-full transition" title="New Contact"><UserPlusIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" /></button>
+                <button onClick={() => { setGroupModalMode('create'); setGroupModalOpen(true); }} className="p-2.5 bg-gray-100 dark:bg-[#1f1f1f] hover:bg-gray-200 dark:hover:bg-[#2f2f2f] rounded-full transition" title="New Group"><UsersIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" /></button>
             </div>
         </div>
         
-        <div className="p-3 space-y-3">
-            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center px-3 py-2">
-                <SearchIcon className="w-4 h-4 text-gray-500" />
-                <input 
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Search or start new chat" 
-                    className="bg-transparent border-none outline-none text-sm ml-2 w-full dark:text-white" 
-                />
+        <div className="px-5 pb-3 space-y-3">
+            <div className="bg-gray-100 dark:bg-[#1f1f1f] rounded-xl flex items-center px-4 py-2.5 transition-all focus-within:ring-2 ring-blue-500/50">
+                <SearchIcon className="w-4 h-4 text-gray-400" />
+                <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm ml-3 w-full dark:text-white font-medium" />
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                {['All', 'Unread', 'Groups', 'Docs', 'Links', 'Audio'].map(f => (
-                    <button 
-                        key={f}
-                        onClick={() => setFilterType(f.toLowerCase() as any)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition whitespace-nowrap ${filterType === f.toLowerCase() ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}
-                    >
-                        {f}
-                    </button>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {['All', 'Unread', 'Groups', 'Docs'].map(f => (
+                    <button key={f} onClick={() => setFilterType(f.toLowerCase() as any)} className={`px-4 py-1.5 rounded-full text-xs font-bold transition whitespace-nowrap ${filterType === f.toLowerCase() ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-100 dark:bg-[#1f1f1f] text-gray-600 dark:text-gray-400'}`}>{f}</button>
                 ))}
             </div>
         </div>
         
-        <div className="overflow-y-auto flex-1 bg-white dark:bg-gray-900">
+        <div className="overflow-y-auto flex-1">
             {contentSearchResults ? (
                 <div className="p-2 space-y-2">
-                    <div className="px-2 text-xs font-bold text-gray-500 uppercase mb-2">Found Messages</div>
+                    <div className="px-4 py-2 text-xs font-bold text-gray-500 uppercase">Found Messages</div>
                     {contentSearchResults.map((item, idx) => (
-                        <div 
-                            key={idx} 
-                            onClick={() => setActiveSessionId(item.session.id)}
-                            className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer flex gap-3"
-                        >
+                        <div key={idx} onClick={() => setActiveSessionId(item.session.id)} className="p-3 mx-2 hover:bg-gray-100 dark:hover:bg-[#1f1f1f] rounded-xl cursor-pointer flex gap-4 items-center">
                             <img src={item.session.isGroup ? item.session.groupAvatar : item.session.user.avatar} className="w-10 h-10 rounded-full" />
                             <div className="flex-1 min-w-0">
-                                <div className="flex justify-between">
+                                <div className="flex justify-between mb-0.5">
                                     <h4 className="font-bold text-sm dark:text-white">{item.session.isGroup ? item.session.groupName : item.session.user.name}</h4>
-                                    <span className="text-xs text-gray-400">{new Date(item.msg.timestamp).toLocaleDateString()}</span>
+                                    <span className="text-[10px] text-gray-400">{new Date(item.msg.timestamp).toLocaleDateString()}</span>
                                 </div>
-                                <p className="text-xs text-gray-500 truncate">{item.msg.text || item.msg.fileName || 'Media'}</p>
+                                <p className="text-xs text-gray-500 truncate font-medium">{item.msg.text || item.msg.fileName || 'Media'}</p>
                             </div>
                         </div>
                     ))}
-                    {contentSearchResults.length === 0 && <div className="text-center text-gray-500 text-sm mt-10">No results found.</div>}
                 </div>
             ) : (
                 filteredSessions.map(session => (
-                    <div 
-                        key={session.id}
-                        onClick={() => setActiveSessionId(session.id)}
-                        className={`p-3 flex gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition ${activeSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800 border-l-4 border-green-500' : 'border-l-4 border-transparent'}`}
-                    >
+                    <div key={session.id} onClick={() => setActiveSessionId(session.id)} className={`p-4 flex gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#161616] transition border-l-4 ${activeSessionId === session.id ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent'}`}>
                         <div className="relative">
-                            <img src={session.isGroup ? session.groupAvatar : session.user.avatar} className="w-12 h-12 rounded-full object-cover" />
-                            {session.user.isOnline && !session.isGroup && (
-                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
-                            )}
+                            <img src={session.isGroup ? session.groupAvatar : session.user.avatar} className="w-12 h-12 rounded-full object-cover shadow-sm" />
+                            {session.user.isOnline && !session.isGroup && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-[#0f0f0f]"></div>}
                         </div>
-                        <div className="flex-1 border-b border-gray-50 dark:border-gray-800 pb-3 min-w-0">
+                        <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-baseline mb-1">
-                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">{session.isGroup ? session.groupName : session.user.name}</h3>
-                                <span className="text-xs text-gray-400 flex-shrink-0">{session.timestamp}</span>
+                                <h3 className={`font-bold text-sm truncate ${activeSessionId === session.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>{session.isGroup ? session.groupName : session.user.name}</h3>
+                                <span className="text-[10px] font-bold text-gray-400 flex-shrink-0">{session.timestamp}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[180px]">{session.lastMessage}</p>
-                                {session.unread > 0 && (
-                                    <span className="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{session.unread}</span>
-                                )}
+                                {session.unread > 0 && <span className="bg-blue-600 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full shadow-sm shadow-blue-500/30">{session.unread}</span>}
                             </div>
                         </div>
                     </div>
@@ -1101,56 +1024,43 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
       </div>
 
       {/* Active Chat Window */}
-      <div className={`flex-1 flex flex-col ${!activeSessionId ? 'hidden md:flex' : 'flex'} bg-[#efeae2] dark:bg-[#0b141a] relative`}>
+      <div className={`flex-1 flex flex-col ${!activeSessionId ? 'hidden md:flex' : 'flex'} bg-[#f0f2f5] dark:bg-[#050505] relative`}>
         {activeSession ? (
           <>
-            <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 shadow-sm z-10">
-              <button onClick={() => setActiveSessionId(null)} className="md:hidden"><BackIcon className="w-6 h-6 dark:text-white" /></button>
-              <div className="flex items-center gap-3 flex-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-1 rounded-lg transition" onClick={() => setShowChatInfo(true)}>
-                  <img src={activeSession.isGroup ? activeSession.groupAvatar : activeSession.user.avatar} className="w-10 h-10 rounded-full" />
+            <div className="px-6 py-3 bg-white/80 dark:bg-[#0f0f0f]/90 backdrop-blur-md border-b border-gray-200 dark:border-[#1f1f1f] flex items-center gap-4 shadow-sm z-10 sticky top-0">
+              <button onClick={() => setActiveSessionId(null)} className="md:hidden p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#222]"><BackIcon className="w-6 h-6 dark:text-white" /></button>
+              <div className="flex items-center gap-4 flex-1 cursor-pointer group" onClick={() => setShowChatInfo(true)}>
+                  <img src={activeSession.isGroup ? activeSession.groupAvatar : activeSession.user.avatar} className="w-10 h-10 rounded-full shadow-sm border border-gray-100 dark:border-[#333]" />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">{activeSession.isGroup ? activeSession.groupName : activeSession.user.name}</h3>
-                    <p className="text-xs text-gray-500 truncate">
-                        {activeSession.isGroup 
-                            ? activeSession.participants?.map(p => p.name.split(' ')[0]).join(', ') 
-                            : (activeSession.user.isOnline ? 'Online' : 'Click for info')}
-                    </p>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate group-hover:text-blue-600 transition">{activeSession.isGroup ? activeSession.groupName : activeSession.user.name}</h3>
+                    <p className="text-xs text-gray-500 truncate font-medium">{activeSession.isGroup ? `${activeSession.participants?.length} members` : (activeSession.user.isOnline ? 'Online' : 'Offline')}</p>
                   </div>
               </div>
-              <div className="flex gap-3 md:gap-5 text-gray-500 dark:text-gray-300 items-center">
+              <div className="flex gap-1 items-center text-gray-500 dark:text-gray-400">
                   {chatSearchTerm ? (
-                      <div className="bg-white dark:bg-gray-800 flex items-center rounded-full px-3 py-1 border border-gray-200 dark:border-gray-700">
-                          <input 
-                            autoFocus
-                            value={chatSearchTerm}
-                            onChange={e => setChatSearchTerm(e.target.value)}
-                            className="bg-transparent text-sm outline-none w-24 dark:text-white"
-                            placeholder="Search..."
-                          />
-                          <button onClick={() => setChatSearchTerm('')}><CloseIcon className="w-4 h-4" /></button>
+                      <div className="flex items-center bg-gray-100 dark:bg-[#222] rounded-full px-3 py-1.5">
+                          <input autoFocus value={chatSearchTerm} onChange={e => setChatSearchTerm(e.target.value)} className="bg-transparent text-sm outline-none w-24 dark:text-white" placeholder="Find..." />
+                          <button onClick={() => setChatSearchTerm('')}><CloseIcon className="w-4 h-4 hover:text-red-500" /></button>
                       </div>
                   ) : (
-                      <button onClick={() => setChatSearchTerm(' ')} title="Search in chat"><SearchIcon className="w-5 h-5" /></button>
+                      <button onClick={() => setChatSearchTerm(' ')} className="p-2 hover:bg-gray-100 dark:hover:bg-[#222] rounded-full transition"><SearchIcon className="w-5 h-5" /></button>
                   )}
-                  <button onClick={() => setCallState({active: true, type: 'video'})} title="Video Call"><VideoIcon className="w-5 h-5" /></button>
-                  <button onClick={() => setCallState({active: true, type: 'audio'})} title="Voice Call"><PhoneIcon className="w-5 h-5" /></button>
-                  <button onClick={() => setShowChatInfo(!showChatInfo)} title="Info"><InfoIcon className="w-5 h-5" /></button>
+                  <button onClick={() => setCallState({active: true, type: 'video'})} className="p-2 hover:bg-gray-100 dark:hover:bg-[#222] rounded-full transition"><VideoIcon className="w-5 h-5" /></button>
+                  <button onClick={() => setCallState({active: true, type: 'audio'})} className="p-2 hover:bg-gray-100 dark:hover:bg-[#222] rounded-full transition"><PhoneIcon className="w-5 h-5" /></button>
+                  <button onClick={() => setShowChatInfo(!showChatInfo)} className="p-2 hover:bg-gray-100 dark:hover:bg-[#222] rounded-full transition"><InfoIcon className="w-5 h-5" /></button>
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat dark:opacity-90">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] dark:opacity-90">
               <EncryptionBadge />
-              
               {activeSession.messages.map((msg, i) => {
                   const prevMsg = activeSession.messages[i - 1];
                   const showDate = !prevMsg || new Date(msg.timestamp).toDateString() !== new Date(prevMsg.timestamp).toDateString();
-                  
                   return (
                       <div key={msg.id}>
                           {showDate && (
-                              <div className="flex justify-center my-4 sticky top-2 z-10">
-                                  <span className="bg-gray-200 dark:bg-gray-800 text-xs px-3 py-1 rounded-lg text-gray-600 dark:text-gray-300 shadow-sm font-medium">
+                              <div className="flex justify-center my-6 sticky top-2 z-10">
+                                  <span className="bg-white/80 dark:bg-[#222]/80 backdrop-blur-sm text-xs px-4 py-1.5 rounded-full text-gray-600 dark:text-gray-300 shadow-sm font-bold border border-gray-200 dark:border-[#333]">
                                       {new Date(msg.timestamp).toDateString()}
                                   </span>
                               </div>
@@ -1161,36 +1071,30 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                       </div>
                   );
               })}
-              {isAiThinking && activeSession.user.id === 'u3' && <div className="text-gray-500 text-xs italic ml-4 animate-pulse">AI is typing...</div>}
+              {isAiThinking && activeSession.user.id === 'u3' && <div className="text-gray-500 text-xs font-bold ml-4 animate-pulse">AI is typing...</div>}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Reply Preview */}
             {replyingTo && (
-                <div className="bg-gray-100 dark:bg-gray-800 p-2 px-4 flex justify-between items-center border-l-4 border-blue-500 mx-2 mt-2 rounded-r-lg shadow-inner">
-                    <div className="flex flex-col max-w-[90%]">
-                        <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">
-                            Replying to {replyingTo.senderId === currentUser.id ? 'Yourself' : (activeSession.participants?.find(p => p.id === replyingTo.senderId)?.name || 'User')}
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                            {replyingTo.type === 'text' ? replyingTo.text : `[${replyingTo.type}]`}
-                        </span>
+                <div className="px-4 pt-2 bg-[#f0f2f5] dark:bg-[#050505]">
+                    <div className="bg-white dark:bg-[#1f1f1f] p-3 rounded-xl border-l-4 border-blue-500 flex justify-between items-center shadow-sm">
+                        <div className="flex flex-col max-w-[90%]">
+                            <span className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-1">Replying to {replyingTo.senderId === currentUser.id ? 'You' : (activeSession.participants?.find(p => p.id === replyingTo.senderId)?.name || 'User')}</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-300 truncate">{replyingTo.type === 'text' ? replyingTo.text : `[${replyingTo.type}]`}</span>
+                        </div>
+                        <button onClick={() => setReplyingTo(null)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#333] rounded-full"><CloseIcon className="w-4 h-4 text-gray-500" /></button>
                     </div>
-                    <button onClick={() => setReplyingTo(null)} className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10">
-                        <CloseIcon className="w-5 h-5 text-gray-500" />
-                    </button>
                 </div>
             )}
 
-            {/* Footer Input */}
-            <div className="p-2 bg-gray-50 dark:bg-gray-900 flex items-end gap-2 border-t border-gray-200 dark:border-gray-800">
-               <div className="relative">
-                   <button onClick={() => setShowAttachments(!showAttachments)} className={`p-3 mb-1 rounded-full transition ${showAttachments ? 'bg-gray-200 dark:bg-gray-700 rotate-45' : 'hover:bg-gray-200 dark:hover:bg-gray-800'}`}>
+            <div className="p-3 bg-[#f0f2f5] dark:bg-[#050505]">
+               <div className="bg-white dark:bg-[#1f1f1f] rounded-3xl p-2 shadow-sm border border-gray-200 dark:border-[#333] flex items-end gap-2">
+                   <button onClick={() => setShowAttachments(!showAttachments)} className={`p-3 rounded-full transition-transform duration-200 ${showAttachments ? 'bg-gray-100 dark:bg-[#333] rotate-45' : 'hover:bg-gray-100 dark:hover:bg-[#333]'}`}>
                        <PlusIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                    </button>
                    
                    {showAttachments && (
-                       <div className="absolute bottom-16 left-0 flex flex-col gap-3 animate-slide-up z-20">
+                       <div className="absolute bottom-20 left-4 flex flex-col gap-3 animate-slide-up z-20">
                            {[
                                { icon: <DocumentIcon className="w-5 h-5" />, bg: 'bg-purple-500', label: 'Document', type: 'document' },
                                { icon: <CameraIcon className="w-5 h-5" />, bg: 'bg-red-500', label: 'Camera', type: 'image' },
@@ -1208,83 +1112,75 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                                     }}
                                     className="flex items-center gap-3 group"
                                >
-                                   <div className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white ${item.bg} hover:scale-110 transition`}>
+                                   <div className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white ${item.bg} hover:scale-110 transition transform`}>
                                        {item.icon}
                                    </div>
-                                   <span className="bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs shadow opacity-0 group-hover:opacity-100 transition dark:text-white font-bold">{item.label}</span>
+                                   <span className="bg-white dark:bg-[#222] px-3 py-1 rounded-lg text-xs font-bold shadow dark:text-white opacity-0 group-hover:opacity-100 transition-opacity">{item.label}</span>
                                 </button>
                            ))}
                        </div>
                    )}
-               </div>
 
-               <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl px-4 py-2 border border-transparent focus-within:border-gray-300 dark:focus-within:border-gray-700 transition flex items-center mb-1">
-                   {isRecording ? (
-                       <div className="flex-1 flex items-center gap-2 text-red-500 font-mono">
-                           <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                           {formatDuration(recordingDuration)}
-                           <span className="text-gray-400 text-xs ml-2">Release to send</span>
-                       </div>
-                   ) : (
-                       <input 
-                         type="text" 
-                         value={inputText}
-                         onChange={(e) => setInputText(e.target.value)}
-                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                         placeholder="Type a message"
-                         className="flex-1 bg-transparent outline-none dark:text-white max-h-32 overflow-y-auto py-1"
-                       />
-                   )}
-               </div>
+                   <div className="flex-1 mb-1">
+                        {isRecording ? (
+                            <div className="flex items-center gap-3 h-10 px-2 animate-pulse">
+                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <span className="text-red-500 font-mono font-bold">{formatDuration(recordingDuration)}</span>
+                                <span className="text-gray-400 text-xs">Recording...</span>
+                            </div>
+                        ) : (
+                            <textarea 
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+                                placeholder="Type a message"
+                                className="w-full bg-transparent outline-none dark:text-white max-h-32 py-2 resize-none text-base"
+                                rows={1}
+                            />
+                        )}
+                   </div>
 
-               <button 
-                    onMouseDown={!inputText ? handleVoiceRecord : undefined}
-                    onMouseUp={!inputText && isRecording ? handleVoiceRecord : undefined}
-                    onClick={inputText ? () => handleSend() : undefined}
-                    // Touch support for mobile
-                    onTouchStart={!inputText ? handleVoiceRecord : undefined}
-                    onTouchEnd={!inputText && isRecording ? handleVoiceRecord : undefined}
-                    className={`p-3 rounded-full shadow-md mb-1 transition-all active:scale-95 flex items-center justify-center ${inputText || isRecording ? 'bg-[#00a884] text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-white'}`}
-               >
-                   {inputText ? <SendIcon className="w-5 h-5" /> : (isRecording ? <SendIcon className="w-5 h-5" /> : <MicrophoneIcon className="w-5 h-5" />)}
-               </button>
+                   <button 
+                        onMouseDown={!inputText ? handleVoiceRecord : undefined}
+                        onMouseUp={!inputText && isRecording ? handleVoiceRecord : undefined}
+                        onClick={inputText ? () => handleSend() : undefined}
+                        onTouchStart={!inputText ? handleVoiceRecord : undefined}
+                        onTouchEnd={!inputText && isRecording ? handleVoiceRecord : undefined}
+                        className={`p-3 rounded-full shadow-lg mb-0.5 transition-all active:scale-90 flex items-center justify-center ${inputText || isRecording ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-[#333] text-gray-500 dark:text-gray-300'}`}
+                   >
+                       {inputText ? <SendIcon className="w-5 h-5" /> : (isRecording ? <SendIcon className="w-5 h-5" /> : <MicrophoneIcon className="w-5 h-5" />)}
+                   </button>
+               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800">
-              <div className="w-32 h-32 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                  <ChatIcon className="w-16 h-16 text-gray-400" />
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+              <div className="w-40 h-40 bg-gray-100 dark:bg-[#1f1f1f] rounded-full flex items-center justify-center mb-8 animate-pulse-slow">
+                  <ChatIcon className="w-20 h-20 text-gray-300 dark:text-gray-600" />
               </div>
-              <h2 className="text-3xl font-light text-gray-700 dark:text-gray-300">MyConnect Web</h2>
-              <p className="mt-4 text-sm text-gray-400 max-w-md text-center leading-relaxed">
-                  Send and receive messages without keeping your phone online.<br/>
-                  Use MyConnect on up to 4 linked devices and 1 phone.
-              </p>
-              <EncryptionBadge />
+              <h2 className="text-3xl font-light text-gray-800 dark:text-gray-200">Welcome to Chats</h2>
+              <p className="mt-4 text-sm text-gray-400 max-w-xs text-center">Select a conversation or start a new one to connect with friends.</p>
+              <button onClick={() => setContactModalOpen(true)} className="mt-8 px-8 py-3 bg-black dark:bg-white text-white dark:text-black rounded-full font-bold hover:opacity-80 transition shadow-lg">
+                  Start New Chat
+              </button>
           </div>
         )}
       </div>
 
-      {/* Right Info Panel (Conditional) */}
+      {/* Right Info Panel */}
       {showChatInfo && activeSession && (
-          <div className="w-full md:w-80 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 absolute inset-0 md:relative z-20 flex flex-col h-full overflow-y-auto animate-slide-in-right">
-              <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 bg-gray-50 dark:bg-gray-900 sticky top-0 z-10">
-                  <button onClick={() => setShowChatInfo(false)} className="hover:bg-gray-200 dark:hover:bg-gray-800 p-1 rounded-full"><CloseIcon className="w-6 h-6 text-gray-500" /></button>
-                  <h3 className="font-bold dark:text-white text-lg">{activeSession.isGroup ? 'Group Info' : 'Contact Info'}</h3>
-              </div>
-
-              <div className="p-6 flex flex-col items-center text-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
-                  <div className="relative group">
+          <div className="w-full md:w-80 border-l border-gray-200 dark:border-[#1f1f1f] bg-white dark:bg-[#0f0f0f] absolute inset-0 md:relative z-20 flex flex-col h-full overflow-y-auto animate-slide-in-right shadow-2xl" onClick={() => setActiveMemberMenuId(null)}>
+              <div className="p-6 flex flex-col items-center text-center border-b border-gray-100 dark:border-[#1f1f1f]">
+                  <button onClick={() => setShowChatInfo(false)} className="self-end p-2 hover:bg-gray-100 dark:hover:bg-[#222] rounded-full text-gray-500 mb-2"><CloseIcon className="w-6 h-6" /></button>
+                  
+                  <div className="relative group mb-4">
                       <img 
                         src={isEditingGroup ? editGroupAvatar : (activeSession.isGroup ? activeSession.groupAvatar : activeSession.user.avatar)} 
-                        className="w-32 h-32 rounded-full object-cover mb-4 shadow-lg border-4 border-gray-100 dark:border-gray-800" 
+                        className="w-28 h-28 rounded-full object-cover shadow-xl border-4 border-white dark:border-[#222]" 
                       />
                       {isEditingGroup && activeSession.isGroup && (
                           <>
-                            <div 
-                                onClick={() => groupAvatarInputRef.current?.click()}
-                                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition mb-4"
-                            >
+                            <div onClick={() => groupAvatarInputRef.current?.click()} className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition backdrop-blur-sm">
                                 <CameraIcon className="w-8 h-8 text-white" />
                             </div>
                             <input type="file" ref={groupAvatarInputRef} className="hidden" accept="image/*" onChange={handleGroupAvatarChange} />
@@ -1293,133 +1189,128 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                   </div>
 
                   {isEditingGroup ? (
-                      <div className="w-full space-y-2">
-                          <input 
-                            value={editGroupName} 
-                            onChange={(e) => setEditGroupName(e.target.value)} 
-                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded border border-blue-500 outline-none text-center font-bold text-xl dark:text-white"
-                          />
-                      </div>
+                      <input 
+                        value={editGroupName} 
+                        onChange={(e) => setEditGroupName(e.target.value)} 
+                        className="w-full p-2 bg-gray-50 dark:bg-[#222] rounded-lg border border-blue-500 outline-none text-center font-bold text-xl dark:text-white mb-2"
+                        autoFocus
+                      />
                   ) : (
-                      <h2 className="text-2xl font-bold dark:text-white flex items-center justify-center gap-2">
+                      <h2 className="text-2xl font-black dark:text-white flex items-center justify-center gap-2">
                           {activeSession.isGroup ? activeSession.groupName : activeSession.user.name}
                           {activeSession.isGroup && activeSession.admins?.includes(currentUser.id) && (
-                              <button onClick={() => setIsEditingGroup(true)} className="text-gray-400 hover:text-blue-500"><PencilIcon className="w-5 h-5" /></button>
+                              <button onClick={() => setIsEditingGroup(true)} className="text-gray-400 hover:text-blue-500"><PencilIcon className="w-4 h-4" /></button>
                           )}
                       </h2>
                   )}
-                  <p className="text-gray-500 text-lg mt-2 font-mono">
-                      {activeSession.isGroup 
-                        ? `Group • ${activeSession.participants?.length} participants` 
-                        : activeSession.user.phoneNumber || '+1 (555) 019-2834'}
+                  
+                  <p className="text-gray-500 font-medium mt-1">
+                      {activeSession.isGroup ? `Group • ${activeSession.participants?.length} participants` : activeSession.user.handle}
                   </p>
               </div>
 
-              <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-4">
-                  <div className="flex flex-col gap-1">
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">About</span>
+              <div className="p-6 space-y-6 border-b border-gray-100 dark:border-[#1f1f1f]">
+                  <div>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">Description</label>
                       {isEditingGroup ? (
                           <textarea 
                             value={editGroupDesc} 
                             onChange={(e) => setEditGroupDesc(e.target.value)} 
-                            className="w-full p-3 bg-gray-100 dark:bg-gray-800 rounded border border-blue-500 outline-none text-sm resize-none dark:text-white"
+                            className="w-full p-3 bg-gray-50 dark:bg-[#222] rounded-xl border border-blue-500 outline-none text-sm resize-none dark:text-white"
                             rows={3}
                           />
                       ) : (
-                          <p className="text-sm dark:text-gray-300 leading-relaxed">{activeSession.isGroup ? activeSession.groupDescription || "No description" : activeSession.user.bio || "Available"}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{activeSession.isGroup ? activeSession.groupDescription || "No description" : activeSession.user.bio || "Available"}</p>
                       )}
                   </div>
                   
                   {isEditingGroup && (
-                      <div className="flex gap-2">
-                          <button onClick={handleSaveGroupInfo} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold text-sm">Save</button>
-                          <button onClick={() => setIsEditingGroup(false)} className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 rounded-lg font-bold text-sm">Cancel</button>
-                      </div>
-                  )}
-
-                  {!activeSession.isGroup && (
-                      <div className="flex flex-col gap-2 pt-2">
-                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Media, Links and Docs</span>
-                          <div className="flex gap-2 mt-1 overflow-hidden rounded-lg">
-                              {[1,2,3].map(i => <div key={i} className="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg flex-shrink-0"></div>)}
-                              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 font-bold">+12</div>
-                          </div>
+                      <div className="flex gap-3">
+                          <button onClick={handleSaveGroupInfo} className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 transition">Save Changes</button>
+                          <button onClick={() => setIsEditingGroup(false)} className="flex-1 bg-gray-100 dark:bg-[#222] text-gray-700 dark:text-white py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-[#333] transition">Cancel</button>
                       </div>
                   )}
               </div>
 
               {activeSession.isGroup && (
-                  <div className="flex-1 p-0">
-                      <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900/50 sticky top-0">
-                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{activeSession.participants?.length} Participants</span>
+                  <div className="flex-1 flex flex-col">
+                      <div className="flex justify-between items-center px-6 py-4 sticky top-0 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-sm z-10">
+                          <span className="text-sm font-bold dark:text-white">{activeSession.participants?.length} Members</span>
                           <div className="flex gap-2">
-                              <button 
-                                onClick={() => {
-                                    navigator.clipboard.writeText(`https://myconnect.app/join/${activeSession.id}`);
-                                    alert("Group invite link copied!");
-                                }} 
-                                className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
-                                title="Copy Invite Link"
-                              >
-                                  <LinkIcon className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => { setGroupModalMode('add_member'); setGroupModalOpen(true); }} className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition">
-                                  <UserPlusIcon className="w-4 h-4" />
+                              <button onClick={() => { navigator.clipboard.writeText(`https://myconnect.app/join/${activeSession.id}`); alert("Link copied!"); }} className="p-2 bg-gray-100 dark:bg-[#222] rounded-full hover:bg-gray-200 transition text-gray-600 dark:text-gray-300" title="Invite Link"><LinkIcon className="w-4 h-4" /></button>
+                              <button onClick={() => { setGroupModalMode('add_member'); setGroupModalOpen(true); }} className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black text-xs font-bold rounded-full hover:opacity-80 transition flex items-center gap-1">
+                                  <PlusIcon className="w-3 h-3" /> Add
                               </button>
                           </div>
                       </div>
-                      <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                          {activeSession.participants?.map(p => (
-                              <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition group" onClick={() => onViewProfile(p)}>
-                                  <img src={p.avatar} className="w-10 h-10 rounded-full object-cover" />
-                                  <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1">
-                                          <h4 className="text-sm font-bold dark:text-white truncate">{p.id === currentUser.id ? 'You' : p.name}</h4>
-                                          {activeSession.admins?.includes(p.id) && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-900 font-bold">Admin</span>}
+                      
+                      <div className="flex-1 px-2 pb-4 overflow-y-auto">
+                          {activeSession.participants?.map(p => {
+                              const isAdmin = activeSession.admins?.includes(p.id);
+                              return (
+                                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1a1a1a] group transition relative">
+                                      <img src={p.avatar} className="w-10 h-10 rounded-full object-cover" />
+                                      <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                              <h4 className="text-sm font-bold dark:text-white truncate">{p.id === currentUser.id ? 'You' : p.name}</h4>
+                                              {isAdmin && (
+                                                  <span className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 text-[10px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
+                                                      <ShieldCheckIcon className="w-3 h-3" /> Admin
+                                                  </span>
+                                              )}
+                                          </div>
+                                          <p className="text-xs text-gray-500 truncate">@{p.handle}</p>
                                       </div>
-                                      <p className="text-xs text-gray-500 truncate">{p.handle}</p>
+                                      
+                                      {/* Admin Actions Menu */}
+                                      {activeSession.admins?.includes(currentUser.id) && p.id !== currentUser.id && (
+                                          <div className="relative">
+                                              <button 
+                                                  onClick={(e) => { e.stopPropagation(); setActiveMemberMenuId(activeMemberMenuId === p.id ? null : p.id); }}
+                                                  className="p-2 hover:bg-gray-200 dark:hover:bg-[#333] rounded-full transition"
+                                              >
+                                                  <MoreVerticalIcon className="w-4 h-4 text-gray-500" />
+                                              </button>
+                                              
+                                              {activeMemberMenuId === p.id && (
+                                                  <div className="absolute right-0 top-8 w-36 bg-white dark:bg-[#252525] rounded-xl shadow-xl border border-gray-100 dark:border-[#333] z-20 overflow-hidden animate-fade-in">
+                                                      <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleToggleAdmin(p.id); setActiveMemberMenuId(null); }}
+                                                        className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-[#333] dark:text-white flex items-center gap-2"
+                                                      >
+                                                          <ShieldCheckIcon className="w-3 h-3" /> {isAdmin ? 'Dismiss Admin' : 'Make Admin'}
+                                                      </button>
+                                                      <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleRemoveMember(p.id); setActiveMemberMenuId(null); }}
+                                                        className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-gray-50 dark:hover:bg-[#333] text-red-500 flex items-center gap-2"
+                                                      >
+                                                          <UserMinusIcon className="w-3 h-3" /> Remove
+                                                      </button>
+                                                  </div>
+                                              )}
+                                          </div>
+                                      )}
                                   </div>
-                                  
-                                  
-                                  {/* Admin Controls */}
-                                  {activeSession.admins?.includes(currentUser.id) && p.id !== currentUser.id && (
-                                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                          <button 
-                                            onClick={(e) => { e.stopPropagation(); handleToggleAdmin(p.id); }}
-                                            className={`p-1.5 rounded-full transition ${activeSession.admins?.includes(p.id) ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100' : 'text-green-500 bg-green-50 dark:bg-green-900/20 hover:bg-green-100'}`}
-                                            title={activeSession.admins?.includes(p.id) ? "Dismiss as Admin" : "Make Admin"}
-                                          >
-                                              <ShieldCheckIcon className="w-4 h-4" />
-                                          </button>
-                                          <button 
-                                            onClick={(e) => { e.stopPropagation(); handleRemoveMember(p.id); }}
-                                            className="p-1.5 text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full transition"
-                                            title="Remove"
-                                          >
-                                              <UserMinusIcon className="w-4 h-4" />
-                                          </button>
-                                      </div>
-                                  )}
-                              </div>
-                          ))}
+                              );
+                          })}
                       </div>
                   </div>
               )}
 
-              <div className="p-4 mt-auto border-t border-gray-100 dark:border-gray-800 space-y-2 bg-white dark:bg-gray-900">
+              <div className="p-6 mt-auto bg-gray-50 dark:bg-[#151515] border-t border-gray-100 dark:border-[#222]">
                   {activeSession.isGroup ? (
                       <button 
                         onClick={() => handleBlockOrLeave(true)}
-                        className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition"
+                        className="w-full py-3.5 flex items-center justify-center gap-2 text-red-600 font-bold bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-2xl transition shadow-sm"
                       >
                           <ExitIcon className="w-5 h-5" /> Exit Group
                       </button>
                   ) : (
                       <button 
                         onClick={() => handleBlockOrLeave(false)}
-                        className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition"
+                        className="w-full py-3.5 flex items-center justify-center gap-2 text-red-600 font-bold bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-2xl transition shadow-sm"
                       >
-                          <ExitIcon className="w-5 h-5" /> Block {activeSession.user.name}
+                          <ExitIcon className="w-5 h-5" /> Block Contact
                       </button>
                   )}
               </div>
