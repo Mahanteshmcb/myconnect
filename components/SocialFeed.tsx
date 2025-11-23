@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon } from './Icons';
 import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
@@ -16,6 +16,8 @@ interface SocialFeedProps {
   onJoinCommunity?: (id: string) => void;
   onCreateCommunity?: (name: string, description: string) => void;
   onDeleteCommunity?: (id: string) => void;
+  onUpdateCommunity?: (id: string, updates: Partial<Community>) => void;
+  onRemoveMember?: (communityId: string, userId: string) => void;
 }
 
 // --- Stories Logic ---
@@ -102,17 +104,118 @@ const StoryViewer = ({ stories, initialIndex, onClose }: { stories: Story[], ini
     );
 };
 
+// --- Share Modal ---
+const SharePostModal = ({ isOpen, onClose, post }: { isOpen: boolean, onClose: () => void, post: Post | null }) => {
+    if (!isOpen || !post) return null;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`https://myconnect.app/post/${post.id}`);
+        alert("Link copied to clipboard!");
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-2xl shadow-xl p-5 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-center">Share to</h3>
+                <div className="flex gap-4 justify-center mb-6">
+                     {['Twitter', 'Facebook', 'WhatsApp', 'Email'].map(platform => (
+                         <div key={platform} className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80">
+                             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-xl shadow-sm">
+                                 📱
+                             </div>
+                             <span className="text-xs text-gray-500">{platform}</span>
+                         </div>
+                     ))}
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl flex items-center gap-3 border border-gray-100 dark:border-gray-700">
+                    <LinkIcon className="w-5 h-5 text-gray-500" />
+                    <input readOnly value={`https://myconnect.app/post/${post.id}`} className="bg-transparent text-sm text-gray-500 flex-1 outline-none truncate" />
+                    <button onClick={handleCopy} className="text-blue-600 font-bold text-sm">Copy</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Edit Community Modal ---
+const EditCommunityModal = ({ 
+    isOpen, 
+    onClose, 
+    community,
+    onSave 
+}: { 
+    isOpen: boolean, 
+    onClose: () => void, 
+    community: Community,
+    onSave: (id: string, updates: Partial<Community>) => void 
+}) => {
+    const [name, setName] = useState(community.name);
+    const [desc, setDesc] = useState(community.description);
+
+    if (!isOpen) return null;
+
+    const handleSave = () => {
+        onSave(community.id, { name, description: desc });
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit Community</h3>
+                    <button onClick={onClose}><CloseIcon className="w-6 h-6 text-gray-500" /></button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                        <input 
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <textarea 
+                            value={desc}
+                            onChange={e => setDesc(e.target.value)}
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-blue-500 resize-none h-24"
+                        />
+                    </div>
+                    <button 
+                        onClick={handleSave}
+                        className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition"
+                    >
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // --- Community Members Modal ---
 const CommunityMembersModal = ({ 
-    communityId, 
+    communityId,
+    communityCreatorId,
+    currentUserId,
     onClose, 
-    onViewProfile 
+    onViewProfile,
+    onRemoveMember
 }: { 
     communityId: string, 
+    communityCreatorId?: string,
+    currentUserId: string,
     onClose: () => void, 
-    onViewProfile: (u: User) => void 
+    onViewProfile: (u: User) => void,
+    onRemoveMember?: (cid: string, uid: string) => void
 }) => {
     const members = useMemo(() => getCommunityMembers(communityId), [communityId]);
+    const isCreator = currentUserId === communityCreatorId;
     
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
@@ -131,6 +234,17 @@ const CommunityMembersModal = ({
                                 <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{u.name}</h4>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{u.handle}</p>
                             </div>
+                            {isCreator && u.id !== currentUserId && (
+                                <button 
+                                    onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        if(confirm(`Remove ${u.name}?`)) onRemoveMember?.(communityId, u.id); 
+                                    }}
+                                    className="px-3 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full hover:bg-red-100"
+                                >
+                                    Remove
+                                </button>
+                            )}
                         </div>
                     ))}
                     {members.length === 0 && (
@@ -299,7 +413,8 @@ const CommunitiesSidebar = ({
     onDelete,
     selectedCommunityId,
     onSelectCommunity,
-    currentUserId
+    currentUserId,
+    onEdit
 }: { 
     communities: Community[], 
     onJoin: (id: string) => void, 
@@ -307,7 +422,8 @@ const CommunitiesSidebar = ({
     onDelete: (id: string) => void,
     selectedCommunityId: string | null,
     onSelectCommunity: (id: string | null) => void,
-    currentUserId: string
+    currentUserId: string,
+    onEdit: (c: Community) => void
 }) => {
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
@@ -358,7 +474,7 @@ const CommunitiesSidebar = ({
                         <div 
                             key={c.id} 
                             onClick={() => onSelectCommunity(c.id)}
-                            className={`flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition ${selectedCommunityId === c.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                            className={`flex items-center gap-3 group cursor-pointer p-2 rounded-xl transition relative ${selectedCommunityId === c.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
                         >
                             <img src={c.avatar} className="w-10 h-10 rounded-xl object-cover" />
                             <div className="flex-1 min-w-0">
@@ -366,15 +482,24 @@ const CommunitiesSidebar = ({
                                 <p className="text-xs text-gray-500">{formatCompactNumber(c.members)} members</p>
                             </div>
                             
-                            {/* Delete button for creator, Join button for others */}
+                            {/* Management Buttons */}
                             {c.creatorId === currentUserId ? (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); if(confirm(`Delete community "${c.name}"?`)) onDelete(c.id); }}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition z-10"
-                                    title="Delete Community"
-                                >
-                                    <TrashIcon className="w-4 h-4" />
-                                </button>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onEdit(c); }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition z-10"
+                                        title="Edit Community"
+                                    >
+                                        <PencilIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); if(confirm(`Delete community "${c.name}"?`)) onDelete(c.id); }}
+                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition z-10"
+                                        title="Delete Community"
+                                    >
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
                             ) : (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
@@ -448,7 +573,7 @@ const RightSidebar = ({
                 <button className="text-blue-500 text-sm mt-2 font-medium w-full text-left px-2">Show more</button>
             </div>
 
-            {/* Who to Follow */}
+            {/* Who to follow */}
             <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
                  <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4">Who to follow</h2>
                  <div className="space-y-4">
@@ -650,8 +775,9 @@ const PostCard: React.FC<{
     onViewProfile: (user: User) => void, 
     onCommentClick: (postId: string) => void,
     onHashtagClick: (tag: string) => void,
-    onMentionClick: (handle: string) => void 
-}> = ({ post, currentUser, onViewProfile, onCommentClick, onHashtagClick, onMentionClick }) => {
+    onMentionClick: (handle: string) => void,
+    onShareClick: (post: Post) => void 
+}> = ({ post, currentUser, onViewProfile, onCommentClick, onHashtagClick, onMentionClick, onShareClick }) => {
     const [liked, setLiked] = useState(false);
     const [likes, setLikes] = useState(post.likes);
     const [retweeted, setRetweeted] = useState(false);
@@ -718,7 +844,7 @@ const PostCard: React.FC<{
                             <div className="p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20"><HeartIcon className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} /></div>
                             <span className="text-sm">{formatCompactNumber(likes)}</span>
                         </button>
-                        <button className="flex items-center gap-2 group hover:text-blue-500">
+                        <button onClick={(e) => { e.stopPropagation(); onShareClick(post); }} className="flex items-center gap-2 group hover:text-blue-500">
                             <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20"><ShareIcon className="w-4 h-4" /></div>
                         </button>
                     </div>
@@ -730,7 +856,7 @@ const PostCard: React.FC<{
 
 // --- Main Social Feed ---
 export const SocialFeed: React.FC<SocialFeedProps> = ({ 
-    posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment, onDeleteCommunity 
+    posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment, onDeleteCommunity, onUpdateCommunity, onRemoveMember 
 }) => {
   const [activeTab, setActiveTab] = useState<'For You' | 'Following' | 'Communities'>('For You');
   const [stories, setStories] = useState<Story[]>(generateMockStories(currentUser, SUGGESTED_USERS));
@@ -747,6 +873,12 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   
   // View Community Members
   const [showMembersModal, setShowMembersModal] = useState(false);
+
+  // Edit Community
+  const [editingCommunity, setEditingCommunity] = useState<Community | null>(null);
+
+  // Sharing
+  const [sharingPost, setSharingPost] = useState<Post | null>(null);
 
   // Pull to refresh state
   const [pullDistance, setPullDistance] = useState(0);
@@ -965,6 +1097,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                             onCommentClick={setActivePostIdForComments}
                             onHashtagClick={handleHashtagClick}
                             onMentionClick={handleMentionClick}
+                            onShareClick={setSharingPost}
                         />
                      ))}
                      {resultPosts.length === 0 && (
@@ -1021,8 +1154,28 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
         {showMembersModal && selectedCommunityId && (
             <CommunityMembersModal 
                 communityId={selectedCommunityId}
+                communityCreatorId={communities.find(c => c.id === selectedCommunityId)?.creatorId}
+                currentUserId={currentUser.id}
                 onClose={() => setShowMembersModal(false)}
                 onViewProfile={onViewProfile}
+                onRemoveMember={onRemoveMember}
+            />
+        )}
+
+        {editingCommunity && onUpdateCommunity && (
+            <EditCommunityModal 
+                isOpen={!!editingCommunity}
+                onClose={() => setEditingCommunity(null)}
+                community={editingCommunity}
+                onSave={onUpdateCommunity}
+            />
+        )}
+
+        {sharingPost && (
+            <SharePostModal 
+                isOpen={!!sharingPost}
+                onClose={() => setSharingPost(null)}
+                post={sharingPost}
             />
         )}
 
@@ -1037,6 +1190,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 selectedCommunityId={selectedCommunityId}
                 onSelectCommunity={handleSelectCommunity}
                 currentUserId={currentUser.id}
+                onEdit={setEditingCommunity}
             />
 
             {/* Main Feed */}
@@ -1158,6 +1312,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                                         onCommentClick={setActivePostIdForComments}
                                         onHashtagClick={handleHashtagClick}
                                         onMentionClick={handleMentionClick}
+                                        onShareClick={setSharingPost}
                                     />
                                 )) : (
                                     <div className="py-20 text-center text-gray-500">

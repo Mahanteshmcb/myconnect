@@ -183,13 +183,6 @@ export default function App() {
           creatorId: currentUser.id // Assign creator
       };
       setCommunities([...communities, newCommunity]);
-      
-      // Auto-select the new community so the user sees it immediately
-      // This requires passing down a way to set the selected community ID in SocialFeed
-      // Ideally, SocialFeed should react to this new community being added. 
-      // Since `selectedCommunityId` is currently internal to SocialFeed, we might not force it 
-      // unless we lift that state up or assume the user will click it. 
-      // For a better UX, we could use a ref or effect, but simply adding it to the list is good for now.
   };
 
   const handleDeleteCommunity = (id: string) => {
@@ -198,12 +191,25 @@ export default function App() {
       setPosts(posts.filter(p => p.communityId !== id));
   };
 
+  const handleUpdateCommunity = (id: string, updates: Partial<Community>) => {
+      setCommunities(communities.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
+
   const handleJoinCommunity = (communityId: string) => {
       setCommunities(communities.map(c => 
           c.id === communityId 
             ? { ...c, isJoined: !c.isJoined, members: c.isJoined ? c.members - 1 : c.members + 1 }
             : c
       ));
+  };
+
+  const handleRemoveMember = (communityId: string, userId: string) => {
+      // In a real app, this would make an API call. 
+      // Here we just simulate updating member count if it's not the current user leaving (which is handleJoinCommunity)
+      setCommunities(communities.map(c => 
+          c.id === communityId ? { ...c, members: Math.max(0, c.members - 1) } : c
+      ));
+      alert("Member removed (simulated)");
   };
 
   // --- Reel Actions ---
@@ -336,6 +342,8 @@ export default function App() {
                 onJoinCommunity={handleJoinCommunity}
                 onCreateCommunity={handleCreateCommunity}
                 onDeleteCommunity={handleDeleteCommunity}
+                onUpdateCommunity={handleUpdateCommunity}
+                onRemoveMember={handleRemoveMember}
             />
         );
       case ViewMode.WATCH:
