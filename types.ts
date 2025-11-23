@@ -6,7 +6,8 @@ export enum ViewMode {
   CREATOR = 'CREATOR',
   PROFILE = 'PROFILE',
   NOTIFICATIONS = 'NOTIFICATIONS',
-  EXPLORE = 'EXPLORE'
+  EXPLORE = 'EXPLORE',
+  CREATE_REEL = 'CREATE_REEL'
 }
 
 export interface User {
@@ -19,6 +20,7 @@ export interface User {
   bio?: string;
   coverImage?: string;
   following?: string;
+  followingIds?: string[]; // Added for following logic
   postsCount?: number;
   isOnline?: boolean;
   // Extended Profile Details
@@ -32,6 +34,15 @@ export interface User {
   twitter?: string;
   linkedin?: string;
   github?: string;
+}
+
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  avatar: string; // Group icon
+  members: number;
+  isJoined?: boolean;
 }
 
 export interface Comment {
@@ -53,6 +64,7 @@ export interface Post {
   shares: number;
   timestamp: string;
   type: 'text' | 'image' | 'video';
+  communityId?: string; // If posted in a community
 }
 
 export interface Video {
@@ -63,6 +75,7 @@ export interface Video {
   comments: string;
   author: User;
   description: string;
+  filter?: string; // CSS filter string
 }
 
 export interface LongFormVideo {
@@ -87,12 +100,16 @@ export interface Message {
   timestamp: Date;
   isAi?: boolean;
   status?: 'sent' | 'delivered' | 'read';
-  type?: 'text' | 'image' | 'audio';
+  type?: 'text' | 'image' | 'video' | 'audio';
+  mediaUrl?: string;
 }
 
 export interface ChatSession {
   id: string;
-  user: User;
+  user: User; // For DM, this is the other user. For Group, this is a placeholder or null
+  isGroup?: boolean;
+  groupName?: string;
+  groupAvatar?: string;
   lastMessage: string;
   unread: number;
   timestamp: string;

@@ -11,8 +11,9 @@ interface UserProfileProps {
   onUpdateUser?: (updatedUser: User) => void;
 }
 
-// --- Edit Profile Modal ---
-const EditProfileModal = ({ 
+// --- Advanced Settings Modal (formerly EditProfileModal) ---
+// Kept for settings not available inline (Channel, Chat, etc.)
+const SettingsModal = ({ 
     isOpen, 
     onClose, 
     currentUser, 
@@ -24,7 +25,7 @@ const EditProfileModal = ({
     onSave: (user: User) => void; 
 }) => {
     const [formData, setFormData] = useState<User>(currentUser);
-    const [activeTab, setActiveTab] = useState<'general' | 'social' | 'channel' | 'chat'>('general');
+    const [activeTab, setActiveTab] = useState<'channel' | 'chat'>('channel');
 
     useEffect(() => {
         setFormData(currentUser);
@@ -52,14 +53,14 @@ const EditProfileModal = ({
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up">
+            <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
                     <div className="flex items-center gap-2">
                          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
                              <CloseIcon className="w-5 h-5 text-gray-900 dark:text-white" />
                          </button>
-                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h2>
+                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Advanced Settings</h2>
                     </div>
                     <button 
                         onClick={handleSave} 
@@ -71,138 +72,12 @@ const EditProfileModal = ({
 
                 {/* Tabs */}
                 <div className="flex border-b border-gray-100 dark:border-gray-800 px-4">
-                    <TabButton id="general" label="General" />
-                    <TabButton id="social" label="Social" />
-                    <TabButton id="channel" label="Channel" />
-                    <TabButton id="chat" label="Chat Info" />
+                    <TabButton id="channel" label="Channel Settings" />
+                    <TabButton id="chat" label="Chat Appearance" />
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {activeTab === 'general' && (
-                        <div className="space-y-4 animate-fade-in">
-                            {/* Images */}
-                            <div className="relative h-32 bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden group">
-                                <img src={formData.coverImage} className="w-full h-full object-cover opacity-60" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <button className="bg-black/50 p-2 rounded-full text-white hover:bg-black/70">
-                                        <CameraIcon className="w-6 h-6" />
-                                    </button>
-                                </div>
-                                <div className="absolute -bottom-2 left-4">
-                                     <div className="relative w-24 h-24">
-                                         <img src={formData.avatar} className="w-full h-full rounded-full border-4 border-white dark:border-gray-900 object-cover" />
-                                         <button className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition text-white">
-                                             <CameraIcon className="w-6 h-6" />
-                                         </button>
-                                     </div>
-                                </div>
-                            </div>
-                            <div className="h-6"></div> {/* Spacer for avatar overlap */}
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Display Name</label>
-                                    <input 
-                                        type="text" 
-                                        value={formData.name} 
-                                        onChange={e => handleChange('name', e.target.value)}
-                                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Handle (@username)</label>
-                                    <input 
-                                        type="text" 
-                                        value={formData.handle} 
-                                        onChange={e => handleChange('handle', e.target.value)}
-                                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Bio</label>
-                                    <textarea 
-                                        value={formData.bio} 
-                                        onChange={e => handleChange('bio', e.target.value)}
-                                        rows={3}
-                                        className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white resize-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'social' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <p className="text-sm text-gray-500 mb-4">These details appear on your main social feed profile.</p>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Location</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.location || ''} 
-                                    onChange={e => handleChange('location', e.target.value)}
-                                    placeholder="City, Country"
-                                    className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Website</label>
-                                <input 
-                                    type="text" 
-                                    value={formData.website || ''} 
-                                    onChange={e => handleChange('website', e.target.value)}
-                                    placeholder="https://yourwebsite.com"
-                                    className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Email (Public)</label>
-                                <input 
-                                    type="email" 
-                                    value={formData.email || ''} 
-                                    onChange={e => handleChange('email', e.target.value)}
-                                    placeholder="contact@email.com"
-                                    className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                />
-                            </div>
-                            <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-3">Social Links</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <TwitterIcon className="w-6 h-6 text-gray-500" />
-                                        <input 
-                                            type="text" 
-                                            value={formData.twitter || ''} 
-                                            onChange={e => handleChange('twitter', e.target.value)}
-                                            placeholder="https://twitter.com/username"
-                                            className="flex-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <LinkedInIcon className="w-6 h-6 text-gray-500" />
-                                        <input 
-                                            type="text" 
-                                            value={formData.linkedin || ''} 
-                                            onChange={e => handleChange('linkedin', e.target.value)}
-                                            placeholder="https://linkedin.com/in/username"
-                                            className="flex-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <GitHubIcon className="w-6 h-6 text-gray-500" />
-                                        <input 
-                                            type="text" 
-                                            value={formData.github || ''} 
-                                            onChange={e => handleChange('github', e.target.value)}
-                                            placeholder="https://github.com/username"
-                                            className="flex-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {activeTab === 'channel' && (
                         <div className="space-y-4 animate-fade-in">
                              <p className="text-sm text-gray-500 mb-4">Settings for your long-form video Creator Channel.</p>
@@ -216,15 +91,14 @@ const EditProfileModal = ({
                                  </div>
                              </div>
                              <div>
-                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Channel Description</label>
-                                <textarea 
-                                    value={formData.bio} 
-                                    onChange={e => handleChange('bio', e.target.value)}
-                                    rows={4}
-                                    placeholder="Describe your channel content..."
-                                    className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white resize-none"
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Channel Email</label>
+                                <input 
+                                    type="email" 
+                                    value={formData.email || ''} 
+                                    onChange={e => handleChange('email', e.target.value)}
+                                    placeholder="contact@email.com"
+                                    className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">This uses your main bio by default but can be customized for video audiences.</p>
                             </div>
                         </div>
                     )}
@@ -252,15 +126,6 @@ const EditProfileModal = ({
                                     className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-transparent focus:border-blue-500 outline-none text-gray-900 dark:text-white"
                                 />
                             </div>
-                            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white">
-                                    <CheckIcon className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 dark:text-white">Active Status</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">You are currently shown as Online</p>
-                                </div>
-                            </div>
                         </div>
                     )}
                 </div>
@@ -269,27 +134,89 @@ const EditProfileModal = ({
     );
 };
 
+// --- Story Highlights Component ---
+const StoryHighlights = () => {
+    const highlights = [
+        { id: 1, title: 'Travel', img: 'https://picsum.photos/id/101/200/200' },
+        { id: 2, title: 'Food', img: 'https://picsum.photos/id/102/200/200' },
+        { id: 3, title: 'Work', img: 'https://picsum.photos/id/103/200/200' },
+        { id: 4, title: 'Pets', img: 'https://picsum.photos/id/104/200/200' },
+    ];
+
+    return (
+        <div className="flex gap-4 overflow-x-auto no-scrollbar py-4 px-1">
+            {highlights.map(h => (
+                <div key={h.id} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer opacity-90 hover:opacity-100 transition">
+                    <div className="w-16 h-16 rounded-full p-[2px] bg-gray-200 dark:bg-gray-700">
+                        <img src={h.img} className="w-full h-full rounded-full object-cover border-2 border-white dark:border-black" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-300">{h.title}</span>
+                </div>
+            ))}
+            <div className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
+                <div className="w-16 h-16 rounded-full border border-gray-300 dark:border-gray-700 flex items-center justify-center bg-gray-50 dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700">
+                    <PlusIcon className="w-6 h-6 text-gray-400" />
+                </div>
+                <span className="text-xs font-medium text-gray-400">New</span>
+            </div>
+        </div>
+    );
+};
+
 export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, posts, onBack, onUpdateUser }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  
+  // Inline Edit State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<User>(user);
+
+  useEffect(() => {
+      if (!isEditing) setEditData(user);
+  }, [user, isEditing]);
   
   // Filter content for this user
   const userPosts = posts.filter(p => p.author.id === user.id);
   const isOwnProfile = user.id === currentUser.id;
   
-  // Mock reels/tagged data as we only have global data in props usually
-  const mockReels = Array.from({ length: 6 }).map((_, i) => ({
+  const mockReels = Array.from({ length: 9 }).map((_, i) => ({
       id: `r${i}`,
-      thumbnail: `https://picsum.photos/id/${40 + i}/400/600`,
-      views: '12K'
+      thumbnail: `https://picsum.photos/id/${200 + i}/400/600`,
+      views: `${(Math.random() * 50).toFixed(1)}K`
   }));
+
+  const mockTagged = Array.from({ length: 4 }).map((_, i) => ({
+      id: `t${i}`,
+      thumbnail: `https://picsum.photos/id/${300 + i}/400/400`,
+  }));
+
+  const handleSaveProfile = () => {
+      if (onUpdateUser) onUpdateUser(editData);
+      setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+      setEditData(user);
+      setIsEditing(false);
+  };
+
+  const handleChange = (key: keyof User, value: any) => {
+      setEditData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleImageUpdate = (type: 'avatar' | 'cover') => {
+      const url = window.prompt(`Enter new ${type} image URL:`, type === 'avatar' ? editData.avatar : editData.coverImage);
+      if (url) {
+          handleChange(type === 'avatar' ? 'avatar' : 'coverImage', url);
+      }
+  };
 
   return (
     <div className="h-full bg-white dark:bg-black overflow-y-auto pb-20 transition-colors">
-      <EditProfileModal 
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+      <SettingsModal 
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
         currentUser={user}
         onSave={(updatedUser) => {
             if (onUpdateUser) onUpdateUser(updatedUser);
@@ -298,96 +225,249 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
 
       {/* Header */}
       <div className="relative">
-         <div className="h-40 md:h-60 w-full bg-gray-300 dark:bg-gray-800 overflow-hidden group">
-            {user.coverImage && <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />}
+         {/* Cover Image */}
+         <div className="h-40 md:h-60 w-full bg-gray-300 dark:bg-gray-800 overflow-hidden group relative">
+            <img src={isEditing ? editData.coverImage : user.coverImage} alt="Cover" className={`w-full h-full object-cover transition ${isEditing ? 'opacity-70 blur-[2px]' : ''}`} />
+            
+            {/* Back Button (Mobile) */}
             <button onClick={onBack} className="absolute top-4 left-4 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 md:hidden z-10">
                 <BackIcon className="w-6 h-6" />
             </button>
+
+            {/* Edit Cover Overlay */}
+            {isEditing && (
+                <button 
+                    onClick={() => handleImageUpdate('cover')}
+                    className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition group"
+                >
+                    <div className="bg-black/50 p-3 rounded-full text-white backdrop-blur-sm">
+                        <CameraIcon className="w-8 h-8" />
+                    </div>
+                </button>
+            )}
          </div>
          
          <div className="max-w-4xl mx-auto px-4 relative">
+            {/* Avatar */}
             <div className="absolute -top-16 left-4 md:left-0">
-                <div className="relative group">
-                    <img src={user.avatar} alt={user.name} className="w-32 h-32 rounded-full border-4 border-white dark:border-black object-cover bg-white dark:bg-gray-800" />
+                <div className="relative group w-32 h-32">
+                    <img 
+                        src={isEditing ? editData.avatar : user.avatar} 
+                        alt={user.name} 
+                        className={`w-full h-full rounded-full border-4 border-white dark:border-black object-cover bg-white dark:bg-gray-800 ${isEditing ? 'opacity-80' : ''}`} 
+                    />
+                    {isEditing && (
+                        <button 
+                            onClick={() => handleImageUpdate('avatar')}
+                            className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full text-white hover:bg-black/50 transition"
+                        >
+                            <CameraIcon className="w-8 h-8" />
+                        </button>
+                    )}
                 </div>
             </div>
             
+            {/* Profile Actions / Header */}
             <div className="pt-20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        {user.name}
-                        {user.verified && <span className="text-blue-500 text-lg">✔</span>}
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium">{user.handle}</p>
+                <div className="flex-1 w-full md:w-auto">
+                    {isEditing ? (
+                        <div className="space-y-2 max-w-md">
+                            <input 
+                                type="text"
+                                value={editData.name}
+                                onChange={(e) => handleChange('name', e.target.value)}
+                                className="w-full text-2xl font-bold bg-gray-50 dark:bg-gray-900 border-b-2 border-blue-500 outline-none text-gray-900 dark:text-white px-2 py-1 rounded"
+                                placeholder="Display Name"
+                            />
+                            <div className="flex items-center text-gray-500 dark:text-gray-400 font-medium bg-gray-50 dark:bg-gray-900 rounded px-2 py-1">
+                                <input 
+                                    type="text"
+                                    value={editData.handle}
+                                    onChange={(e) => handleChange('handle', e.target.value)}
+                                    className="bg-transparent outline-none flex-1 border-b border-dashed border-gray-400"
+                                    placeholder="@handle"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                {user.name}
+                                {user.verified && <span className="text-blue-500 text-lg">✔</span>}
+                            </h1>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">{user.handle}</p>
+                        </div>
+                    )}
                 </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full md:w-auto">
                    {isOwnProfile ? (
-                       <button 
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                       >
-                           Edit Profile
-                       </button>
+                       <>
+                           {isEditing ? (
+                               <>
+                                   <button 
+                                        onClick={handleCancelEdit}
+                                        className="flex-1 md:flex-none px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                                   >
+                                       Cancel
+                                   </button>
+                                   <button 
+                                        onClick={handleSaveProfile}
+                                        className="flex-1 md:flex-none px-6 py-2 bg-blue-600 rounded-lg font-semibold text-white hover:bg-blue-700 transition shadow-lg"
+                                   >
+                                       Save Changes
+                                   </button>
+                               </>
+                           ) : (
+                               <button 
+                                    onClick={() => setIsEditing(true)}
+                                    className="flex-1 md:flex-none px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                               >
+                                   Edit Profile
+                               </button>
+                           )}
+                           <button 
+                                onClick={() => setIsSettingsModalOpen(true)}
+                                className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                           >
+                               <SettingsIcon className="w-6 h-6" />
+                           </button>
+                       </>
                    ) : (
                        <>
                            <button 
                                 onClick={() => setIsFollowing(!isFollowing)}
-                                className={`px-6 py-2 rounded-lg font-semibold transition ${isFollowing ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'bg-black dark:bg-white text-white dark:text-black'}`}
+                                className={`flex-1 md:flex-none px-6 py-2 rounded-lg font-semibold transition ${isFollowing ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'bg-black dark:bg-white text-white dark:text-black'}`}
                            >
                                {isFollowing ? 'Following' : 'Follow'}
                            </button>
-                           <button className="px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                           <button className="flex-1 md:flex-none px-6 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                                Message
+                           </button>
+                           <button className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                               <SettingsIcon className="w-6 h-6" />
                            </button>
                        </>
                    )}
-                   <button className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                       <SettingsIcon className="w-6 h-6" />
-                   </button>
                 </div>
             </div>
             
             {/* Bio & Details */}
-            <div className="mt-4 max-w-2xl space-y-2">
-                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{user.bio}</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
-                    {user.location && (
-                        <span className="flex items-center gap-1">
-                            📍 {user.location}
-                        </span>
-                    )}
-                    {user.website && (
-                        <a href={user.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
-                            🔗 {user.website.replace('https://', '')}
-                        </a>
-                    )}
-                    {user.joinedDate && (
-                        <span className="flex items-center gap-1">
-                            📅 Joined {user.joinedDate}
-                        </span>
-                    )}
-                </div>
-                
-                {/* Social Links Display */}
-                {(user.twitter || user.linkedin || user.github) && (
-                    <div className="flex items-center gap-3 mt-3 pt-2">
-                        {user.twitter && (
-                            <a href={user.twitter} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-blue-400 transition" title="Twitter">
-                                <TwitterIcon className="w-5 h-5" />
-                            </a>
-                        )}
-                        {user.linkedin && (
-                            <a href={user.linkedin} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-blue-700 transition" title="LinkedIn">
-                                <LinkedInIcon className="w-5 h-5" />
-                            </a>
-                        )}
-                        {user.github && (
-                            <a href={user.github} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-black dark:hover:text-white transition" title="GitHub">
-                                <GitHubIcon className="w-5 h-5" />
-                            </a>
-                        )}
+            <div className="mt-6 max-w-2xl space-y-4">
+                {isEditing ? (
+                    <div className="space-y-4 animate-fade-in bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Bio</label>
+                            <textarea 
+                                value={editData.bio}
+                                onChange={(e) => handleChange('bio', e.target.value)}
+                                className="w-full bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white resize-none"
+                                rows={3}
+                                placeholder="Tell the world about yourself..."
+                            />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Location</label>
+                                <input 
+                                    type="text"
+                                    value={editData.location || ''}
+                                    onChange={(e) => handleChange('location', e.target.value)}
+                                    className="w-full bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                                    placeholder="City, Country"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Website</label>
+                                <input 
+                                    type="text"
+                                    value={editData.website || ''}
+                                    onChange={(e) => handleChange('website', e.target.value)}
+                                    className="w-full bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                                    placeholder="https://example.com"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-3 pt-2">
+                             <label className="text-xs font-bold text-gray-500 uppercase">Social Links</label>
+                             <div className="flex items-center gap-2">
+                                 <TwitterIcon className="w-5 h-5 text-gray-500" />
+                                 <input 
+                                    type="text"
+                                    value={editData.twitter || ''}
+                                    onChange={(e) => handleChange('twitter', e.target.value)}
+                                    className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                                    placeholder="Twitter URL"
+                                 />
+                             </div>
+                             <div className="flex items-center gap-2">
+                                 <LinkedInIcon className="w-5 h-5 text-gray-500" />
+                                 <input 
+                                    type="text"
+                                    value={editData.linkedin || ''}
+                                    onChange={(e) => handleChange('linkedin', e.target.value)}
+                                    className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                                    placeholder="LinkedIn URL"
+                                 />
+                             </div>
+                             <div className="flex items-center gap-2">
+                                 <GitHubIcon className="w-5 h-5 text-gray-500" />
+                                 <input 
+                                    type="text"
+                                    value={editData.github || ''}
+                                    onChange={(e) => handleChange('github', e.target.value)}
+                                    className="flex-1 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white text-sm"
+                                    placeholder="GitHub URL"
+                                 />
+                             </div>
+                        </div>
                     </div>
+                ) : (
+                    <>
+                        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{user.bio}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+                            {user.location && (
+                                <span className="flex items-center gap-1">
+                                    📍 {user.location}
+                                </span>
+                            )}
+                            {user.website && (
+                                <a href={user.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
+                                    🔗 {user.website.replace('https://', '')}
+                                </a>
+                            )}
+                            {user.joinedDate && (
+                                <span className="flex items-center gap-1">
+                                    📅 Joined {user.joinedDate}
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* Social Links Display */}
+                        {(user.twitter || user.linkedin || user.github) && (
+                            <div className="flex items-center gap-3 mt-3 pt-2">
+                                {user.twitter && (
+                                    <a href={user.twitter} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-blue-400 transition" title="Twitter">
+                                        <TwitterIcon className="w-5 h-5" />
+                                    </a>
+                                )}
+                                {user.linkedin && (
+                                    <a href={user.linkedin} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-blue-700 transition" title="LinkedIn">
+                                        <LinkedInIcon className="w-5 h-5" />
+                                    </a>
+                                )}
+                                {user.github && (
+                                    <a href={user.github} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-black dark:hover:text-white transition" title="GitHub">
+                                        <GitHubIcon className="w-5 h-5" />
+                                    </a>
+                                )}
+                            </div>
+                        )}
+                        
+                        <StoryHighlights />
+                    </>
                 )}
             </div>
             
@@ -462,7 +542,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                          {mockReels.map(reel => (
                              <div key={reel.id} className="aspect-[9/16] bg-gray-900 relative cursor-pointer group overflow-hidden">
                                  <img src={reel.thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
-                                 <div className="absolute bottom-2 left-2 text-white text-xs font-bold flex items-center gap-1">
+                                 <div className="absolute bottom-2 left-2 text-white text-xs font-bold flex items-center gap-1 drop-shadow-md">
                                      <PlayCircleIcon className="w-3 h-3" /> {reel.views}
                                  </div>
                              </div>
@@ -471,12 +551,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                 )}
 
                 {activeTab === 'tagged' && (
-                     <div className="py-20 text-center text-gray-400">
-                         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                             <TagIcon className="w-8 h-8 text-gray-300" />
-                         </div>
-                         <h3 className="font-bold text-lg text-gray-900 dark:text-white">Photos of You</h3>
-                         <p>When people tag you in photos, they'll appear here.</p>
+                     <div className="grid grid-cols-3 gap-1 md:gap-4">
+                         {mockTagged.map(tag => (
+                             <div key={tag.id} className="aspect-square bg-gray-100 dark:bg-gray-900 relative cursor-pointer group overflow-hidden">
+                                 <img src={tag.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                                 <div className="absolute top-2 right-2">
+                                     <TagIcon className="w-4 h-4 text-white drop-shadow-md" />
+                                 </div>
+                             </div>
+                         ))}
                      </div>
                 )}
             </div>

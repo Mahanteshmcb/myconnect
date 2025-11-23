@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Comment, User } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, VolumeUpIcon, VolumeOffIcon, PlayCircleIcon, CloseIcon, SendIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, VolumeUpIcon, VolumeOffIcon, PlayCircleIcon, CloseIcon, SendIcon, PlusIcon, CameraIcon } from './Icons';
 import { CURRENT_USER } from '../services/mockData';
 
 interface VideoReelsProps {
@@ -9,6 +9,7 @@ interface VideoReelsProps {
   isMuted: boolean;
   toggleMute: () => void;
   onViewProfile: (user: User) => void;
+  onCreateReel: () => void;
 }
 
 interface ReelItemProps {
@@ -18,6 +19,169 @@ interface ReelItemProps {
   toggleMute: () => void;
   onViewProfile: (user: User) => void;
 }
+
+// --- Create Reel Interface ---
+export const CreateReel = ({ onBack, onPost, currentUser }: { onBack: () => void, onPost: (video: Video) => void, currentUser: User }) => {
+    const [caption, setCaption] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [activeFilter, setActiveFilter] = useState('none');
+
+    const FILTERS = [
+        { name: 'Normal', value: 'none', color: 'bg-gray-500' },
+        { name: 'B&W', value: 'grayscale(100%)', color: 'bg-gray-800' },
+        { name: 'Sepia', value: 'sepia(0.8)', color: 'bg-yellow-700' },
+        { name: 'Vivid', value: 'saturate(2)', color: 'bg-red-500' },
+        { name: 'Cool', value: 'hue-rotate(180deg)', color: 'bg-blue-400' },
+        { name: 'Warm', value: 'sepia(0.4) saturate(1.5)', color: 'bg-orange-400' },
+        { name: 'Invert', value: 'invert(1)', color: 'bg-white' },
+        { name: 'Vintage', value: 'contrast(1.2) brightness(0.9)', color: 'bg-purple-800' },
+    ];
+
+    const handleFileSelect = () => {
+        // Simulate file selection
+        const mockVideo = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4';
+        setPreviewUrl(mockVideo);
+        setActiveFilter('none');
+    };
+
+    const handlePost = () => {
+        if (!previewUrl) return;
+        
+        const newVideo: Video = {
+            id: `v_${Date.now()}`,
+            url: previewUrl,
+            thumbnail: 'https://picsum.photos/400/700', // Mock thumbnail
+            likes: '0',
+            comments: '0',
+            author: currentUser,
+            description: caption || 'New Reel ✨',
+            filter: activeFilter
+        };
+        onPost(newVideo);
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col animate-fade-in" role="dialog" aria-label="Create New Reel">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 z-10 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0">
+                <button onClick={onBack} className="p-2 rounded-full bg-black/40 text-white backdrop-blur-md" aria-label="Close creator">
+                    <CloseIcon className="w-6 h-6" />
+                </button>
+                <h2 className="text-white font-bold text-lg drop-shadow-md">New Reel</h2>
+                <div className="w-10"></div> {/* Spacer */}
+            </div>
+
+            {/* Preview / Camera Area */}
+            <div className="flex-1 relative bg-gray-900 flex items-center justify-center overflow-hidden">
+                {previewUrl ? (
+                    <video 
+                        src={previewUrl} 
+                        className="w-full h-full object-cover" 
+                        style={{ filter: activeFilter }}
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                    />
+                ) : (
+                    <div className="flex flex-col items-center gap-4 text-gray-500">
+                        <CameraIcon className="w-20 h-20 opacity-50" />
+                        <p>Camera Preview</p>
+                    </div>
+                )}
+
+                {/* Camera Controls Overlay (Mock) */}
+                {!previewUrl && (
+                    <div className="absolute right-4 top-20 flex flex-col gap-6 text-white">
+                         <button className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition" aria-label="Toggle Flash">
+                             <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">⚡️</div>
+                             <span className="text-[10px]">Flash</span>
+                         </button>
+                         <button className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition" aria-label="Change Recording Speed">
+                             <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">1x</div>
+                             <span className="text-[10px]">Speed</span>
+                         </button>
+                         <button className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition" aria-label="Set Timer">
+                             <div className="w-8 h-8 rounded-full border border-white flex items-center justify-center">⏱</div>
+                             <span className="text-[10px]">Timer</span>
+                         </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Controls */}
+            <div className="bg-black pb-safe relative z-20">
+                {previewUrl ? (
+                    <div className="space-y-4 pt-4">
+                        {/* Filters Carousel */}
+                        <div className="px-4">
+                            <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Filters</h3>
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2" role="radiogroup" aria-label="Video Filters">
+                                {FILTERS.map((f) => (
+                                    <button 
+                                        key={f.name}
+                                        onClick={() => setActiveFilter(f.value)}
+                                        className={`flex flex-col items-center gap-1 min-w-[60px] group transition-transform active:scale-95`}
+                                        aria-label={`Apply ${f.name} filter`}
+                                        aria-pressed={activeFilter === f.value}
+                                        role="radio"
+                                        aria-checked={activeFilter === f.value}
+                                    >
+                                        <div className={`w-14 h-14 rounded-full border-2 overflow-hidden ${activeFilter === f.value ? 'border-white ring-2 ring-blue-500' : 'border-gray-600'}`}>
+                                            <div 
+                                                className={`w-full h-full ${f.color}`}
+                                                style={ f.name === 'Normal' ? {} : { filter: f.value }}
+                                            ></div>
+                                        </div>
+                                        <span className={`text-[10px] font-medium ${activeFilter === f.value ? 'text-white' : 'text-gray-500'}`}>{f.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-gray-900 rounded-t-2xl space-y-4">
+                            <div className="flex gap-3">
+                                <img src={currentUser.avatar} className="w-10 h-10 rounded-full border border-gray-700" alt="" />
+                                <input 
+                                    type="text" 
+                                    value={caption}
+                                    onChange={(e) => setCaption(e.target.value)}
+                                    placeholder="Write a caption..." 
+                                    className="flex-1 bg-gray-800 rounded-xl px-4 text-white outline-none focus:ring-1 ring-blue-500"
+                                    aria-label="Video Caption"
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setPreviewUrl(null)} className="flex-1 py-3 bg-gray-800 text-white font-bold rounded-xl hover:bg-gray-700 transition" aria-label="Discard and retake video">Retake</button>
+                                <button onClick={handlePost} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition" aria-label="Post Reel">Post Reel</button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-between items-center px-8 py-6">
+                        <button onClick={handleFileSelect} className="w-10 h-10 rounded-lg border-2 border-white/30 overflow-hidden" aria-label="Select video from gallery">
+                            <img src="https://picsum.photos/id/10/100/100" className="w-full h-full object-cover opacity-60" alt="Gallery preview" />
+                        </button>
+                        
+                        <button 
+                            className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 scale-110' : 'bg-transparent'}`}
+                            onClick={() => setIsRecording(!isRecording)}
+                            aria-label={isRecording ? "Stop Recording" : "Start Recording"}
+                        >
+                            <div className={`w-16 h-16 bg-red-500 rounded-full ${isRecording ? 'animate-pulse' : ''}`}></div>
+                        </button>
+
+                        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 text-white" aria-label="Switch Camera">
+                            <CameraIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 // --- Comment Sheet Component ---
 const CommentSheet = ({ 
@@ -82,7 +246,7 @@ const CommentSheet = ({
                                 <button className="text-gray-400 hover:text-red-500 transition">
                                     <HeartIcon className="w-4 h-4" />
                                 </button>
-                                <span className="text-[10px] text-gray-400">12</span>
+                                <span className="text-xs text-gray-400">12</span>
                             </div>
                         </div>
                     ))}
@@ -123,14 +287,53 @@ const CommentSheet = ({
     );
 };
 
+// --- Share Sheet Component ---
+const ShareSheet = ({ isOpen, onClose, video }: { isOpen: boolean, onClose: () => void, video: Video }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full md:w-[450px] md:mx-auto rounded-t-2xl p-4 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-4"></div>
+                <h3 className="font-bold text-center mb-4 dark:text-white">Share to</h3>
+                
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+                    {['Direct', 'WhatsApp', 'Facebook', 'Messenger', 'Twitter', 'Email'].map(app => (
+                        <div key={app} className="flex flex-col items-center gap-2 min-w-[70px]">
+                            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl">
+                                📱
+                            </div>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{app}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex gap-4 mt-2 overflow-x-auto no-scrollbar pb-2">
+                    {['Copy Link', 'Save Video', 'Duet', 'Stitch'].map(action => (
+                         <div key={action} className="flex flex-col items-center gap-2 min-w-[70px]">
+                            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-white">
+                                <ShareIcon className="w-5 h-5" />
+                            </div>
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{action}</span>
+                         </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMute, onViewProfile }) => {
   const [liked, setLiked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(isActive);
   const [progress, setProgress] = useState(0);
   const [showHeartOverlay, setShowHeartOverlay] = useState(false);
   
-  // Comment State
+  // Interaction Sheets
   const [showComments, setShowComments] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [showAudioInfo, setShowAudioInfo] = useState(false);
+  
   const [comments, setComments] = useState<Comment[]>([
       { id: '1', author: { ...video.author, name: 'Jessica Miller', avatar: 'https://picsum.photos/id/10/100/100' }, text: 'This view is absolutely breathtaking! 😍 Where exactly is this?', timestamp: '2h' },
       { id: '2', author: { ...video.author, name: 'David Chen', avatar: 'https://picsum.photos/id/12/100/100' }, text: 'I need to go here next summer. Adding to my bucket list.', timestamp: '45m' },
@@ -210,6 +413,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
             src={video.url}
             poster={video.thumbnail}
             className="w-full h-full object-cover"
+            style={{ filter: video.filter || 'none' }}
             loop
             playsInline
             muted={isMuted}
@@ -217,7 +421,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
           />
           
           {/* Pause Indicator */}
-          {!isPlaying && !showComments && (
+          {!isPlaying && !showComments && !showShare && !showAudioInfo && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/10 pointer-events-none">
                   <PlayCircleIcon className="w-16 h-16 text-white/50 animate-pulse" />
               </div>
@@ -236,7 +440,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
           </div>
       
           {/* Overlay UI */}
-          <div className={`absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none transition-opacity duration-300 ${showComments ? 'opacity-0' : 'opacity-100'}`}>
+          <div className={`absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none transition-opacity duration-300 ${showComments || showShare ? 'opacity-0' : 'opacity-100'}`}>
             <div className="absolute bottom-4 left-0 right-0 p-4 pb-12 md:pb-4 flex items-end justify-between pointer-events-auto">
                 
                 {/* Left Side: Info */}
@@ -247,7 +451,10 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                         <button className="border border-white/50 bg-transparent text-xs px-3 py-1 rounded-lg font-semibold backdrop-blur-md hover:bg-white/20 transition">Follow</button>
                     </div>
                     <p className="text-sm mb-2 line-clamp-2 leading-snug text-shadow-sm">{video.description}</p>
-                    <div className="flex items-center gap-2 text-xs opacity-90">
+                    <div 
+                        className="flex items-center gap-2 text-xs opacity-90 cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); setShowAudioInfo(true); }}
+                    >
                         <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
                            <span>♫</span>
                            <div className="w-24 overflow-hidden whitespace-nowrap">
@@ -277,14 +484,20 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                     </div>
 
                     <div className="flex flex-col items-center gap-1">
-                         <button className="p-2 transition active:scale-90">
+                         <button 
+                            onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
+                            className="p-2 transition active:scale-90"
+                         >
                              <ShareIcon className="w-8 h-8 text-white drop-shadow-lg" />
                          </button>
                          <span className="text-white text-xs font-bold drop-shadow-md">Share</span>
                     </div>
 
-                    <div className="w-10 h-10 bg-gray-800/80 rounded-full flex items-center justify-center border border-white/20 mt-2 animate-spin-slow">
-                        <img onClick={() => onViewProfile(video.author)} src={video.author.avatar} className="w-6 h-6 rounded-full cursor-pointer" />
+                    <div 
+                        className="w-10 h-10 bg-gray-800/80 rounded-full flex items-center justify-center border border-white/20 mt-2 animate-spin-slow cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); setShowAudioInfo(true); }}
+                    >
+                        <img src={video.author.avatar} className="w-6 h-6 rounded-full" />
                     </div>
                 </div>
             </div>
@@ -293,7 +506,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
           {/* Mute Toggle */}
           <button 
             onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-            className={`absolute top-20 right-4 bg-black/20 backdrop-blur-md p-2 rounded-full text-white z-20 hover:bg-black/40 transition ${showComments ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            className={`absolute top-20 right-4 bg-black/20 backdrop-blur-md p-2 rounded-full text-white z-20 hover:bg-black/40 transition ${showComments || showShare ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
               {isMuted ? <VolumeOffIcon className="w-5 h-5" /> : <VolumeUpIcon className="w-5 h-5" />}
           </button>
@@ -306,12 +519,38 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
             onAddComment={handleAddComment}
             onViewProfile={onViewProfile}
           />
+
+          {/* Share Sheet */}
+          <ShareSheet 
+            isOpen={showShare}
+            onClose={() => setShowShare(false)}
+            video={video}
+          />
+
+          {/* Audio Info Sheet */}
+          {showAudioInfo && (
+              <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowAudioInfo(false)}>
+                  <div className="bg-white dark:bg-gray-900 w-full p-6 rounded-t-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
+                      <div className="flex gap-4">
+                          <div className="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                              <span className="text-2xl">♫</span>
+                          </div>
+                          <div>
+                              <h3 className="font-bold text-lg dark:text-white">Original Sound</h3>
+                              <p className="text-gray-500">{video.author.name}</p>
+                              <p className="text-xs text-gray-400 mt-2">10.5K videos made with this sound</p>
+                          </div>
+                      </div>
+                      <button className="w-full mt-6 bg-red-500 text-white py-3 rounded-xl font-bold">Use this sound</button>
+                  </div>
+              </div>
+          )}
       </div>
     </div>
   );
 };
 
-export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile }) => {
+export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile, onCreateReel }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -323,21 +562,32 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleM
   };
 
   return (
-    <div 
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="h-full w-full bg-black overflow-y-scroll snap-y snap-mandatory no-scrollbar"
-    >
-      {videos.map((video, index) => (
-        <ReelItem 
-          key={video.id} 
-          video={video} 
-          isActive={index === activeIndex} 
-          isMuted={isMuted}
-          toggleMute={toggleMute}
-          onViewProfile={onViewProfile}
-        />
-      ))}
+    <div className="relative h-full w-full">
+        {/* Creation Floating Action Button */}
+        <button 
+            onClick={onCreateReel}
+            className="absolute top-20 md:top-6 left-4 z-30 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 p-3 rounded-full text-white shadow-lg hover:scale-110 transition active:scale-95"
+            aria-label="Create Reel"
+        >
+            <PlusIcon className="w-6 h-6" />
+        </button>
+
+        <div 
+            ref={containerRef}
+            onScroll={handleScroll}
+            className="h-full w-full bg-black overflow-y-scroll snap-y snap-mandatory no-scrollbar"
+        >
+        {videos.map((video, index) => (
+            <ReelItem 
+            key={video.id} 
+            video={video} 
+            isActive={index === activeIndex} 
+            isMuted={isMuted}
+            toggleMute={toggleMute}
+            onViewProfile={onViewProfile}
+            />
+        ))}
+        </div>
     </div>
   );
 };

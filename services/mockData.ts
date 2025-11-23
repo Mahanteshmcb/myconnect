@@ -1,5 +1,14 @@
 
-import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem } from '../types';
+import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community } from '../types';
+
+export const MOCK_USERS: Record<string, User> = {
+  'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true },
+  'u2': { id: 'u2', name: 'David Chen', handle: '@dchen_tech', avatar: 'https://picsum.photos/id/91/100/100', verified: true, subscribers: '850K', isOnline: false },
+  'u3': { id: 'u3', name: 'MyConnect AI', handle: '@ai_assistant', avatar: 'https://picsum.photos/id/2/100/100', verified: true, isOnline: true },
+  'u4': { id: 'u4', name: 'Emma Wilson', handle: '@emma_art', avatar: 'https://picsum.photos/id/129/100/100', subscribers: '45K', isOnline: true },
+  'u5': { id: 'u5', name: 'TechDaily', handle: '@techdaily', avatar: 'https://picsum.photos/id/201/100/100', verified: true, subscribers: '2.1M', isOnline: false },
+  'u6': { id: 'u6', name: 'Cooking w/ James', handle: '@chefjames', avatar: 'https://picsum.photos/id/292/100/100', subscribers: '500K', isOnline: true },
+};
 
 export const CURRENT_USER: User = {
   id: 'me',
@@ -11,6 +20,7 @@ export const CURRENT_USER: User = {
   bio: 'Digital creator | Tech enthusiast | Coffee lover ☕️\nBuilding the future one pixel at a time.',
   coverImage: 'https://picsum.photos/id/29/1200/400',
   following: '450',
+  followingIds: ['u1', 'u2', 'u5'], // Following Sarah, David, TechDaily
   postsCount: 84,
   isOnline: true,
   website: 'https://alexrivera.dev',
@@ -24,14 +34,12 @@ export const CURRENT_USER: User = {
   linkedin: 'https://linkedin.com/in/alexrivera'
 };
 
-export const MOCK_USERS: Record<string, User> = {
-  'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true },
-  'u2': { id: 'u2', name: 'David Chen', handle: '@dchen_tech', avatar: 'https://picsum.photos/id/91/100/100', verified: true, subscribers: '850K', isOnline: false },
-  'u3': { id: 'u3', name: 'MyConnect AI', handle: '@ai_assistant', avatar: 'https://picsum.photos/id/2/100/100', verified: true, isOnline: true },
-  'u4': { id: 'u4', name: 'Emma Wilson', handle: '@emma_art', avatar: 'https://picsum.photos/id/129/100/100', subscribers: '45K', isOnline: true },
-  'u5': { id: 'u5', name: 'TechDaily', handle: '@techdaily', avatar: 'https://picsum.photos/id/201/100/100', verified: true, subscribers: '2.1M', isOnline: false },
-  'u6': { id: 'u6', name: 'Cooking w/ James', handle: '@chefjames', avatar: 'https://picsum.photos/id/292/100/100', subscribers: '500K', isOnline: true },
-};
+export const MOCK_COMMUNITIES: Community[] = [
+  { id: 'g1', name: 'React Developers', members: 15400, avatar: 'https://picsum.photos/id/0/200/200', description: 'Everything React.js, Next.js and more.', isJoined: true },
+  { id: 'g2', name: 'Digital Art Hub', members: 8200, avatar: 'https://picsum.photos/id/106/200/200', description: 'Share your art and get feedback.', isJoined: false },
+  { id: 'g3', name: 'Startup Founders', members: 5300, avatar: 'https://picsum.photos/id/20/200/200', description: 'Advice and networking for founders.', isJoined: true },
+  { id: 'g4', name: 'Photography Lovers', members: 22000, avatar: 'https://picsum.photos/id/250/200/200', description: 'Shots from around the world.', isJoined: false },
+];
 
 export const FEED_POSTS: Post[] = [
   {
@@ -47,7 +55,8 @@ export const FEED_POSTS: Post[] = [
     ],
     shares: 12,
     timestamp: '2h ago',
-    type: 'image'
+    type: 'image',
+    communityId: 'g1'
   },
   {
     id: 'p2',
@@ -72,7 +81,42 @@ export const FEED_POSTS: Post[] = [
     commentsList: [],
     shares: 145,
     timestamp: '6h ago',
-    type: 'image'
+    type: 'image',
+    communityId: 'g2'
+  },
+  {
+    id: 'p4',
+    author: MOCK_USERS['u5'],
+    content: 'Breaking: New AI model released today promises to revolutionize coding workflows. Read our full analysis below. 🤖⚡️',
+    likes: 5400,
+    comments: 320,
+    commentsList: [],
+    shares: 1200,
+    timestamp: '1h ago',
+    type: 'text'
+  },
+  {
+    id: 'p5',
+    author: MOCK_USERS['u6'],
+    content: 'Fresh homemade pasta! Who wants the recipe? 🍝',
+    image: 'https://picsum.photos/id/493/800/600',
+    likes: 850,
+    comments: 150,
+    commentsList: [],
+    shares: 45,
+    timestamp: '30m ago',
+    type: 'image',
+    communityId: 'g3' // Mistake in mock data context but good for filtering test
+  },
+  {
+    id: 'p6',
+    author: MOCK_USERS['u3'], // AI Assistant
+    content: 'Tip of the day: You can now summarize long threads using the new AI features in MyConnect! Just mention me. ✨',
+    likes: 12000,
+    comments: 50,
+    shares: 300,
+    timestamp: '5h ago',
+    type: 'text'
   }
 ];
 
@@ -229,7 +273,7 @@ export const INITIAL_CHATS: ChatSession[] = [
     unread: 1,
     timestamp: 'Now',
     messages: [
-      { id: 'm1', senderId: 'u3', text: 'Hello Alex! I am your personal MyConnect AI Assistant. How can I help you today?', timestamp: new Date(), isAi: true, status: 'read' }
+      { id: 'm1', senderId: 'u3', text: 'Hello Alex! I am your personal MyConnect AI Assistant. How can I help you today?', timestamp: new Date(), isAi: true, status: 'read', type: 'text' }
     ]
   },
   {
@@ -239,8 +283,8 @@ export const INITIAL_CHATS: ChatSession[] = [
     unread: 0,
     timestamp: '10m',
     messages: [
-      { id: 'm2', senderId: 'me', text: 'Hey, are we still on for coffee?', timestamp: new Date(Date.now() - 1000 * 60 * 60), status: 'read' },
-      { id: 'm3', senderId: 'u1', text: 'Yes! See you at 5!', timestamp: new Date(Date.now() - 1000 * 60 * 10), status: 'delivered' }
+      { id: 'm2', senderId: 'me', text: 'Hey, are we still on for coffee?', timestamp: new Date(Date.now() - 1000 * 60 * 60), status: 'read', type: 'text' },
+      { id: 'm3', senderId: 'u1', text: 'Yes! See you at 5!', timestamp: new Date(Date.now() - 1000 * 60 * 10), status: 'delivered', type: 'text' }
     ]
   },
   {
@@ -250,8 +294,21 @@ export const INITIAL_CHATS: ChatSession[] = [
     unread: 2,
     timestamp: '1h',
     messages: [
-      { id: 'm4', senderId: 'u2', text: 'Check out the new design mockups.', timestamp: new Date(Date.now() - 1000 * 60 * 120), status: 'read' },
-      { id: 'm5', senderId: 'u2', text: 'What do you think?', timestamp: new Date(Date.now() - 1000 * 60 * 60), status: 'read' }
+      { id: 'm4', senderId: 'u2', text: 'Check out the new design mockups.', timestamp: new Date(Date.now() - 1000 * 60 * 120), status: 'read', type: 'text' },
+      { id: 'm5', senderId: 'u2', text: 'What do you think?', timestamp: new Date(Date.now() - 1000 * 60 * 60), status: 'read', type: 'text' }
+    ]
+  },
+  {
+    id: 'g_chat_1',
+    user: { ...CURRENT_USER, id: 'group_placeholder' }, // Placeholder for group logic
+    isGroup: true,
+    groupName: 'Weekend Hikers',
+    groupAvatar: 'https://picsum.photos/id/10/200/200',
+    lastMessage: 'Sarah: Rain check?',
+    unread: 5,
+    timestamp: '2h',
+    messages: [
+      { id: 'gm1', senderId: 'u1', text: 'Rain check?', timestamp: new Date(Date.now() - 1000 * 60 * 120), status: 'read', type: 'text' }
     ]
   }
 ];

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification } from './types';
 import { SocialFeed } from './components/SocialFeed';
-import { VideoReels } from './components/VideoReels';
+import { VideoReels, CreateReel } from './components/VideoReels';
 import { ChatApp } from './components/ChatApp';
 import { LongFormVideoApp } from './components/LongFormVideo';
 import { UserProfile } from './components/UserProfile';
@@ -124,7 +124,7 @@ export default function App() {
   };
 
   // --- Feed Actions ---
-  const handleCreatePost = (content: string) => {
+  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video') => {
     const newPost: Post = {
       id: `new_p_${Date.now()}`,
       author: currentUser,
@@ -134,9 +134,16 @@ export default function App() {
       commentsList: [],
       shares: 0,
       timestamp: 'Just now',
-      type: 'text'
+      type: type || 'text',
+      image: media
     };
     setPosts([newPost, ...posts]);
+  };
+
+  // --- Reel Actions ---
+  const handlePostReel = (video: Video) => {
+      setReels([video, ...reels]);
+      setActiveTab(ViewMode.WATCH);
   };
 
   // --- Chat Actions ---
@@ -209,6 +216,7 @@ export default function App() {
                 currentUser={currentUser} 
                 onPostCreate={handleCreatePost} 
                 onViewProfile={handleViewProfile}
+                onUpdateUser={handleUpdateUser}
             />
         );
       case ViewMode.WATCH:
@@ -218,8 +226,17 @@ export default function App() {
             isMuted={isReelsMuted} 
             toggleMute={() => setIsReelsMuted(!isReelsMuted)} 
             onViewProfile={handleViewProfile}
+            onCreateReel={() => setActiveTab(ViewMode.CREATE_REEL)}
           />
         );
+      case ViewMode.CREATE_REEL:
+          return (
+              <CreateReel 
+                onBack={() => setActiveTab(ViewMode.WATCH)} 
+                onPost={handlePostReel}
+                currentUser={currentUser}
+              />
+          );
       case ViewMode.CHAT:
         return (
           <ChatApp 
@@ -254,7 +271,7 @@ export default function App() {
       case ViewMode.EXPLORE:
         return <Explore items={EXPLORE_ITEMS} />;
       default:
-        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onViewProfile={handleViewProfile} />;
+        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
     }
   };
 
@@ -287,7 +304,7 @@ export default function App() {
           <button onClick={() => setActiveTab(ViewMode.CREATOR)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.CREATOR ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
             <YouTubeLogo className="w-8 h-8" />
           </button>
-          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.WATCH ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
             <VideoIcon className="w-6 h-6" />
           </button>
           <button onClick={() => setActiveTab(ViewMode.EXPLORE)} className={`p-2 rounded-lg transition ${activeTab === ViewMode.EXPLORE ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
@@ -315,12 +332,12 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className={`flex-1 overflow-hidden ${activeTab === ViewMode.WATCH ? 'bg-black' : ''}`}>
+      <main className={`flex-1 overflow-hidden ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'bg-black' : ''}`}>
         {renderContent()}
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className={`md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 h-16 flex justify-around items-center z-50 pb-safe fixed bottom-0 w-full transition-colors ${activeTab === ViewMode.WATCH ? 'bg-black/90 border-gray-800 backdrop-blur-sm text-white' : ''}`}>
+      <nav className={`md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 h-16 flex justify-around items-center z-50 pb-safe fixed bottom-0 w-full transition-colors ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'bg-black/90 border-gray-800 backdrop-blur-sm text-white' : ''}`}>
           <button onClick={() => setActiveTab(ViewMode.FEED)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.FEED ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
             <HomeIcon className="w-6 h-6" />
             <span className="text-[10px] font-medium">Home</span>
@@ -329,7 +346,7 @@ export default function App() {
             <YouTubeLogo className="w-6 h-6" />
             <span className="text-[10px] font-medium">Video</span>
           </button>
-          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.WATCH ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+          <button onClick={() => setActiveTab(ViewMode.WATCH)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`}>
             <VideoIcon className="w-6 h-6" />
             <span className="text-[10px] font-medium">Reels</span>
           </button>

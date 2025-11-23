@@ -46,6 +46,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [comments, setComments] = useState<{user: string, text: string, time: string}[]>([]);
 
   const filteredVideos = videos.filter(v => {
@@ -66,6 +67,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
     setIsSubscribed(false); // Reset state for new video simulation
     setIsLiked(false);
     setIsDisliked(false);
+    setDescriptionExpanded(false);
     setComments([
         { user: "TechFan99", text: "Great content as always!", time: "2 hours ago" },
         { user: "Sarah J.", text: "Can you do a tutorial on the advanced features?", time: "5 hours ago" }
@@ -200,12 +202,23 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
                         </div>
                     </div>
 
-                    <div className="mt-4 bg-gray-100 dark:bg-[#272727] p-3 rounded-xl text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-[#3f3f3f] transition">
+                    <div 
+                        className={`mt-4 bg-gray-100 dark:bg-[#272727] p-3 rounded-xl text-sm transition-all cursor-pointer hover:bg-gray-200 dark:hover:bg-[#3f3f3f] ${descriptionExpanded ? '' : 'h-24 overflow-hidden relative'}`}
+                        onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                    >
                         <div className="font-bold text-gray-900 dark:text-white mb-1">
                             {selectedVideo.views} views • {selectedVideo.uploadedAt}
                         </div>
-                        <p className="text-gray-800 dark:text-white whitespace-pre-wrap line-clamp-3">{selectedVideo.description}</p>
-                        <span className="font-bold text-gray-600 dark:text-gray-400 mt-1 block">Show more</span>
+                        <p className="text-gray-800 dark:text-white whitespace-pre-wrap">{selectedVideo.description}</p>
+                        <p className="text-gray-800 dark:text-white mt-4">
+                            Connect with us:<br/>
+                            Twitter: @streamhub<br/>
+                            Instagram: @streamhub_official<br/>
+                            Discord: invite.gg/streamhub
+                        </p>
+                        <span className="font-bold text-gray-600 dark:text-gray-400 mt-2 block">
+                            {descriptionExpanded ? 'Show less' : 'Show more'}
+                        </span>
                     </div>
 
                     {/* Comment Section */}
@@ -229,26 +242,26 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {comments.map((c, i) => (
-                                <div key={i} className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                                <div key={i} className="flex gap-4 group">
+                                    <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                         {c.user[0]}
                                     </div>
                                     <div>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="font-bold text-sm text-gray-900 dark:text-white">{c.user}</span>
+                                            <span className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{c.user}</span>
                                             <span className="text-xs text-gray-500">{c.time}</span>
                                         </div>
                                         <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{c.text}</p>
                                         <div className="flex items-center gap-4 mt-2">
                                             <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
-                                                <ThumbsUpIcon className="w-3 h-3" />
+                                                <ThumbsUpIcon className="w-3.5 h-3.5" />
                                             </button>
                                             <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
-                                                <ThumbsDownIcon className="w-3 h-3" />
+                                                <ThumbsDownIcon className="w-3.5 h-3.5" />
                                             </button>
-                                            <span className="text-xs font-bold text-gray-500 cursor-pointer hover:text-gray-700">Reply</span>
+                                            <span className="text-xs font-bold text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">Reply</span>
                                         </div>
                                     </div>
                                 </div>
@@ -260,6 +273,13 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
 
             {/* Right Column: Recommendations */}
             <div className="w-full lg:w-[400px] px-4 lg:px-0 flex flex-col gap-3 pb-20">
+                <div className="flex gap-2 mb-2 overflow-x-auto no-scrollbar">
+                    {['All', 'From this channel', 'Related'].map(tag => (
+                        <button key={tag} className="px-3 py-1.5 bg-gray-100 dark:bg-[#272727] rounded-lg text-sm font-medium whitespace-nowrap hover:bg-gray-200 dark:hover:bg-[#3f3f3f] text-gray-900 dark:text-white">
+                            {tag}
+                        </button>
+                    ))}
+                </div>
                 {relatedVideos.map(video => (
                     <div key={video.id} onClick={() => handleVideoClick(video)} className="flex gap-2 cursor-pointer group">
                         <div className="w-40 h-24 relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-[#272727]">
@@ -267,8 +287,8 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
                             <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs font-bold px-1 rounded">{video.duration}</span>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2">{video.title}</h4>
-                            <p className="text-xs text-gray-600 dark:text-[#aaa]">{video.author.name}</p>
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight">{video.title}</h4>
+                            <p className="text-xs text-gray-600 dark:text-[#aaa] hover:text-gray-900 dark:hover:text-white">{video.author.name}</p>
                             <p className="text-xs text-gray-600 dark:text-[#aaa]">{video.views} views • {video.uploadedAt}</p>
                         </div>
                     </div>

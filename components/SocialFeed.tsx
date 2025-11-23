@@ -1,22 +1,85 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Post, User, Comment } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, SendIcon, CloseIcon, TrashIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon } from './Icons';
-import { TRENDING_TOPICS, SUGGESTED_USERS } from '../services/mockData';
+import { Post, User, Comment, Community } from '../types';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, SendIcon, CloseIcon, TrashIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, PlayCircleIcon, UsersIcon } from './Icons';
+import { TRENDING_TOPICS, SUGGESTED_USERS, MOCK_COMMUNITIES } from '../services/mockData';
 
 interface SocialFeedProps {
   posts: Post[];
   currentUser: User;
-  onPostCreate: (content: string) => void;
+  onPostCreate: (content: string, media?: string, type?: 'image' | 'video') => void;
   onViewProfile: (user?: User) => void;
+  onUpdateUser?: (user: User) => void; // Added prop for follow updates
 }
 
+// --- Skeleton Loader Component ---
+const SkeletonPost = () => (
+    <div className="bg-white dark:bg-gray-900 p-4 border-b border-gray-100 dark:border-gray-800 animate-pulse">
+        <div className="flex gap-3">
+            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+            <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4"></div>
+                <div className="h-40 bg-gray-200 dark:bg-gray-800 rounded-xl mt-2"></div>
+            </div>
+        </div>
+        <div className="flex justify-between mt-4 px-2">
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded-full"></div>
+        </div>
+    </div>
+);
+
+// --- User Hover Card ---
+const UserHoverCard = ({ user, children, onViewProfile }: { user: User, children?: React.ReactNode, onViewProfile: (user: User) => void }) => {
+    return (
+        <div className="relative group inline-block">
+            <div onClick={(e) => { e.stopPropagation(); onViewProfile(user); }}>
+                {children}
+            </div>
+            {/* Hover Card Popup */}
+            <div className="absolute top-full left-0 z-50 pt-2 hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity delay-300 duration-200 pointer-events-none group-hover:pointer-events-auto">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 w-72 p-4 overflow-hidden">
+                    <div className="flex justify-between items-start mb-3">
+                        <img src={user.avatar} className="w-14 h-14 rounded-full object-cover border border-gray-100 dark:border-gray-800" />
+                        <button className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-full font-bold text-sm hover:opacity-80">
+                            Profile
+                        </button>
+                    </div>
+                    <div className="mb-3">
+                         <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight hover:underline cursor-pointer" onClick={() => onViewProfile(user)}>{user.name}</h4>
+                         <span className="text-gray-500 text-sm">{user.handle}</span>
+                    </div>
+                    <p className="text-gray-800 dark:text-gray-200 text-sm mb-4 line-clamp-3">
+                        {user.bio || "No bio available."}
+                    </p>
+                    <div className="flex gap-4 text-sm">
+                        <div className="flex gap-1">
+                            <span className="font-bold text-gray-900 dark:text-white">{user.following || '0'}</span>
+                            <span className="text-gray-500">Following</span>
+                        </div>
+                        <div className="flex gap-1">
+                            <span className="font-bold text-gray-900 dark:text-white">{user.subscribers || '0'}</span>
+                            <span className="text-gray-500">Followers</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Create Post Component ---
-const CreatePost = ({ user, onPost, onViewProfile }: { user: User, onPost: (content: string) => void, onViewProfile: (user: User) => void }) => {
+const CreatePost = ({ user, onPost, onViewProfile }: { user: User, onPost: (content: string, media?: string, type?: 'image' | 'video') => void, onViewProfile: (user: User) => void }) => {
   const [content, setContent] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const MAX_CHARS = 280;
   const charsLeft = MAX_CHARS - content.length;
   const progress = (content.length / MAX_CHARS) * 100;
@@ -24,16 +87,30 @@ const CreatePost = ({ user, onPost, onViewProfile }: { user: User, onPost: (cont
 
   const handleSubmit = () => {
     if ((content.trim() || mediaPreview) && content.length <= MAX_CHARS) {
-      onPost(content);
+      onPost(content, mediaPreview || undefined, mediaType || undefined);
       setContent('');
       setMediaPreview(null);
+      setMediaType(null);
       setIsFocused(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleMediaClick = () => {
-      const sampleImage = `https://picsum.photos/seed/${Date.now()}/800/400`;
-      setMediaPreview(sampleImage);
+  const handleFileClick = (type: 'image' | 'video') => {
+      if (fileInputRef.current) {
+          // Accept only specific types based on button clicked
+          fileInputRef.current.accept = type === 'image' ? "image/*" : "video/*";
+          fileInputRef.current.click();
+      }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const url = URL.createObjectURL(file);
+          setMediaPreview(url);
+          setMediaType(file.type.startsWith('video') ? 'video' : 'image');
+      }
   };
 
   return (
@@ -50,9 +127,13 @@ const CreatePost = ({ user, onPost, onViewProfile }: { user: User, onPost: (cont
           />
           
           {mediaPreview && (
-              <div className="relative mt-2 rounded-2xl overflow-hidden group">
-                  <img src={mediaPreview} className="w-full h-64 object-cover" />
-                  <button onClick={() => setMediaPreview(null)} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-black/70">
+              <div className="relative mt-2 rounded-2xl overflow-hidden group bg-black">
+                  {mediaType === 'video' ? (
+                      <video src={mediaPreview} controls className="w-full h-64 object-contain" />
+                  ) : (
+                      <img src={mediaPreview} className="w-full h-64 object-contain" />
+                  )}
+                  <button onClick={() => { setMediaPreview(null); setMediaType(null); if(fileInputRef.current) fileInputRef.current.value = ''; }} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-black/70">
                       <CloseIcon className="w-4 h-4" />
                   </button>
               </div>
@@ -61,7 +142,15 @@ const CreatePost = ({ user, onPost, onViewProfile }: { user: User, onPost: (cont
       </div>
       <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
         <div className="flex gap-2 text-blue-500">
-             <button onClick={handleMediaClick} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"><CameraIcon className="w-5 h-5" /></button>
+             {/* Hidden File Input */}
+             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+             
+             <button onClick={() => handleFileClick('image')} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition" title="Add Photo">
+                 <CameraIcon className="w-5 h-5" />
+             </button>
+             <button onClick={() => handleFileClick('video')} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition" title="Add Video">
+                 <FilmIcon className="w-5 h-5" />
+             </button>
              <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"><span className="text-xl leading-none">GIF</span></button>
              <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"><span className="text-xl leading-none">📊</span></button>
         </div>
@@ -103,7 +192,7 @@ const RichText = ({ text }: { text: string }) => {
 };
 
 // --- Post Card Component ---
-const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void }> = ({ post, currentUser, onViewProfile }) => {
+const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void, onHidePost: (id: string) => void, onUnfollow: (id: string) => void }> = ({ post, currentUser, onViewProfile, onHidePost, onUnfollow }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes);
   const [bookmarked, setBookmarked] = useState(false);
@@ -162,24 +251,52 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
   return (
     <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors p-4 cursor-pointer">
       <div className="flex gap-3">
-        <img onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 cursor-pointer" />
+        <UserHoverCard user={post.author} onViewProfile={onViewProfile}>
+            <img src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 cursor-pointer" />
+        </UserHoverCard>
+        
         <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-1.5 overflow-hidden">
-                    <h3 onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} className="font-bold text-gray-900 dark:text-white truncate cursor-pointer hover:underline">{post.author.name}</h3>
+                    <UserHoverCard user={post.author} onViewProfile={onViewProfile}>
+                        <h3 className="font-bold text-gray-900 dark:text-white truncate cursor-pointer hover:underline">{post.author.name}</h3>
+                    </UserHoverCard>
                     {post.author.verified && <span className="text-blue-500 text-[12px]">✔</span>}
-                    <span onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} className="text-gray-500 dark:text-gray-400 text-sm truncate cursor-pointer hover:underline">{post.author.handle} · {post.timestamp}</span>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); setShowOptions(!showOptions); }} className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 relative group">
-                    ...
-                    {showOptions && (
-                        <div className="absolute top-6 right-0 bg-white dark:bg-black shadow-xl border border-gray-200 dark:border-gray-700 rounded-lg w-32 z-20 py-1 font-bold text-sm">
-                            <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200">Not interested</div>
-                            <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500">Report</div>
-                        </div>
+                    <UserHoverCard user={post.author} onViewProfile={onViewProfile}>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm truncate cursor-pointer hover:underline">{post.author.handle}</span>
+                    </UserHoverCard>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">· {post.timestamp}</span>
+                    {post.communityId && (
+                        <span className="text-sm font-medium text-gray-500">in <span className="text-blue-500 hover:underline">Community {post.communityId}</span></span>
                     )}
-                </button>
+                </div>
+                <div className="relative">
+                    <button onClick={(e) => { e.stopPropagation(); setShowOptions(!showOptions); }} className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 relative group">
+                        ...
+                    </button>
+                    {showOptions && (
+                        <>
+                            <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}></div>
+                            <div className="absolute top-6 right-0 bg-white dark:bg-black shadow-xl border border-gray-200 dark:border-gray-700 rounded-xl w-48 z-20 py-2 font-bold text-sm overflow-hidden animate-fade-in">
+                                <div onClick={(e) => { e.stopPropagation(); onHidePost(post.id); setShowOptions(false); }} className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer flex items-center gap-2">
+                                    <span className="text-lg">😢</span> Not interested
+                                </div>
+                                {post.author.id !== currentUser.id && (
+                                    <div onClick={(e) => { e.stopPropagation(); onUnfollow(post.author.id); setShowOptions(false); }} className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer flex items-center gap-2">
+                                        <span className="text-lg">👤</span> Unfollow @{post.author.handle.replace('@','')}
+                                    </div>
+                                )}
+                                <div className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer flex items-center gap-2">
+                                    <span className="text-lg">🔇</span> Mute @{post.author.handle.replace('@','')}
+                                </div>
+                                <div className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500 cursor-pointer flex items-center gap-2 border-t border-gray-100 dark:border-gray-800">
+                                    <span className="text-lg">🚩</span> Report Post
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Content */}
@@ -189,8 +306,12 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
 
             {post.image && (
                 <div className="mt-3 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 relative select-none" onDoubleClick={handleDoubleTap}>
-                    <img src={post.image} alt="Post content" className="w-full h-auto object-cover max-h-[500px]" />
-                    {showHeartOverlay && (
+                    {post.type === 'video' ? (
+                        <video controls src={post.image} className="w-full h-auto object-cover max-h-[500px]" />
+                    ) : (
+                        <img src={post.image} alt="Post content" className="w-full h-auto object-cover max-h-[500px]" />
+                    )}
+                    {showHeartOverlay && post.type !== 'video' && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <HeartIcon className="w-24 h-24 text-white animate-like drop-shadow-lg" filled />
                         </div>
@@ -203,6 +324,7 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                 <button 
                     onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
                     className="flex items-center gap-2 group hover:text-blue-500 transition"
+                    title="Reply"
                 >
                     <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
                         <CommentIcon className="w-4 h-4" />
@@ -213,6 +335,7 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                 <button 
                     onClick={(e) => { e.stopPropagation(); handleRepost(); }}
                     className={`flex items-center gap-2 group hover:text-green-500 transition ${reposted ? 'text-green-500' : ''}`}
+                    title="Repost"
                 >
                     <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20">
                         <RepeatIcon className="w-4 h-4" />
@@ -223,14 +346,15 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                 <button 
                     onClick={(e) => { e.stopPropagation(); handleLike(); }}
                     className={`flex items-center gap-2 group hover:text-red-500 transition ${liked ? 'text-red-500' : ''}`}
+                    title="Like"
                 >
                     <div className="p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20">
-                        <HeartIcon className="w-4 h-4" filled={liked} />
+                        <HeartIcon className={`w-4 h-4 ${liked ? 'animate-like' : ''}`} filled={liked} />
                     </div>
                     <span className="text-xs group-hover:text-red-500">{likes}</span>
                 </button>
 
-                <button className="flex items-center gap-2 group hover:text-blue-500 transition">
+                <button className="flex items-center gap-2 group hover:text-blue-500 transition" title="View Analytics">
                     <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
                         <ChartBarIcon className="w-4 h-4" />
                     </div>
@@ -241,10 +365,11 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                     <button 
                         onClick={(e) => { e.stopPropagation(); handleBookmark(); }}
                         className={`p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 transition ${bookmarked ? 'text-blue-500' : ''}`}
+                        title="Bookmark"
                     >
                         <BookmarkIcon className="w-4 h-4" filled={bookmarked} />
                     </button>
-                    <button className="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 transition">
+                    <button className="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 transition" title="Share">
                         <ShareIcon className="w-4 h-4" />
                     </button>
                 </div>
@@ -255,7 +380,7 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                 <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 animate-fade-in" onClick={e => e.stopPropagation()}>
                     <div className="flex gap-2 mb-3">
                         <img src={currentUser.avatar} className="w-8 h-8 rounded-full" alt="Me" />
-                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2 flex items-center">
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2 flex items-center transition-all duration-300 ease-in-out focus-within:py-4 focus-within:shadow-md focus-within:ring-1 ring-blue-500/20">
                             <input 
                                 type="text" 
                                 value={newComment}
@@ -263,6 +388,7 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                                 onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
                                 placeholder="Post your reply" 
                                 className="w-full bg-transparent outline-none text-sm text-gray-900 dark:text-white"
+                                autoFocus
                             />
                             <button 
                                 onClick={handleAddComment}
@@ -275,10 +401,14 @@ const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: 
                     </div>
                     {comments.map(comment => (
                         <div key={comment.id} className="flex gap-3 mb-3">
-                             <img onClick={() => onViewProfile(comment.author)} src={comment.author.avatar} className="w-8 h-8 rounded-full cursor-pointer" alt={comment.author.name} />
+                             <UserHoverCard user={comment.author} onViewProfile={onViewProfile}>
+                                <img src={comment.author.avatar} className="w-8 h-8 rounded-full cursor-pointer" alt={comment.author.name} />
+                             </UserHoverCard>
                              <div>
                                  <div className="flex items-center gap-2">
-                                     <span onClick={() => onViewProfile(comment.author)} className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{comment.author.name}</span>
+                                     <UserHoverCard user={comment.author} onViewProfile={onViewProfile}>
+                                         <span className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{comment.author.name}</span>
+                                     </UserHoverCard>
                                      <span className="text-xs text-gray-500">{comment.timestamp}</span>
                                  </div>
                                  <p className="text-sm text-gray-800 dark:text-gray-200">{comment.text}</p>
@@ -408,9 +538,62 @@ const Stories = () => {
   );
 };
 
-export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPostCreate, onViewProfile }) => {
+// --- Communities/Groups Sidebar Component ---
+const CommunitiesSidebar = ({ communities: initialCommunities }: { communities: Community[] }) => {
+    const [communities, setCommunities] = useState(initialCommunities);
+
+    const handleCreateCommunity = () => {
+        const name = prompt("Enter community name:");
+        if (name) {
+            alert(`Community "${name}" created! (Functionality simulated)`);
+        }
+    };
+
+    const toggleJoin = (id: string) => {
+        setCommunities(prev => prev.map(c => c.id === id ? { ...c, isJoined: !c.isJoined } : c));
+    };
+
+    return (
+        <div className="bg-gray-50 dark:bg-[#16181c] rounded-2xl p-4 mb-4">
+            <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <UsersIcon className="w-6 h-6" />
+                Communities
+            </h2>
+            <div className="space-y-4">
+                {communities.map(comm => (
+                    <div key={comm.id} className="flex items-center justify-between group">
+                         <div className="flex items-center gap-2">
+                             <img src={comm.avatar} className="w-10 h-10 rounded-lg object-cover" alt={comm.name} />
+                             <div>
+                                 <div className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{comm.name}</div>
+                                 <div className="text-gray-500 text-xs">{comm.members.toLocaleString()} members</div>
+                             </div>
+                         </div>
+                         <button 
+                            onClick={() => toggleJoin(comm.id)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition ${comm.isJoined ? 'bg-transparent border border-gray-300 dark:border-gray-600 text-gray-500' : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80'}`}
+                         >
+                             {comm.isJoined ? 'Joined' : 'Join'}
+                         </button>
+                    </div>
+                ))}
+            </div>
+            <button 
+                onClick={handleCreateCommunity}
+                className="w-full mt-4 py-2 border border-blue-500 text-blue-500 rounded-xl text-sm font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition flex items-center justify-center gap-2"
+            >
+                <PlusIcon className="w-4 h-4" /> Create Community
+            </button>
+        </div>
+    );
+};
+
+export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPostCreate, onViewProfile, onUpdateUser }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'For You' | 'Following' | 'Communities'>('For You');
+  const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
   
   // Pull to refresh state
   const [pullDistance, setPullDistance] = useState(0);
@@ -425,7 +608,6 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-      // Only capture start if we are at the top
       if (containerRef.current && containerRef.current.scrollTop === 0) {
           startY.current = e.touches[0].clientY;
       }
@@ -433,13 +615,10 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
 
   const handleTouchMove = (e: React.TouchEvent) => {
       if (!containerRef.current || isRefreshing) return;
-      
       const currentY = e.touches[0].clientY;
       const dy = currentY - startY.current;
 
-      // Only act if we started at top, are still at top, and dragging down
       if (containerRef.current.scrollTop <= 0 && dy > 0) {
-          // Resistance factor for rubber-banding effect
           setPullDistance(Math.min(dy * 0.45, 120));
       } else {
           setPullDistance(0);
@@ -454,6 +633,46 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
       setPullDistance(0);
   };
 
+  const toggleFollow = (targetId: string) => {
+      if (!onUpdateUser) return;
+      let newIds = currentUser.followingIds ? [...currentUser.followingIds] : [];
+      if (newIds.includes(targetId)) {
+          newIds = newIds.filter(id => id !== targetId);
+      } else {
+          newIds.push(targetId);
+      }
+      onUpdateUser({ ...currentUser, followingIds: newIds });
+  };
+
+  const isFollowing = (userId: string) => {
+      return currentUser.followingIds?.includes(userId) || false;
+  };
+
+  const handleHidePost = (id: string) => {
+      setHiddenPostIds(prev => [...prev, id]);
+  };
+
+  // Filter posts based on active tab, search, and hidden posts
+  const displayPosts = posts.filter(post => {
+      if (hiddenPostIds.includes(post.id)) return false;
+
+      // Search Filter
+      if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matches = post.content.toLowerCase().includes(q) || 
+                          post.author.name.toLowerCase().includes(q) ||
+                          post.author.handle.toLowerCase().includes(q);
+          if (!matches) return false;
+      }
+
+      // Tab Filter
+      if (activeTab === 'Communities') return !!post.communityId;
+      if (activeTab === 'Following') return isFollowing(post.author.id) || post.author.id === currentUser.id;
+      
+      // For You - show everything (or algorithm)
+      return true; 
+  });
+
   return (
     <div 
         ref={containerRef}
@@ -464,13 +683,20 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
         onTouchEnd={handleTouchEnd}
     >
       {isSearchOpen && (
-          <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col animate-fade-in">
+          <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col animate-fade-in md:hidden">
             <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-800 gap-2">
                 <div className="bg-gray-100 dark:bg-gray-800 flex-1 rounded-full flex items-center px-4 py-2">
                     <SearchIcon className="w-5 h-5 text-gray-400 mr-2" />
-                    <input autoFocus type="text" placeholder="Search MyConnect..." className="bg-transparent outline-none w-full text-gray-900 dark:text-white" />
+                    <input 
+                        autoFocus 
+                        type="text" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search MyConnect..." 
+                        className="bg-transparent outline-none w-full text-gray-900 dark:text-white" 
+                    />
                 </div>
-                <button onClick={() => setIsSearchOpen(false)} className="text-blue-600 font-medium">Cancel</button>
+                <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="text-blue-600 font-medium">Cancel</button>
             </div>
           </div>
       )}
@@ -500,11 +726,32 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
         {/* Main Feed Column */}
         <div className="flex-1 max-w-[600px] border-x border-gray-100 dark:border-gray-800 w-full mx-auto lg:mx-0 pt-0 pb-32">
             
-            {/* Mobile Header */}
-            <div className="md:hidden flex items-center justify-between sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-20 py-3 px-4 border-b border-gray-100 dark:border-gray-800">
-                <img onClick={() => onViewProfile(currentUser)} src={currentUser.avatar} className="w-8 h-8 rounded-full object-cover cursor-pointer" alt="Me" />
-                <div className="flex gap-4 text-gray-800 dark:text-white">
-                    <button onClick={() => setIsSearchOpen(true)}><SearchIcon className="w-6 h-6" /></button>
+            {/* Header / Tabs */}
+            <div className="sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-20 border-b border-gray-100 dark:border-gray-800">
+                {/* Mobile Header Top Row */}
+                <div className="md:hidden flex items-center justify-between py-3 px-4">
+                    <img onClick={() => onViewProfile(currentUser)} src={currentUser.avatar} className="w-8 h-8 rounded-full object-cover cursor-pointer" alt="Me" />
+                    <div className="flex gap-4 text-gray-800 dark:text-white">
+                        <button onClick={() => setIsSearchOpen(true)}><SearchIcon className="w-6 h-6" /></button>
+                    </div>
+                </div>
+
+                {/* Tabs Row */}
+                <div className="flex">
+                    {['For You', 'Following', 'Communities'].map(tab => (
+                        <button 
+                            key={tab}
+                            onClick={() => setActiveTab(tab as any)}
+                            className="flex-1 py-4 text-sm font-bold relative hover:bg-gray-50 dark:hover:bg-white/5 transition"
+                        >
+                            <span className={activeTab === tab ? 'text-gray-900 dark:text-white' : 'text-gray-500'}>
+                                {tab}
+                            </span>
+                            {activeTab === tab && (
+                                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-14 h-1 bg-blue-500 rounded-full"></div>
+                            )}
+                        </button>
+                    ))}
                 </div>
             </div>
             
@@ -518,23 +765,51 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
             </div>
             
             <div className="flex flex-col">
-                {posts.map(post => (
-                <PostCard key={post.id} post={post} currentUser={currentUser} onViewProfile={onViewProfile} />
-                ))}
+                {displayPosts.length > 0 ? (
+                    displayPosts.map(post => (
+                        <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            currentUser={currentUser} 
+                            onViewProfile={onViewProfile} 
+                            onHidePost={handleHidePost}
+                            onUnfollow={(id) => toggleFollow(id)}
+                        />
+                    ))
+                ) : (
+                    <div className="p-8 text-center text-gray-500">
+                        <div className="mb-2 text-2xl">🕵️</div>
+                        <p>No posts found.</p>
+                        {activeTab === 'Following' && <p className="text-xs mt-1">Try following more people!</p>}
+                        {activeTab === 'Communities' && <p className="text-xs mt-1">Join a community to see posts here.</p>}
+                        {searchQuery && <p className="text-xs mt-1">Try a different search term.</p>}
+                    </div>
+                )}
             </div>
 
-            <div className="text-center py-10 text-gray-400 text-sm">
-                <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-800 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            {/* Skeleton Loading State */}
+            <div className="mt-4">
+                <SkeletonPost />
+                <SkeletonPost />
             </div>
         </div>
 
         {/* Right Sidebar (Desktop) */}
-        <div className="hidden lg:block w-[350px] pt-4 pr-4 space-y-4">
+        <div className="hidden lg:block w-[350px] pt-4 pr-4 space-y-4 sticky top-0 h-screen overflow-y-auto no-scrollbar">
             {/* Search */}
             <div className="bg-gray-100 dark:bg-[#16181c] rounded-full flex items-center px-4 py-3 mb-4 group focus-within:ring-1 ring-blue-500">
                 <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-400 group-focus-within:text-blue-500" />
-                <input type="text" placeholder="Search" className="bg-transparent w-full ml-3 outline-none text-gray-900 dark:text-white placeholder-gray-500" />
+                <input 
+                    type="text" 
+                    placeholder="Search" 
+                    className="bg-transparent w-full ml-3 outline-none text-gray-900 dark:text-white placeholder-gray-500" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
             </div>
+
+            {/* Communities */}
+            <CommunitiesSidebar communities={MOCK_COMMUNITIES} />
 
             {/* Trends */}
             <div className="bg-gray-50 dark:bg-[#16181c] rounded-2xl p-4">
@@ -558,23 +833,35 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
             <div className="bg-gray-50 dark:bg-[#16181c] rounded-2xl p-4">
                 <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4">Who to follow</h2>
                 <div className="space-y-4">
-                    {SUGGESTED_USERS.map(user => (
-                        <div key={user.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <img onClick={() => onViewProfile(user)} src={user.avatar} className="w-10 h-10 rounded-full object-cover cursor-pointer" alt="" />
-                                <div>
-                                    <div onClick={() => onViewProfile(user)} className="font-bold text-sm text-gray-900 dark:text-white hover:underline cursor-pointer">{user.name}</div>
-                                    <div className="text-gray-500 text-xs">{user.handle}</div>
+                    {SUGGESTED_USERS.map(user => {
+                        const followed = isFollowing(user.id);
+                        return (
+                            <div key={user.id} className="flex items-center justify-between group">
+                                <div className="flex items-center gap-2">
+                                    <UserHoverCard user={user} onViewProfile={onViewProfile}>
+                                        <img src={user.avatar} className="w-10 h-10 rounded-full object-cover cursor-pointer" alt="" />
+                                    </UserHoverCard>
+                                    <div>
+                                        <UserHoverCard user={user} onViewProfile={onViewProfile}>
+                                            <div className="font-bold text-sm text-gray-900 dark:text-white hover:underline cursor-pointer">{user.name}</div>
+                                        </UserHoverCard>
+                                        <div className="text-gray-500 text-xs">{user.handle}</div>
+                                    </div>
                                 </div>
+                                <button 
+                                    onClick={() => toggleFollow(user.id)}
+                                    className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${followed ? 'bg-transparent border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white' : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80'}`}
+                                >
+                                    {followed ? 'Following' : 'Follow'}
+                                </button>
                             </div>
-                            <button className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-full text-sm font-bold hover:opacity-80 transition">Follow</button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
                 <button className="text-blue-500 text-sm mt-4 hover:underline">Show more</button>
             </div>
             
-            <div className="text-xs text-gray-500 px-4 flex flex-wrap gap-x-3 gap-y-1">
+            <div className="text-xs text-gray-500 px-4 flex flex-wrap gap-x-3 gap-y-1 pb-4">
                 <a href="#" className="hover:underline">Terms of Service</a>
                 <a href="#" className="hover:underline">Privacy Policy</a>
                 <a href="#" className="hover:underline">Cookie Policy</a>
