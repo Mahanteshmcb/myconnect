@@ -19,6 +19,7 @@ export interface User {
   verified?: boolean;
   subscribers?: string;
   subscriberCount?: number; // Numeric for algos
+  subscriptions?: string[]; // IDs of users subscribed to
   bio?: string;
   coverImage?: string;
   following?: string;
@@ -116,8 +117,11 @@ export interface LongFormVideo {
   description: string;
   category: string;
   likes?: string;
+  likeCount?: number;
+  dislikeCount?: number;
   type?: 'video' | 'short' | 'live';
   tags?: string[];
+  privacy?: 'public' | 'private' | 'unlisted';
 }
 
 export interface Message {
