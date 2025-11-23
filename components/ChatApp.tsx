@@ -142,7 +142,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions, currentUser, onSendM
   }, {} as Record<string, Message[]>) || {};
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm mx-auto max-w-6xl transition-colors">
+    <div className="flex h-full bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm mx-auto max-w-6xl transition-colors pb-16 md:pb-0">
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
       
       {/* Sidebar */}

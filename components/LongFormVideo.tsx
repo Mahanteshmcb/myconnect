@@ -778,7 +778,7 @@ const VideoContextMenu = ({
 
 export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initialVideos, currentUser, onViewProfile }) => {
   const [videos, setVideos] = useState(initialVideos);
-  const [currentView, setCurrentView] = useState<'HOME' | 'WATCH' | 'REELS' | 'CHANNEL' | 'LIBRARY' | 'LIVE' | 'ANALYTICS' | 'CREATE_REEL'>('HOME');
+  const [currentView, setCurrentView] = useState<'HOME' | 'WATCH' | 'REELS' | 'CHANNEL' | 'LIBRARY' | 'LIVE' | 'ANALYTICS' | 'CREATE_REEL' | 'WATCH_LATER'>('HOME');
   const [selectedVideo, setSelectedVideo] = useState<LongFormVideo | null>(null);
   const [viewingChannel, setViewingChannel] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -955,8 +955,58 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
       }, 2500);
   };
 
-  // --- Header Component ---
-  const Header = () => (
+  const renderVideoList = (videoList: LongFormVideo[], emptyMessage: string) => {
+      if (videoList.length === 0) return <p className="text-gray-500 p-6">{emptyMessage}</p>;
+      
+      return (
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {videoList.map(video => (
+                  <div key={video.id} onClick={() => handleVideoClick(video)} className="cursor-pointer group flex flex-col gap-3 relative">
+                      <div className="aspect-video rounded-xl overflow-hidden mb-2 relative">
+                          <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">{video.duration}</span>
+                          
+                          {/* Three Dot Context Menu Trigger (Bottom Right of Thumbnail) */}
+                          <button 
+                             onClick={(e) => { e.stopPropagation(); setActiveMenuVideoId(activeMenuVideoId === video.id ? null : video.id); }}
+                             className="absolute bottom-1 left-1 p-1 bg-black/70 hover:bg-black/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                              <MoreVerticalIcon className="w-4 h-4" />
+                          </button>
+                      </div>
+
+                      {activeMenuVideoId === video.id && (
+                          <VideoContextMenu 
+                              video={video}
+                              onClose={() => setActiveMenuVideoId(null)}
+                              onWatchLater={() => toggleWatchLater(video)}
+                              onDownload={() => handleDownload(video)}
+                              onShare={() => setSharingVideo(video)}
+                              onSaveToPlaylist={() => alert("Added to Playlist")}
+                          />
+                      )}
+
+                      <h3 className="font-bold text-gray-900 dark:text-white line-clamp-2">{video.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{video.author.name}</p>
+                  </div>
+              ))}
+          </div>
+      );
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-white dark:bg-[#0f0f0f]" onClick={() => setActiveMenuVideoId(null)}>
+      {currentView === 'LIVE' ? (
+          <LiveStudio onClose={() => setCurrentView('HOME')} currentUser={currentUser} />
+      ) : currentView === 'CREATE_REEL' ? (
+          <CreateReel 
+            onBack={() => setCurrentView('REELS')}
+            onPost={handlePostReel}
+            currentUser={currentUser}
+          />
+      ) : (
+      <>
+      {/* INLINED HEADER TO FIX INPUT FOCUS ISSUE */}
       <div className="sticky top-0 z-20 bg-white dark:bg-[#0f0f0f] px-4 h-14 flex items-center justify-between border-b border-transparent dark:border-none">
           <div className="flex items-center gap-4">
               <button 
@@ -980,7 +1030,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                     onSubmit={(e) => { e.preventDefault(); setCurrentView('HOME'); }}
                   >
                       <div className="flex flex-1 items-center px-4 bg-white dark:bg-[#121212] border border-gray-300 dark:border-[#303030] rounded-l-full h-10 shadow-inner focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all ml-8 group">
-                          {/* Search icon inside input shown only when focused/active style preference, otherwise hidden or ghosted */}
                           <div className="md:hidden group-focus-within:block mr-2">
                               <SearchIcon className="w-4 h-4 text-gray-400" />
                           </div>
@@ -1056,60 +1105,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
               <img onClick={() => handleChannelClick(currentUser)} src={currentUser.avatar} className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 ring-blue-500 transition" alt="Profile" />
           </div>
       </div>
-  );
 
-  const renderVideoList = (videoList: LongFormVideo[], emptyMessage: string) => {
-      if (videoList.length === 0) return <p className="text-gray-500 p-6">{emptyMessage}</p>;
-      
-      return (
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {videoList.map(video => (
-                  <div key={video.id} onClick={() => handleVideoClick(video)} className="cursor-pointer group flex flex-col gap-3 relative">
-                      <div className="aspect-video rounded-xl overflow-hidden mb-2 relative">
-                          <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">{video.duration}</span>
-                          
-                          {/* Three Dot Context Menu Trigger (Bottom Right of Thumbnail) */}
-                          <button 
-                             onClick={(e) => { e.stopPropagation(); setActiveMenuVideoId(activeMenuVideoId === video.id ? null : video.id); }}
-                             className="absolute bottom-1 left-1 p-1 bg-black/70 hover:bg-black/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                              <MoreVerticalIcon className="w-4 h-4" />
-                          </button>
-                      </div>
-
-                      {activeMenuVideoId === video.id && (
-                          <VideoContextMenu 
-                              video={video}
-                              onClose={() => setActiveMenuVideoId(null)}
-                              onWatchLater={() => toggleWatchLater(video)}
-                              onDownload={() => handleDownload(video)}
-                              onShare={() => setSharingVideo(video)}
-                              onSaveToPlaylist={() => alert("Added to Playlist")}
-                          />
-                      )}
-
-                      <h3 className="font-bold text-gray-900 dark:text-white line-clamp-2">{video.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{video.author.name}</p>
-                  </div>
-              ))}
-          </div>
-      );
-  };
-
-  return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#0f0f0f]" onClick={() => setActiveMenuVideoId(null)}>
-      {currentView === 'LIVE' ? (
-          <LiveStudio onClose={() => setCurrentView('HOME')} currentUser={currentUser} />
-      ) : currentView === 'CREATE_REEL' ? (
-          <CreateReel 
-            onBack={() => setCurrentView('REELS')}
-            onPost={handlePostReel}
-            currentUser={currentUser}
-          />
-      ) : (
-      <>
-      <Header />
       <UploadVideoModal 
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
@@ -1138,7 +1134,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
             
             <SidebarItem collapsed={isSidebarCollapsed} icon={<CheckIcon className="w-6 h-6" />} label="Your Channel" active={currentView === 'CHANNEL' && viewingChannel?.id === currentUser.id} onClick={() => handleChannelClick(currentUser)} />
             <SidebarItem collapsed={isSidebarCollapsed} icon={<HistoryIcon className="w-6 h-6" />} label="History" active={false} onClick={() => setCurrentView('LIBRARY')} />
-            <SidebarItem collapsed={isSidebarCollapsed} icon={<ClockIcon className="w-6 h-6" />} label="Watch Later" active={false} onClick={() => setCurrentView('LIBRARY')} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<ClockIcon className="w-6 h-6" />} label="Watch Later" active={currentView === 'WATCH_LATER'} onClick={() => setCurrentView('WATCH_LATER')} />
             <SidebarItem collapsed={isSidebarCollapsed} icon={<DownloadIcon className="w-6 h-6" />} label="Downloads" active={false} onClick={() => setCurrentView('LIBRARY')} />
             <SidebarItem collapsed={isSidebarCollapsed} icon={<DashboardIcon className="w-6 h-6" />} label="Analytics" active={currentView === 'ANALYTICS'} onClick={() => setCurrentView('ANALYTICS')} />
             
@@ -1184,6 +1180,21 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                   </div>
               )}
 
+              {currentView === 'WATCH_LATER' && (
+                  <div className="p-6 pb-20 min-h-full">
+                      <div className="flex items-center gap-4 mb-6">
+                           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg">
+                               <ClockIcon className="w-8 h-8 text-white" />
+                           </div>
+                           <div>
+                               <h1 className="text-3xl font-bold dark:text-white">Watch Later</h1>
+                               <p className="text-gray-500">{watchLater.length} videos • Updated today</p>
+                           </div>
+                      </div>
+                      {renderVideoList(watchLater, "Your Watch Later list is empty.")}
+                  </div>
+              )}
+
               {currentView === 'LIBRARY' && (
                   <div className="p-6 space-y-10 pb-20">
                       <div className="flex items-center gap-4 mb-6">
@@ -1221,7 +1232,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                       <section>
                           <div className="flex justify-between items-center mb-4">
                               <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><ClockIcon className="w-5 h-5" /> Watch Later</h2>
-                              <button className="text-blue-500 text-sm font-bold">See all</button>
+                              <button onClick={() => setCurrentView('WATCH_LATER')} className="text-blue-500 text-sm font-bold hover:underline">See all</button>
                           </div>
                           {watchLater.length === 0 ? <p className="text-gray-500 text-sm italic">Your list is empty.</p> : (
                               <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">

@@ -1,5 +1,5 @@
 
-import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community } from '../types';
+import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community, Store, Order } from '../types';
 
 export const MOCK_USERS: Record<string, User> = {
   'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true, followingIds: ['u2', 'u4'] },
@@ -31,7 +31,8 @@ export const CURRENT_USER: User = {
   email: 'hello@alexrivera.dev',
   twitter: 'https://twitter.com/alexrivera',
   github: 'https://github.com/alexrivera',
-  linkedin: 'https://linkedin.com/in/alexrivera'
+  linkedin: 'https://linkedin.com/in/alexrivera',
+  savedPostIds: []
 };
 
 export const getUserByHandle = (handle: string): User | undefined => {
@@ -389,10 +390,171 @@ export const SUGGESTED_USERS = [
   MOCK_USERS['u6']
 ];
 
+export const MOCK_STORES: Store[] = [
+    {
+        id: 's1',
+        sellerId: 'u4', // Emma
+        name: 'Emma\'s Art Shop',
+        logo: 'https://picsum.photos/id/103/200/200',
+        banner: 'https://picsum.photos/id/106/800/200',
+        rating: 4.8,
+        followers: 1250,
+        description: 'Original paintings and digital prints.',
+        isVerified: true
+    },
+    {
+        id: 's2',
+        sellerId: 'u5', // TechDaily
+        name: 'TechDaily Gadgets',
+        logo: 'https://picsum.photos/id/201/200/200',
+        banner: 'https://picsum.photos/id/0/800/200',
+        rating: 4.5,
+        followers: 5400,
+        description: 'Best tech accessories reviewed by us.',
+        isVerified: true
+    },
+    {
+        id: 's3',
+        sellerId: 'me', // Current User Store
+        name: 'Alex\'s Gear',
+        logo: 'https://picsum.photos/id/64/200/200',
+        banner: 'https://picsum.photos/id/29/800/200',
+        rating: 5.0,
+        followers: 45,
+        description: 'My used camera gear and accessories.',
+        isVerified: true
+    }
+];
+
 export const MARKET_ITEMS: Product[] = [
-    { id: 'p1', title: 'Vintage Camera', price: '$120', image: 'https://picsum.photos/id/250/300/300', location: 'New York, NY', category: 'Electronics' },
-    { id: 'p2', title: 'MacBook Pro M1', price: '$900', image: 'https://picsum.photos/id/0/300/300', location: 'San Francisco, CA', category: 'Electronics' },
-    { id: 'p3', title: 'Leather Jacket', price: '$85', image: 'https://picsum.photos/id/445/300/300', location: 'Chicago, IL', category: 'Clothing' },
-    { id: 'p4', title: 'Mountain Bike', price: '$350', image: 'https://picsum.photos/id/191/300/300', location: 'Denver, CO', category: 'Sports' },
-    { id: 'p5', title: 'Gaming Monitor', price: '$200', image: 'https://picsum.photos/id/20/300/300', location: 'Austin, TX', category: 'Electronics' },
+    { 
+        id: 'p1', 
+        title: 'Vintage Camera', 
+        price: '$120', 
+        rawPrice: 120,
+        image: 'https://picsum.photos/id/250/300/300', 
+        images: ['https://picsum.photos/id/250/600/600', 'https://picsum.photos/id/251/600/600'],
+        location: 'New York, NY', 
+        category: 'Electronics', 
+        sellerId: 'u4',
+        stock: 2,
+        description: 'Fully functional vintage camera in excellent condition. Comes with original strap.',
+        rating: 4.5,
+        reviewCount: 12,
+        shippingTime: '3-5 days',
+        returnPolicy: 'No returns'
+    },
+    { 
+        id: 'p2', 
+        title: 'MacBook Pro M1', 
+        price: '$900',
+        rawPrice: 900, 
+        image: 'https://picsum.photos/id/0/300/300', 
+        images: ['https://picsum.photos/id/0/600/600'],
+        location: 'San Francisco, CA', 
+        category: 'Electronics', 
+        sellerId: 'u5',
+        stock: 5,
+        description: 'Lightly used MacBook Pro. M1 Chip, 16GB RAM, 512GB SSD.',
+        rating: 4.9,
+        reviewCount: 45,
+        shippingTime: '2 days',
+        returnPolicy: '14 days return',
+        discount: '10% OFF'
+    },
+    { 
+        id: 'p3', 
+        title: 'Leather Jacket', 
+        price: '$85', 
+        rawPrice: 85,
+        image: 'https://picsum.photos/id/445/300/300', 
+        images: ['https://picsum.photos/id/445/600/600'],
+        location: 'Chicago, IL', 
+        category: 'Fashion', 
+        sellerId: 'u4',
+        stock: 1,
+        variants: [
+            { name: 'Size', options: ['M', 'L'] },
+            { name: 'Color', options: ['Brown', 'Black'] }
+        ],
+        description: 'Genuine leather jacket. Vintage look.',
+        rating: 4.2,
+        reviewCount: 8,
+        shippingTime: '5-7 days',
+        returnPolicy: '30 days return'
+    },
+    { 
+        id: 'p4', 
+        title: 'Mountain Bike', 
+        price: '$350', 
+        rawPrice: 350,
+        image: 'https://picsum.photos/id/191/300/300', 
+        images: ['https://picsum.photos/id/191/600/600'],
+        location: 'Denver, CO', 
+        category: 'Sports', 
+        sellerId: 'u6',
+        stock: 1,
+        description: 'Rugged mountain bike ready for trails.',
+        rating: 4.7,
+        reviewCount: 3,
+        shippingTime: 'Pickup Only',
+        returnPolicy: 'No returns'
+    },
+    { 
+        id: 'p5', 
+        title: 'Gaming Monitor', 
+        price: '$200', 
+        rawPrice: 200,
+        image: 'https://picsum.photos/id/20/300/300', 
+        images: ['https://picsum.photos/id/20/600/600'],
+        location: 'Austin, TX', 
+        category: 'Electronics', 
+        sellerId: 'me',
+        stock: 2,
+        description: '27 inch 144hz monitor. Perfect for gaming.',
+        rating: 5.0,
+        reviewCount: 1,
+        shippingTime: '3 days',
+        returnPolicy: '7 days return'
+    },
+    { id: 'p6', title: 'Modern Sofa', price: '$450', rawPrice: 450, image: 'https://picsum.photos/id/32/300/300', images: [], location: 'Seattle, WA', category: 'Home', sellerId: 'u2', stock: 1, rating: 4.6, reviewCount: 10, discount: '15% OFF' },
+    { id: 'p7', title: 'Designer Sunglasses', price: '$150', rawPrice: 150, image: 'https://picsum.photos/id/64/300/300', images: [], location: 'Miami, FL', category: 'Fashion', sellerId: 'u1', stock: 10, rating: 4.8, reviewCount: 22 },
+    { id: 'p8', title: 'Wireless Earbuds', price: '$45', rawPrice: 45, image: 'https://picsum.photos/id/96/300/300', images: [], location: 'Boston, MA', category: 'Electronics', sellerId: 'u5', stock: 50, rating: 4.3, reviewCount: 150, discount: 'Deal' },
+    { id: 'p9', title: 'Skincare Set', price: '$60', rawPrice: 60, image: 'https://picsum.photos/id/100/300/300', images: [], location: 'Los Angeles, CA', category: 'Beauty', sellerId: 'u1', stock: 20, rating: 4.9, reviewCount: 85 },
+    { id: 'p10', title: 'Yoga Mat', price: '$25', rawPrice: 25, image: 'https://picsum.photos/id/152/300/300', images: [], location: 'Portland, OR', category: 'Sports', sellerId: 'u6', stock: 100, rating: 4.5, reviewCount: 40 },
+    { id: 'p11', title: 'Coffee Maker', price: '$80', rawPrice: 80, image: 'https://picsum.photos/id/204/300/300', images: [], location: 'Seattle, WA', category: 'Home', sellerId: 'u2', stock: 15, rating: 4.7, reviewCount: 60 },
+    { id: 'p12', title: 'Running Shoes', price: '$110', rawPrice: 110, image: 'https://picsum.photos/id/319/300/300', images: [], location: 'Austin, TX', category: 'Fashion', sellerId: 'u4', stock: 8, rating: 4.6, reviewCount: 30 },
+    { id: 'p13', title: 'Smart Watch', price: '$220', rawPrice: 220, image: 'https://picsum.photos/id/366/300/300', images: [], location: 'San Jose, CA', category: 'Electronics', sellerId: 'u5', stock: 12, rating: 4.4, reviewCount: 95, discount: '5% OFF' },
+    { id: 'p14', title: 'Ceramic Vase', price: '$35', rawPrice: 35, image: 'https://picsum.photos/id/400/300/300', images: [], location: 'Santa Fe, NM', category: 'Home', sellerId: 'u4', stock: 5, rating: 5.0, reviewCount: 12 },
+    { id: 'p15', title: 'Mechanical Keyboard', price: '$140', rawPrice: 140, image: 'https://picsum.photos/id/425/300/300', images: [], location: 'New York, NY', category: 'Electronics', sellerId: 'me', stock: 3, rating: 4.8, reviewCount: 20 },
+    { id: 'p16', title: 'Organic Face Oil', price: '$40', rawPrice: 40, image: 'https://picsum.photos/id/443/300/300', images: [], location: 'San Diego, CA', category: 'Beauty', sellerId: 'u1', stock: 30, rating: 4.7, reviewCount: 55 },
+];
+
+export const MARKET_BANNERS = [
+    { id: 1, image: 'https://picsum.photos/id/1/1200/400', title: 'Summer Sale', subtitle: 'Up to 50% off on Fashion' },
+    { id: 2, image: 'https://picsum.photos/id/20/1200/400', title: 'Tech Upgrade', subtitle: 'Latest gadgets at best prices' },
+    { id: 3, image: 'https://picsum.photos/id/180/1200/400', title: 'Home Decor', subtitle: 'Revamp your living space' },
+];
+
+export const MOCK_ORDERS: Order[] = [
+    {
+        id: 'o1',
+        buyerId: 'u2',
+        items: [{ productId: 'p5', quantity: 1, title: 'Gaming Monitor', price: 200 }],
+        total: 200,
+        status: 'shipped',
+        date: '2025-05-10',
+        shippingAddress: '123 Tech Lane, SF, CA',
+        paymentMethod: 'online'
+    },
+    {
+        id: 'o2',
+        buyerId: 'u1',
+        items: [{ productId: 'p5', quantity: 1, title: 'Gaming Monitor', price: 200 }],
+        total: 200,
+        status: 'delivered',
+        date: '2025-05-01',
+        shippingAddress: '456 Park Ave, NY, NY',
+        paymentMethod: 'cod'
+    }
 ];

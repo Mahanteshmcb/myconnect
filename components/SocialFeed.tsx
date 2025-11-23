@@ -1,23 +1,23 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Post, User, Comment, Community } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon } from './Icons';
-import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS } from '../services/mockData';
+import { Post, User, Comment, Community, Product } from '../types';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon, ShoppingBagIcon } from './Icons';
+import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS, MARKET_ITEMS, MOCK_COMMUNITIES } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
-interface SocialFeedProps {
+export interface SocialFeedProps {
   posts: Post[];
   currentUser: User;
-  onPostCreate: (content: string, media?: string, type?: 'image' | 'video', communityId?: string) => void;
-  onAddComment: (postId: string, text: string) => void;
+  onPostCreate: (content: string, media?: string, type?: 'image' | 'video' | 'text', communityId?: string, productId?: string) => void;
   onViewProfile: (user: User) => void;
-  onUpdateUser?: (user: User) => void; 
   communities?: Community[];
   onJoinCommunity?: (id: string) => void;
-  onCreateCommunity?: (name: string, description: string) => void;
+  onCreateCommunity?: (name: string, desc: string) => void;
+  onAddComment: (postId: string, text: string) => void;
   onDeleteCommunity?: (id: string) => void;
   onUpdateCommunity?: (id: string, updates: Partial<Community>) => void;
   onRemoveMember?: (communityId: string, userId: string) => void;
+  onUpdateUser?: (user: User) => void;
 }
 
 // --- Stories Logic ---
@@ -599,104 +599,6 @@ const RightSidebar = ({
     );
 };
 
-// --- Create Post Component ---
-const CreatePost = ({ user, onPost, onViewProfile, communities = [] }: { user: User, onPost: (content: string, media?: string, type?: 'image' | 'video', communityId?: string) => void, onViewProfile: (user: User) => void, communities: Community[] }) => {
-  const [content, setContent] = useState('');
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
-  const [postTarget, setPostTarget] = useState<'public' | string>('public');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const joinedCommunities = communities.filter(c => c.isJoined);
-
-  const handleSubmit = () => {
-    if ((content.trim() || mediaPreview)) {
-      onPost(
-        content, 
-        mediaPreview || undefined, 
-        mediaType || undefined, 
-        postTarget === 'public' ? undefined : postTarget
-      );
-      setContent('');
-      setMediaPreview(null);
-      setMediaType(null);
-      setPostTarget('public');
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-          const url = URL.createObjectURL(file);
-          setMediaPreview(url);
-          setMediaType(file.type.startsWith('video') ? 'video' : 'image');
-      }
-  };
-
-  return (
-    <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm mb-6 border border-gray-100 dark:border-gray-800">
-      <div className="flex gap-3">
-        <img onClick={() => onViewProfile(user)} src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80" />
-        <div className="flex-1">
-          {/* Post Target Selector */}
-          {joinedCommunities.length > 0 && (
-              <div className="mb-2">
-                <select 
-                    value={postTarget} 
-                    onChange={e => setPostTarget(e.target.value)}
-                    className="text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full outline-none border-none cursor-pointer appearance-none hover:bg-blue-100 transition"
-                >
-                    <option value="public">🌎 Everyone</option>
-                    {joinedCommunities.map(c => <option key={c.id} value={c.id}>👥 {c.name}</option>)}
-                </select>
-              </div>
-          )}
-
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={`What's happening?`}
-            className="w-full bg-transparent text-lg text-gray-900 dark:text-white outline-none resize-none min-h-[60px] placeholder-gray-500"
-          />
-          {mediaPreview && (
-              <div className="relative mt-2 rounded-2xl overflow-hidden group bg-black">
-                  {mediaType === 'video' ? (
-                      <video src={mediaPreview} controls className="w-full max-h-[300px] object-contain" />
-                  ) : (
-                      <img src={mediaPreview} className="w-full max-h-[300px] object-contain" />
-                  )}
-                  <button onClick={() => { setMediaPreview(null); setMediaType(null); }} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white">
-                      <CloseIcon className="w-4 h-4" />
-                  </button>
-              </div>
-          )}
-        </div>
-      </div>
-      <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-        <div className="flex gap-1 text-blue-500">
-             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-             <button onClick={() => { fileInputRef.current!.accept = "image/*"; fileInputRef.current!.click() }} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition" title="Photo">
-                 <CameraIcon className="w-5 h-5" />
-             </button>
-             <button onClick={() => { fileInputRef.current!.accept = "video/*"; fileInputRef.current!.click() }} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition" title="Video">
-                 <FilmIcon className="w-5 h-5" />
-             </button>
-             <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition hidden sm:block" title="Poll">
-                 <ChartBarIcon className="w-5 h-5" />
-             </button>
-        </div>
-        <button 
-           onClick={handleSubmit}
-           disabled={!content.trim() && !mediaPreview}
-           className="bg-blue-500 text-white px-6 py-2 rounded-full font-bold text-sm disabled:opacity-50 hover:bg-blue-600 transition shadow-md transform active:scale-95"
-         >
-           Post
-         </button>
-      </div>
-    </div>
-  );
-};
-
 // --- Feed Comment Modal ---
 const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: { post: Post | null, currentUser: User, isOpen: boolean, onClose: () => void, onAddComment: (postId: string, text: string) => void }) => {
     const [text, setText] = useState('');
@@ -768,93 +670,248 @@ const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: 
     );
 };
 
-// --- Post Card ---
-const PostCard: React.FC<{ 
-    post: Post, 
-    currentUser: User, 
-    onViewProfile: (user: User) => void, 
-    onCommentClick: (postId: string) => void,
-    onHashtagClick: (tag: string) => void,
-    onMentionClick: (handle: string) => void,
-    onShareClick: (post: Post) => void 
-}> = ({ post, currentUser, onViewProfile, onCommentClick, onHashtagClick, onMentionClick, onShareClick }) => {
-    const [liked, setLiked] = useState(false);
-    const [likes, setLikes] = useState(post.likes);
-    const [retweeted, setRetweeted] = useState(false);
-    
-    // Parse hashtags in content
-    const renderContent = (text: string) => {
-        const regex = /([#@][\w_]+)/g;
-        const parts = text.split(regex);
-        return parts.map((part, i) => {
-            if (part.startsWith('#')) {
-                return <span key={i} onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }} className="text-blue-500 cursor-pointer hover:underline">{part}</span>;
-            }
-            if (part.startsWith('@')) {
-                return <span key={i} onClick={(e) => { e.stopPropagation(); onMentionClick(part); }} className="text-blue-500 cursor-pointer hover:underline">{part}</span>;
-            }
-            return <span key={i}>{part}</span>;
-        });
-    };
+// --- Add Product Picker Modal ---
+const ProductPickerModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (p: Product) => void }) => {
+    const [query, setQuery] = useState('');
+    const filtered = MARKET_ITEMS.filter(p => p.title.toLowerCase().includes(query.toLowerCase()));
 
     return (
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/30 dark:hover:bg-gray-800/10 transition p-4 cursor-pointer">
-            <div className="flex gap-3">
-                <img src={post.author.avatar} className="w-10 h-10 rounded-full object-cover cursor-pointer" onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} />
-                <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-gray-900 dark:text-white hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }}>{post.author.name}</span>
-                            {post.author.verified && <CheckIcon className="w-4 h-4 text-blue-500" />}
-                            <span className="text-gray-500 text-sm">{post.author.handle} · {post.timestamp}</span>
-                            {post.communityId && (
-                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 uppercase tracking-wide">
-                                    Community
-                                </span>
-                            )}
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-slide-up">
+                <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
+                    <SearchIcon className="w-5 h-5 text-gray-400" />
+                    <input 
+                        autoFocus
+                        className="flex-1 bg-transparent outline-none dark:text-white"
+                        placeholder="Search products to tag..."
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                    />
+                    <button onClick={onClose}><CloseIcon className="w-5 h-5 text-gray-500" /></button>
+                </div>
+                <div className="max-h-80 overflow-y-auto p-2">
+                    {filtered.map(p => (
+                        <div key={p.id} onClick={() => onSelect(p)} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
+                            <img src={p.image} className="w-10 h-10 rounded object-cover" />
+                            <div className="flex-1">
+                                <div className="text-sm font-bold dark:text-white">{p.title}</div>
+                                <div className="text-xs text-blue-500 font-bold">{p.price}</div>
+                            </div>
                         </div>
-                        <button className="text-gray-400 hover:text-blue-500">...</button>
-                    </div>
-
-                    <div className="mt-1 text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">
-                        {renderContent(post.content)}
-                    </div>
-
-                    {post.image && (
-                        <div className="mt-3 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800">
-                            {post.type === 'video' ? (
-                                <video src={post.image} controls className="w-full max-h-[500px] object-cover" />
-                            ) : (
-                                <img src={post.image} className="w-full max-h-[500px] object-cover" />
-                            )}
-                        </div>
-                    )}
-
-                    {/* Interactions */}
-                    <div className="flex justify-between items-center mt-3 max-w-md text-gray-500">
-                        <button onClick={(e) => { e.stopPropagation(); onCommentClick(post.id); }} className="flex items-center gap-2 group hover:text-blue-500">
-                            <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20"><CommentIcon className="w-4 h-4" /></div>
-                            <span className="text-sm">{formatCompactNumber(post.commentsList?.length || post.comments)}</span>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); setRetweeted(!retweeted); }} className={`flex items-center gap-2 group ${retweeted ? 'text-green-500' : 'hover:text-green-500'}`}>
-                            <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20"><RepeatIcon className="w-4 h-4" /></div>
-                            <span className="text-sm">{formatCompactNumber(post.shares + (retweeted ? 1 : 0))}</span>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); setLiked(!liked); setLikes(l => liked ? l - 1 : l + 1); }} className={`flex items-center gap-2 group ${liked ? 'text-red-500' : 'hover:text-red-500'}`}>
-                            <div className="p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20"><HeartIcon className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} /></div>
-                            <span className="text-sm">{formatCompactNumber(likes)}</span>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); onShareClick(post); }} className="flex items-center gap-2 group hover:text-blue-500">
-                            <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20"><ShareIcon className="w-4 h-4" /></div>
-                        </button>
-                    </div>
+                    ))}
+                    {filtered.length === 0 && <div className="p-4 text-gray-500 text-center text-sm">No products found.</div>}
                 </div>
             </div>
         </div>
     );
 };
 
-// --- Main Social Feed ---
+// --- Create Post Component ---
+const CreatePost = ({ user, onPost, onViewProfile, communities }: { user: User, onPost: (content: string, media?: string, type?: 'image'|'video'|'text', communityId?: string, productId?: string) => void, onViewProfile: (u: User) => void, communities: Community[] }) => {
+    const [text, setText] = useState('');
+    const [image, setImage] = useState<string | null>(null);
+    const [selectedCommunity, setSelectedCommunity] = useState<string>('');
+    const [showProductPicker, setShowProductPicker] = useState(false);
+    const [taggedProduct, setTaggedProduct] = useState<Product | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handlePost = () => {
+        if(!text.trim() && !image) return;
+        onPost(text, image || undefined, image ? 'image' : 'text', selectedCommunity || undefined, taggedProduct?.id);
+        setText('');
+        setImage(null);
+        setSelectedCommunity('');
+        setTaggedProduct(null);
+    }
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if(e.target.files?.[0]) {
+            setImage(URL.createObjectURL(e.target.files[0]));
+        }
+    }
+
+    return (
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-6">
+            {showProductPicker && <ProductPickerModal onClose={() => setShowProductPicker(false)} onSelect={(p) => { setTaggedProduct(p); setShowProductPicker(false); }} />}
+            
+            <div className="flex gap-4">
+                <img onClick={() => onViewProfile(user)} src={user.avatar} className="w-10 h-10 rounded-full object-cover cursor-pointer" />
+                <div className="flex-1">
+                    <textarea 
+                        value={text}
+                        onChange={e => setText(e.target.value)}
+                        placeholder="What's on your mind?"
+                        className="w-full bg-transparent outline-none text-gray-900 dark:text-white text-base resize-none min-h-[60px]"
+                    />
+                    
+                    {image && (
+                        <div className="relative mb-3 inline-block">
+                             <img src={image} className="max-h-60 rounded-lg" />
+                             <button onClick={() => setImage(null)} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"><CloseIcon className="w-4 h-4" /></button>
+                        </div>
+                    )}
+
+                    {taggedProduct && (
+                        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg mb-3 w-fit">
+                            <ShoppingBagIcon className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-bold text-blue-700 dark:text-blue-300">Tagged: {taggedProduct.title}</span>
+                            <button onClick={() => setTaggedProduct(null)}><CloseIcon className="w-4 h-4 text-blue-500" /></button>
+                        </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex gap-4">
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                            <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition"><CameraIcon className="w-5 h-5" /></button>
+                            <button onClick={() => setShowProductPicker(true)} className="text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 p-2 rounded-full transition"><TagIcon className="w-5 h-5" /></button>
+                            
+                            {communities.length > 0 && (
+                                <select 
+                                    value={selectedCommunity} 
+                                    onChange={e => setSelectedCommunity(e.target.value)}
+                                    className="bg-gray-100 dark:bg-gray-800 text-xs rounded-full px-3 outline-none dark:text-white border-none"
+                                >
+                                    <option value="">Public</option>
+                                    {communities.filter(c => c.isJoined).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            )}
+                        </div>
+                        <button 
+                            onClick={handlePost} 
+                            disabled={!text.trim() && !image}
+                            className="bg-blue-600 text-white px-6 py-1.5 rounded-full font-bold text-sm hover:bg-blue-700 disabled:opacity-50 transition"
+                        >
+                            Post
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// --- Post Card Component ---
+const PostCard = ({ 
+    post, 
+    currentUser, 
+    onViewProfile, 
+    onCommentClick, 
+    onHashtagClick, 
+    onMentionClick,
+    onShareClick
+}: { 
+    post: Post, 
+    currentUser: User, 
+    onViewProfile: (u: User) => void, 
+    onCommentClick: (id: string) => void, 
+    onHashtagClick: (tag: string) => void, 
+    onMentionClick: (handle: string) => void,
+    onShareClick: (p: Post) => void
+}) => {
+    const [liked, setLiked] = useState(false);
+    const [likesCount, setLikesCount] = useState(post.likes);
+
+    const handleLike = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (liked) {
+            setLiked(false);
+            setLikesCount(prev => prev - 1);
+        } else {
+            setLiked(true);
+            setLikesCount(prev => prev + 1);
+        }
+    };
+
+    // Parse content for hashtags and mentions
+    const renderContent = (content: string) => {
+        const parts = content.split(/(\s+)/);
+        return parts.map((part, i) => {
+            if (part.startsWith('#')) {
+                return <span key={i} onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }} className="text-blue-500 hover:underline cursor-pointer">{part}</span>;
+            } else if (part.startsWith('@')) {
+                return <span key={i} onClick={(e) => { e.stopPropagation(); onMentionClick(part); }} className="text-blue-500 hover:underline cursor-pointer font-bold">{part}</span>;
+            }
+            return part;
+        });
+    };
+
+    // Find community info if exists
+    const communityName = post.communityId ? MOCK_COMMUNITIES.find(c => c.id === post.communityId)?.name : null;
+
+    return (
+        <div className="bg-white dark:bg-gray-900 p-4 border-b border-gray-100 dark:border-gray-800 transition hover:bg-gray-50/50 dark:hover:bg-gray-800/20 cursor-default">
+            {/* Header */}
+            <div className="flex items-start gap-3 mb-3">
+                <img 
+                    onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }}
+                    src={post.author.avatar} 
+                    className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80" 
+                />
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1 flex-wrap">
+                        <span onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} className="font-bold text-gray-900 dark:text-white cursor-pointer hover:underline text-sm">{post.author.name}</span>
+                        {post.author.verified && <CheckIcon className="w-3.5 h-3.5 text-blue-500" />}
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">@{post.author.handle}</span>
+                        <span className="text-gray-400 text-xs">• {post.timestamp}</span>
+                        {communityName && (
+                            <>
+                                <span className="text-gray-400 text-xs">in</span>
+                                <span className="text-blue-500 text-xs font-bold hover:underline cursor-pointer">{communityName}</span>
+                            </>
+                        )}
+                    </div>
+                    {/* Content */}
+                    <p className="text-sm text-gray-900 dark:text-white mt-1 whitespace-pre-wrap leading-relaxed">{renderContent(post.content)}</p>
+                </div>
+                <button className="text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 p-1 rounded-full"><div className="rotate-90">...</div></button>
+            </div>
+
+            {/* Media */}
+            {post.image && (
+                <div className="ml-12 mb-3 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 relative group cursor-pointer">
+                    <img src={post.image} className="w-full h-auto max-h-[500px] object-cover" />
+                    {post.taggedProductId && (
+                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm">
+                            <ShoppingBagIcon className="w-3 h-3" />
+                            <span>Tagged Product</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Actions */}
+            <div className="ml-12 flex justify-between items-center pr-4">
+                <button onClick={handleLike} className={`flex items-center gap-2 text-xs font-bold group ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}>
+                    <div className={`p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20 transition ${liked ? '' : ''}`}>
+                        <HeartIcon className={`w-5 h-5 ${liked ? 'animate-like' : ''}`} filled={liked} />
+                    </div>
+                    <span>{formatCompactNumber(likesCount)}</span>
+                </button>
+
+                <button onClick={() => onCommentClick(post.id)} className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-blue-500 group">
+                    <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition">
+                        <CommentIcon className="w-5 h-5" />
+                    </div>
+                    <span>{formatCompactNumber(post.commentsList?.length || post.comments)}</span>
+                </button>
+
+                <button className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-green-500 group">
+                     <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20 transition">
+                        <RepeatIcon className="w-5 h-5" />
+                    </div>
+                    <span>{formatCompactNumber(post.shares)}</span>
+                </button>
+
+                <button onClick={() => onShareClick(post)} className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-blue-500 group">
+                    <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition">
+                        <ShareIcon className="w-5 h-5" />
+                    </div>
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export const SocialFeed: React.FC<SocialFeedProps> = ({ 
     posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment, onDeleteCommunity, onUpdateCommunity, onRemoveMember 
 }) => {
@@ -933,33 +990,11 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
 
   }, [searchQuery, posts, communities]);
 
-  // Main Feed Display Logic (Standard View)
-  const displayPosts = useMemo(() => {
-      let filtered = posts;
-
-      // Note: Search is handled separately now, so this filtering mainly handles Tabs
-      
-      // 1. Tab Filter
-      if (activeTab === 'Following') {
-          // Strictly show posts from authors in the following list
-          filtered = filtered.filter(p => currentUser.followingIds?.includes(p.author.id));
-      } else if (activeTab === 'Communities') {
-          if (selectedCommunityId) {
-              filtered = filtered.filter(p => p.communityId === selectedCommunityId);
-          } else {
-              filtered = filtered.filter(p => !!p.communityId);
-          }
-      } else if (activeTab === 'For You') {
-          return getPersonalizedFeed(filtered, currentUser);
-      }
-
-      return filtered;
-  }, [posts, activeTab, currentUser, selectedCommunityId]);
-
   // Derived Community Lists for Dashboard
   const joinedCommunities = communities.filter(c => c.isJoined);
   const unjoinedCommunities = communities.filter(c => !c.isJoined);
 
+  // ... (Rest of existing handlers)
   const handleSelectCommunity = (id: string | null) => {
       setSelectedCommunityId(id);
       setActiveTab('Communities');
@@ -997,9 +1032,6 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
       }
   };
 
-  const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId && !searchQuery;
-
-  // Touch Handlers for Pull to Refresh
   const handleTouchStart = (e: React.TouchEvent) => {
     // Only enable pull to refresh if at the very top
     if (containerRef.current && containerRef.current.scrollTop <= 0) {
@@ -1038,7 +1070,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
     touchStartY.current = 0;
   };
 
-  // Render Search Results Helper
+  const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId && !searchQuery;
+
+  // Render Search Results Helper (Reused)
   const renderSearchResults = () => {
       if (!searchResults) return null;
       
@@ -1150,6 +1184,26 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
           </div>
       );
   };
+
+  // Main Feed Display Logic (Standard View)
+  const displayPosts = useMemo(() => {
+      let filtered = posts;
+      
+      // 1. Tab Filter
+      if (activeTab === 'Following') {
+          filtered = filtered.filter(p => currentUser.followingIds?.includes(p.author.id));
+      } else if (activeTab === 'Communities') {
+          if (selectedCommunityId) {
+              filtered = filtered.filter(p => p.communityId === selectedCommunityId);
+          } else {
+              filtered = filtered.filter(p => !!p.communityId);
+          }
+      } else if (activeTab === 'For You') {
+          return getPersonalizedFeed(filtered, currentUser);
+      }
+
+      return filtered;
+  }, [posts, activeTab, currentUser, selectedCommunityId]);
 
   return (
     <div 

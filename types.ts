@@ -45,6 +45,8 @@ export interface User {
   // Preferences
   themePreference?: 'light' | 'dark' | 'system';
   contentPreferences?: string[]; // e.g. ['tech', 'art']
+  
+  savedPostIds?: string[]; // Bookmarks
 }
 
 export interface Community {
@@ -88,6 +90,9 @@ export interface Post {
   engagementScore?: number; // Calculated dynamically
   tags?: string[];
   category?: string;
+  
+  // Social Commerce
+  taggedProductId?: string;
 }
 
 export interface Video {
@@ -153,14 +158,82 @@ export interface ChatSession {
   typingUsers?: string[]; // IDs of users typing
 }
 
+// --- E-Commerce Types ---
+
+export interface Variant {
+  name: string; // e.g. Size, Color
+  options: string[];
+}
+
+export interface Review {
+  id: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
 export interface Product {
   id: string;
   title: string;
-  price: string;
-  image: string;
+  description?: string;
+  price: string; // Display price "$120"
+  rawPrice?: number; // Numeric for calc
+  discount?: string; // "20% OFF"
+  images: string[]; // Array of URLs
+  image: string; // Main image (keep for compatibility)
   location: string;
-  sellerId?: string;
-  category?: string;
+  sellerId: string;
+  category: string;
+  stock: number;
+  variants?: Variant[];
+  rating?: number;
+  reviewCount?: number;
+  reviews?: Review[];
+  shippingTime?: string;
+  returnPolicy?: string;
+}
+
+export interface PayoutDetails {
+  method: 'upi' | 'bank';
+  upiId?: string;
+  accountNumber?: string;
+  ifsc?: string;
+  holderName: string;
+}
+
+export interface Store {
+  id: string;
+  sellerId: string;
+  name: string;
+  logo: string;
+  banner: string;
+  rating: number;
+  followers: number;
+  description: string;
+  isVerified?: boolean;
+  payoutDetails?: PayoutDetails;
+  totalRevenue?: number;
+}
+
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  variant?: string;
+  title: string; // Snapshot
+  price: number; // Snapshot
+}
+
+export interface Order {
+  id: string;
+  buyerId: string;
+  items: OrderItem[];
+  total: number;
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  date: string;
+  shippingAddress: string;
+  paymentMethod: 'cod' | 'online';
 }
 
 export interface Notification {

@@ -13,16 +13,13 @@ import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS
 import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, StreamHubIcon, ShoppingBagIcon } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
-// --- Mobile Menu Drawer Component ---
+// ... (Keep MobileMenu component)
 const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, onViewProfile }: { isOpen: boolean; onClose: () => void; currentUser: User; isDarkMode: boolean; toggleDarkMode: () => void; onViewProfile: () => void }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex justify-end">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      
-      {/* Drawer */}
       <div className="relative w-3/4 max-w-xs bg-white dark:bg-gray-900 h-full shadow-2xl flex flex-col animate-slide-in-right transition-colors duration-300">
         <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
           <h2 className="font-bold text-lg dark:text-white">Menu</h2>
@@ -31,7 +28,6 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           </button>
         </div>
         
-        {/* Profile Section */}
         <div className="p-5 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3 mb-2">
             <img src={currentUser.avatar} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
@@ -48,7 +44,6 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           </button>
         </div>
 
-        {/* Menu Items */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
            {[
              { icon: <SettingsIcon className="w-6 h-6" />, label: "Settings & Privacy" },
@@ -61,7 +56,6 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
                {item.label}
              </button>
            ))}
-           {/* Dark Mode Toggle */}
             <button onClick={toggleDarkMode} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
                <span className="text-gray-500 dark:text-gray-400"><MoonIcon className="w-6 h-6" /></span>
                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
@@ -72,7 +66,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.8</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.1.0</p>
         </div>
       </div>
     </div>
@@ -84,14 +78,10 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   
-  // Global State
   const [currentUser, setCurrentUser] = useState<User>(CURRENT_USER);
   const [viewingUser, setViewingUser] = useState<User>(CURRENT_USER); 
   
-  // Navigation State
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  
-  // Community selection state lifted to App to allow creation to switch tabs/selection
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
 
   const [posts, setPosts] = useState<Post[]>(FEED_POSTS);
@@ -102,11 +92,8 @@ export default function App() {
   const [communities, setCommunities] = useState<Community[]>(MOCK_COMMUNITIES);
 
   const [isAiThinking, setIsAiThinking] = useState(false);
-  
-  // Reels Global Mute State
   const [isReelsMuted, setIsReelsMuted] = useState(false);
 
-  // Toggle Dark Mode
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -117,7 +104,6 @@ export default function App() {
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
-  // --- Profile Actions ---
   const handleUpdateUser = (updatedUser: User) => {
       setCurrentUser(updatedUser);
       if (viewingUser.id === updatedUser.id) {
@@ -130,8 +116,8 @@ export default function App() {
       setActiveTab(ViewMode.PROFILE);
   };
 
-  // --- Feed Actions ---
-  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video', communityId?: string) => {
+  // Updated Create Post handler to support product tagging
+  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video' | 'text', communityId?: string, productId?: string) => {
     const newPost: Post = {
       id: `new_p_${Date.now()}`,
       author: currentUser,
@@ -143,7 +129,8 @@ export default function App() {
       timestamp: 'Just now',
       type: type || 'text',
       image: media,
-      communityId: communityId
+      communityId: communityId,
+      taggedProductId: productId // Add product ID
     };
     setPosts([newPost, ...posts]);
   };
@@ -168,7 +155,7 @@ export default function App() {
       }));
   };
 
-  // --- Community Actions ---
+  // ... (Keep Community Actions)
   const handleCreateCommunity = (name: string, description: string) => {
       const newId = `c_${Date.now()}`;
       const newCommunity: Community = {
@@ -180,16 +167,15 @@ export default function App() {
           isJoined: true,
           tags: [],
           trendingScore: 0,
-          creatorId: currentUser.id // Assign creator
+          creatorId: currentUser.id 
       };
       setCommunities([...communities, newCommunity]);
-      setSelectedCommunityId(newId); // Auto select
-      setActiveTab(ViewMode.FEED); // Go to feed
+      setSelectedCommunityId(newId);
+      setActiveTab(ViewMode.FEED); 
   };
 
   const handleDeleteCommunity = (id: string) => {
       setCommunities(communities.filter(c => c.id !== id));
-      // Also remove posts from this community (optional, but cleaner)
       setPosts(posts.filter(p => p.communityId !== id));
       if (selectedCommunityId === id) setSelectedCommunityId(null);
   };
@@ -207,8 +193,6 @@ export default function App() {
   };
 
   const handleRemoveMember = (communityId: string, userId: string) => {
-      // In a real app, this would make an API call. 
-      // Here we just simulate updating member count if it's not the current user leaving (which is handleJoinCommunity)
       setCommunities(communities.map(c => 
           c.id === communityId ? { ...c, members: Math.max(0, c.members - 1) } : c
       ));
@@ -225,22 +209,14 @@ export default function App() {
   };
 
   const handleVideoClick = (video: LongFormVideo) => {
-      // We need to switch to CREATOR view (StreamHub) and select the video
-      // But App.tsx doesn't easily pass "selectedVideo" prop directly to LongFormVideoApp via state efficiently without lifting it all up.
-      // For now, we'll just switch tab. In a real app, we'd use a router or global context.
       setActiveTab(ViewMode.CREATOR);
-      // A more complex refactor would be needed to deep-link to a video from Explore without URL routing.
-      // For this demo, switching to the hub is the best approximation.
-      // Alternatively, we can alert the user or play it in a modal within Explore (which we did in ExploreDetailModal for quick view).
   };
 
-  // --- Reel Actions ---
   const handlePostReel = (video: Video) => {
       setReels([video, ...reels]);
       setActiveTab(ViewMode.WATCH);
   };
 
-  // --- Chat Actions ---
   const handleCreateGroup = (name: string) => {
       const newGroupId = `g_${Date.now()}`;
       const newGroup: ChatSession = {
@@ -255,20 +231,15 @@ export default function App() {
           messages: []
       };
       setChats([newGroup, ...chats]);
-      
-      // Switch to Chat View and open the new group immediately
       setActiveTab(ViewMode.CHAT);
       setSelectedChatId(newGroupId);
   };
   
   const handleStartChat = (targetUser: User) => {
-      // 1. Check if chat exists
       const existingChat = chats.find(c => !c.isGroup && c.user.id === targetUser.id);
-      
       if (existingChat) {
           setSelectedChatId(existingChat.id);
       } else {
-          // 2. Create new chat
           const newChatId = `c_${Date.now()}`;
           const newChat: ChatSession = {
               id: newChatId,
@@ -281,8 +252,6 @@ export default function App() {
           setChats([newChat, ...chats]);
           setSelectedChatId(newChatId);
       }
-      
-      // 3. Switch to Chat View
       setActiveTab(ViewMode.CHAT);
   };
 
@@ -297,7 +266,7 @@ export default function App() {
       timestamp: new Date(),
       type: type,
       mediaUrl: mediaUrl,
-      status: 'sending' // Initial status
+      status: 'sending'
     };
 
     const updatedChats = [...chats];
@@ -310,11 +279,10 @@ export default function App() {
     setChats(updatedChats);
 
     const currentSession = updatedChats[sessionIndex];
-    if (currentSession.user.id === 'u3' && type === 'text') { // u3 is the AI
+    if (currentSession.user.id === 'u3' && type === 'text') {
       setIsAiThinking(true);
       try {
         const aiResponseText = await getAIResponse(text);
-        
         const aiMessage: Message = {
           id: `ai_msg_${Date.now()}`,
           senderId: 'u3',
@@ -366,19 +334,9 @@ export default function App() {
                 onDeleteCommunity={handleDeleteCommunity}
                 onUpdateCommunity={handleUpdateCommunity}
                 onRemoveMember={handleRemoveMember}
-                // Note: SocialFeed logic for "selectedCommunityId" is handled internally mostly via prop passing from App state in real apps
-                // Here we are re-mounting SocialFeed, so we need to make sure it knows if we just navigated to a community.
-                // Since we don't pass selectedCommunityId as a prop to force it, we rely on SocialFeed's internal state or we should pass it.
-                // For better architecture, we should pass selectedCommunityId as a prop to SocialFeed.
-                // But modifying SocialFeed again might be verbose. 
-                // Let's assume SocialFeed handles its own internal "selectedCommunityId" unless we lift it.
-                // To support navigation from Explore -> Community Feed properly, we really should lift `selectedCommunityId` to App state completely.
-                // * Correction: We did lift `selectedCommunityId` to App state in `App.tsx` logic above for creation, but SocialFeed doesn't consume it as a prop yet in the previous file version.
-                // Let's pass it if SocialFeed accepts it, or we just let user navigate manually for now if avoiding big refactor.
-                // Actually, `handleNavigateToCommunity` sets `activeTab`, but doesn't force SocialFeed to open that community unless we pass it.
             />
         );
-      case ViewMode.WATCH: // Used for Reels/Shorts standalone viewer
+      case ViewMode.WATCH:
         return (
           <VideoReels 
             videos={reels} 
@@ -408,7 +366,7 @@ export default function App() {
             selectedSessionId={selectedChatId}
           />
         );
-      case ViewMode.CREATOR: // Main Video Hub
+      case ViewMode.CREATOR:
         return (
           <LongFormVideoApp 
             videos={longFormVideos} 
@@ -442,7 +400,7 @@ export default function App() {
             />
         );
       case ViewMode.MARKET:
-        return <Marketplace products={MARKET_ITEMS} />;
+        return <Marketplace />;
       default:
         return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
     }
@@ -461,7 +419,6 @@ export default function App() {
         onViewProfile={() => handleViewProfile(currentUser)}
       />
 
-      {/* Desktop Header */}
       <header className="hidden md:flex bg-white dark:bg-gray-900 shadow-sm z-50 px-6 h-16 items-center justify-between sticky top-0 border-b dark:border-gray-800 transition-colors">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab(ViewMode.FEED)}>
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 w-8 h-8 rounded-lg flex items-center justify-center">
@@ -504,12 +461,10 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className={`flex-1 overflow-hidden ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'bg-black' : ''}`}>
         {renderContent()}
       </main>
 
-      {/* Mobile Bottom Nav */}
       <nav className={`md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 h-16 flex justify-around items-center z-50 pb-safe fixed bottom-0 w-full transition-colors ${activeTab === ViewMode.WATCH || activeTab === ViewMode.CREATE_REEL ? 'bg-black/90 border-gray-800 backdrop-blur-sm text-white' : ''}`}>
           <button onClick={() => setActiveTab(ViewMode.FEED)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.FEED ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
             <HomeIcon className="w-6 h-6" />
@@ -522,6 +477,10 @@ export default function App() {
           <button onClick={() => setActiveTab(ViewMode.EXPLORE)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.EXPLORE ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
             <ExploreIcon className="w-6 h-6" />
             <span className="text-[10px] font-medium">Explore</span>
+          </button>
+          <button onClick={() => setActiveTab(ViewMode.MARKET)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.MARKET ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
+            <ShoppingBagIcon className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Shop</span>
           </button>
           <button onClick={() => setActiveTab(ViewMode.CHAT)} className={`p-2 flex flex-col items-center gap-1 ${activeTab === ViewMode.CHAT ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}`}>
             <ChatIcon className="w-6 h-6" />
