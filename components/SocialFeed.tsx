@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Post, User, Comment } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, SendIcon, CloseIcon, TrashIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, SendIcon, CloseIcon, TrashIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon } from './Icons';
+import { TRENDING_TOPICS, SUGGESTED_USERS } from '../services/mockData';
 
 interface SocialFeedProps {
   posts: Post[];
@@ -12,21 +13,29 @@ interface SocialFeedProps {
 const CreatePost = ({ user, onPost }: { user: User, onPost: (content: string) => void }) => {
   const [content, setContent] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  
+  const MAX_CHARS = 280;
+  const charsLeft = MAX_CHARS - content.length;
+  const progress = (content.length / MAX_CHARS) * 100;
+  const progressColor = charsLeft < 20 ? 'text-red-500' : charsLeft < 50 ? 'text-yellow-500' : 'text-blue-500';
 
   const handleSubmit = () => {
-    if (content.trim()) {
+    if ((content.trim() || mediaPreview) && content.length <= MAX_CHARS) {
       onPost(content);
       setContent('');
+      setMediaPreview(null);
       setIsFocused(false);
     }
   };
 
-  const handleMockAction = (type: string) => {
-    alert(`${type} feature would open a picker here!`);
+  const handleMediaClick = () => {
+      const sampleImage = `https://picsum.photos/seed/${Date.now()}/800/400`;
+      setMediaPreview(sampleImage);
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
+    <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm mb-6 border border-gray-100 dark:border-gray-800 transition-colors">
       <div className="flex gap-3">
         <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
         <div className="flex-1">
@@ -34,45 +43,74 @@ const CreatePost = ({ user, onPost }: { user: User, onPost: (content: string) =>
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setIsFocused(true)}
-            placeholder={`What's on your mind, ${user.name.split(' ')[0]}?`}
-            className="w-full bg-gray-100 rounded-lg px-4 py-2 text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition resize-none h-12 focus:h-24"
+            placeholder={`What's happening?`}
+            className="w-full bg-transparent text-lg text-gray-900 dark:text-white outline-none resize-none min-h-[50px]"
           />
+          
+          {mediaPreview && (
+              <div className="relative mt-2 rounded-2xl overflow-hidden group">
+                  <img src={mediaPreview} className="w-full h-64 object-cover" />
+                  <button onClick={() => setMediaPreview(null)} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-black/70">
+                      <CloseIcon className="w-4 h-4" />
+                  </button>
+              </div>
+          )}
         </div>
       </div>
-      {(isFocused || content) && (
-        <div className="flex justify-end mt-2">
-           <button 
-             onClick={handleSubmit}
-             disabled={!content.trim()}
-             className="bg-blue-600 text-white px-4 py-1.5 rounded-full font-medium text-sm disabled:opacity-50 hover:bg-blue-700 transition"
-           >
-             Post
-           </button>
+      <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <div className="flex gap-2 text-blue-500">
+             <button onClick={handleMediaClick} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"><CameraIcon className="w-5 h-5" /></button>
+             <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"><span className="text-xl leading-none">GIF</span></button>
+             <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition"><span className="text-xl leading-none">📊</span></button>
         </div>
-      )}
-      <div className="flex justify-between mt-3 pt-3 border-t border-gray-100">
-        <button onClick={() => handleMockAction('Photo/Video')} className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:bg-gray-50 px-3 py-1 rounded-lg transition">
-          <span className="text-green-500">🖼️</span> Photo/Video
-        </button>
-        <button onClick={() => handleMockAction('Feeling/Activity')} className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:bg-gray-50 px-3 py-1 rounded-lg transition">
-          <span className="text-yellow-500">😊</span> Feeling
-        </button>
-        <button onClick={() => handleMockAction('Live Video')} className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:bg-gray-50 px-3 py-1 rounded-lg transition">
-          <span className="text-red-500">🎥</span> Live
-        </button>
+        <div className="flex items-center gap-4">
+             {content.length > 0 && (
+                 <div className="flex items-center gap-2">
+                     <span className={`text-xs ${charsLeft < 0 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>{charsLeft}</span>
+                     <div className="w-5 h-5 rounded-full border-2 border-gray-200 dark:border-gray-700 relative flex items-center justify-center">
+                         <div className={`absolute inset-0 rounded-full border-2 border-transparent ${progressColor}`} style={{ clipPath: `inset(0 ${100 - progress}% 0 0)` }}></div>
+                     </div>
+                 </div>
+             )}
+             <button 
+               onClick={handleSubmit}
+               disabled={(!content.trim() && !mediaPreview) || charsLeft < 0}
+               className="bg-blue-500 text-white px-5 py-1.5 rounded-full font-bold text-sm disabled:opacity-50 hover:bg-blue-600 transition shadow-sm"
+             >
+               Post
+             </button>
+        </div>
       </div>
     </div>
   );
+};
+
+// --- Rich Text Component (Hashtags/Mentions) ---
+const RichText = ({ text }: { text: string }) => {
+    const parts = text.split(/((?:#|@)\w+)/g);
+    return (
+        <p className="text-gray-900 dark:text-gray-100 text-[15px] leading-normal whitespace-pre-wrap">
+            {parts.map((part, i) => {
+                if (part.startsWith('#') || part.startsWith('@')) {
+                    return <span key={i} className="text-blue-500 hover:underline cursor-pointer">{part}</span>;
+                }
+                return part;
+            })}
+        </p>
+    );
 };
 
 // --- Post Card Component ---
 const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [reposted, setReposted] = useState(false);
+  const [shares, setShares] = useState(post.shares);
   const [showComments, setShowComments] = useState(false);
+  const [showHeartOverlay, setShowHeartOverlay] = useState(false);
   const [comments, setComments] = useState<Comment[]>(post.commentsList || []);
   const [newComment, setNewComment] = useState('');
-  const [showShare, setShowShare] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
   const handleLike = () => {
@@ -82,6 +120,29 @@ const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
       setLikes(likes + 1);
     }
     setLiked(!liked);
+  };
+
+  const handleDoubleTap = (e: React.MouseEvent) => {
+      e.stopPropagation(); // prevent opening post
+      if (!liked) {
+          setLikes(likes + 1);
+          setLiked(true);
+      }
+      setShowHeartOverlay(true);
+      setTimeout(() => setShowHeartOverlay(false), 1000);
+  };
+
+  const handleRepost = () => {
+      if (reposted) {
+          setShares(shares - 1);
+      } else {
+          setShares(shares + 1);
+      }
+      setReposted(!reposted);
+  };
+
+  const handleBookmark = () => {
+      setBookmarked(!bookmarked);
   };
 
   const handleAddComment = () => {
@@ -96,127 +157,136 @@ const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
     setNewComment('');
   };
 
-  const handleShare = () => {
-    setShowShare(true);
-    setTimeout(() => setShowShare(false), 2000); // Auto close "copied" toast
-  };
-
   return (
-    <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden relative">
-        {/* Share Toast */}
-        {showShare && (
-            <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white px-4 py-2 rounded-full text-sm z-20 fade-in">
-                Link copied to clipboard!
-            </div>
-        )}
-
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between relative">
-        <div className="flex items-center gap-3">
-          <img src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover border border-gray-100" />
-          <div>
-            <div className="flex items-center gap-1">
-              <h3 className="font-semibold text-sm text-gray-900">{post.author.name}</h3>
-              {post.author.verified && <span className="text-blue-500 text-[10px]">✔</span>}
-            </div>
-            <p className="text-xs text-gray-500">{post.timestamp} • 🌎</p>
-          </div>
-        </div>
-        <button onClick={() => setShowOptions(!showOptions)} className="text-gray-400 hover:text-gray-600 p-1">...</button>
-        
-        {/* Options Dropdown */}
-        {showOptions && (
-            <div className="absolute top-10 right-4 bg-white shadow-xl border border-gray-100 rounded-lg w-40 z-10 py-1">
-                <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700">
-                    <span>👁️</span> Hide Post
-                </button>
-                <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600">
-                    <TrashIcon className="w-4 h-4" /> Report
-                </button>
-            </div>
-        )}
-        {/* Click overlay to close options */}
-        {showOptions && <div className="fixed inset-0 z-0" onClick={() => setShowOptions(false)}></div>}
-      </div>
-      
-      {/* Content */}
-      <div className="px-4 pb-2">
-        <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
-      </div>
-
-      {post.image && (
-        <div className="mt-2">
-          <img src={post.image} alt="Post content" className="w-full h-auto object-cover max-h-[500px]" />
-        </div>
-      )}
-
-      {/* Action Bar */}
-      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-50 mt-2">
-        <div className="flex gap-4 w-full">
-          <button 
-            onClick={handleLike}
-            className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-medium transition py-1 rounded-lg hover:bg-gray-50 ${liked ? 'text-red-500' : 'text-gray-600'}`}
-          >
-            <HeartIcon className="w-5 h-5" filled={liked} />
-            {likes > 0 ? likes : 'Like'}
-          </button>
-          <button 
-             onClick={() => setShowComments(!showComments)}
-             className="flex-1 flex items-center justify-center gap-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 py-1 rounded-lg transition"
-           >
-            <CommentIcon className="w-5 h-5" />
-            {comments.length > 0 ? comments.length : 'Comment'}
-          </button>
-          <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 py-1 rounded-lg transition">
-            <ShareIcon className="w-5 h-5" />
-            Share
-          </button>
-        </div>
-      </div>
-
-      {/* Comment Section */}
-      {showComments && (
-          <div className="bg-gray-50 p-4 border-t border-gray-100 animate-fade-in-down">
-            {comments.length > 0 ? (
-                <div className="space-y-3 mb-4">
-                    {comments.map(comment => (
-                        <div key={comment.id} className="flex gap-2">
-                             <img src={comment.author.avatar} className="w-8 h-8 rounded-full" alt={comment.author.name} />
-                             <div className="bg-white p-2 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">
-                                 <h4 className="text-xs font-bold text-gray-900">{comment.author.name}</h4>
-                                 <p className="text-sm text-gray-800">{comment.text}</p>
-                             </div>
-                             <span className="text-[10px] text-gray-400 mt-2">{comment.timestamp}</span>
-                        </div>
-                    ))}
+    <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors p-4 cursor-pointer">
+      <div className="flex gap-3">
+        <img src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+            {/* Header */}
+            <div className="flex justify-between items-start">
+                <div className="flex items-center gap-1.5 overflow-hidden">
+                    <h3 className="font-bold text-gray-900 dark:text-white truncate">{post.author.name}</h3>
+                    {post.author.verified && <span className="text-blue-500 text-[12px]">✔</span>}
+                    <span className="text-gray-500 dark:text-gray-400 text-sm truncate">{post.author.handle} · {post.timestamp}</span>
                 </div>
-            ) : (
-                <div className="text-center text-gray-400 text-sm py-2">No comments yet. Be the first!</div>
+                <button onClick={(e) => { e.stopPropagation(); setShowOptions(!showOptions); }} className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 relative group">
+                    ...
+                    {showOptions && (
+                        <div className="absolute top-6 right-0 bg-white dark:bg-black shadow-xl border border-gray-200 dark:border-gray-700 rounded-lg w-32 z-20 py-1 font-bold text-sm">
+                            <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200">Not interested</div>
+                            <div className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500">Report</div>
+                        </div>
+                    )}
+                </button>
+            </div>
+
+            {/* Content */}
+            <div className="mt-1">
+                <RichText text={post.content} />
+            </div>
+
+            {post.image && (
+                <div className="mt-3 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 relative select-none" onDoubleClick={handleDoubleTap}>
+                    <img src={post.image} alt="Post content" className="w-full h-auto object-cover max-h-[500px]" />
+                    {showHeartOverlay && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <HeartIcon className="w-24 h-24 text-white animate-like drop-shadow-lg" filled />
+                        </div>
+                    )}
+                </div>
             )}
-            
-            {/* Add Comment Input */}
-            <div className="flex gap-2 items-center mt-2">
-                <img src={currentUser.avatar} className="w-8 h-8 rounded-full" alt="Me" />
-                <div className="flex-1 relative">
-                    <input 
-                        type="text" 
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                        placeholder="Write a comment..." 
-                        className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                    />
+
+            {/* Actions */}
+            <div className="flex justify-between items-center mt-3 max-w-md text-gray-500 dark:text-gray-400">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
+                    className="flex items-center gap-2 group hover:text-blue-500 transition"
+                >
+                    <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
+                        <CommentIcon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs group-hover:text-blue-500">{comments.length}</span>
+                </button>
+
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleRepost(); }}
+                    className={`flex items-center gap-2 group hover:text-green-500 transition ${reposted ? 'text-green-500' : ''}`}
+                >
+                    <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20">
+                        <RepeatIcon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs group-hover:text-green-500">{shares}</span>
+                </button>
+
+                <button 
+                    onClick={(e) => { e.stopPropagation(); handleLike(); }}
+                    className={`flex items-center gap-2 group hover:text-red-500 transition ${liked ? 'text-red-500' : ''}`}
+                >
+                    <div className="p-2 rounded-full group-hover:bg-red-50 dark:group-hover:bg-red-900/20">
+                        <HeartIcon className="w-4 h-4" filled={liked} />
+                    </div>
+                    <span className="text-xs group-hover:text-red-500">{likes}</span>
+                </button>
+
+                <button className="flex items-center gap-2 group hover:text-blue-500 transition">
+                    <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
+                        <ChartBarIcon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs group-hover:text-blue-500">2.4K</span>
+                </button>
+
+                <div className="flex gap-1">
                     <button 
-                        onClick={handleAddComment}
-                        disabled={!newComment.trim()}
-                        className="absolute right-2 top-1.5 text-blue-600 hover:bg-blue-50 p-1 rounded-full disabled:opacity-30"
+                        onClick={(e) => { e.stopPropagation(); handleBookmark(); }}
+                        className={`p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 transition ${bookmarked ? 'text-blue-500' : ''}`}
                     >
-                        <SendIcon className="w-4 h-4" />
+                        <BookmarkIcon className="w-4 h-4" filled={bookmarked} />
+                    </button>
+                    <button className="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-500 transition">
+                        <ShareIcon className="w-4 h-4" />
                     </button>
                 </div>
             </div>
-          </div>
-      )}
+
+            {/* Comment Section (Inline) */}
+            {showComments && (
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 animate-fade-in" onClick={e => e.stopPropagation()}>
+                    <div className="flex gap-2 mb-3">
+                        <img src={currentUser.avatar} className="w-8 h-8 rounded-full" alt="Me" />
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2 flex items-center">
+                            <input 
+                                type="text" 
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                                placeholder="Post your reply" 
+                                className="w-full bg-transparent outline-none text-sm text-gray-900 dark:text-white"
+                            />
+                            <button 
+                                onClick={handleAddComment}
+                                disabled={!newComment.trim()}
+                                className="text-blue-500 disabled:opacity-50 ml-2"
+                            >
+                                <SendIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                    {comments.map(comment => (
+                        <div key={comment.id} className="flex gap-3 mb-3">
+                             <img src={comment.author.avatar} className="w-8 h-8 rounded-full" alt={comment.author.name} />
+                             <div>
+                                 <div className="flex items-center gap-2">
+                                     <span className="font-bold text-sm text-gray-900 dark:text-white">{comment.author.name}</span>
+                                     <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                                 </div>
+                                 <p className="text-sm text-gray-800 dark:text-gray-200">{comment.text}</p>
+                             </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -224,19 +294,42 @@ const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
 // --- Stories Component ---
 const Stories = () => {
   const [viewingStory, setViewingStory] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
   
   const stories = [
-    { id: 1, name: 'You', img: 'https://picsum.photos/id/64/100/100', isUser: true, storyImg: 'https://picsum.photos/id/64/400/800' },
+    { id: 1, name: 'Your Story', img: 'https://picsum.photos/id/64/100/100', isUser: true, storyImg: 'https://picsum.photos/id/64/400/800' },
     { id: 2, name: 'Elon', img: 'https://picsum.photos/id/10/100/100', storyImg: 'https://picsum.photos/id/10/400/800' },
     { id: 3, name: 'Mark', img: 'https://picsum.photos/id/12/100/100', storyImg: 'https://picsum.photos/id/12/400/800' },
     { id: 4, name: 'Jane', img: 'https://picsum.photos/id/15/100/100', storyImg: 'https://picsum.photos/id/15/400/800' },
     { id: 5, name: 'Sarah', img: 'https://picsum.photos/id/20/100/100', storyImg: 'https://picsum.photos/id/20/400/800' },
+    { id: 6, name: 'David', img: 'https://picsum.photos/id/25/100/100', storyImg: 'https://picsum.photos/id/25/400/800' },
   ];
+
+  useEffect(() => {
+      let interval: any;
+      if (viewingStory !== null) {
+          setProgress(0);
+          interval = setInterval(() => {
+              setProgress(prev => {
+                  if (prev >= 100) {
+                      if (viewingStory < stories.length - 1) {
+                           setViewingStory(viewingStory + 1);
+                           return 0;
+                      } else {
+                           setViewingStory(null);
+                           return 100;
+                      }
+                  }
+                  return prev + 1;
+              });
+          }, 50);
+      }
+      return () => clearInterval(interval);
+  }, [viewingStory]);
 
   const handleStoryClick = (index: number) => {
       if (index === 0) {
-          // User story - simulate adding
-          alert("This would open the camera to add a story!");
+          alert("Add to your story!");
       } else {
           setViewingStory(index);
       }
@@ -244,55 +337,66 @@ const Stories = () => {
 
   return (
     <>
-        <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar pb-2">
+        <div className="flex gap-4 mb-4 overflow-x-auto no-scrollbar pb-2 px-4 border-b border-gray-100 dark:border-gray-800">
         {stories.map((story, index) => (
-            <div key={story.id} onClick={() => handleStoryClick(index)} className="flex flex-col items-center space-y-1 min-w-[70px] cursor-pointer group">
-            <div className={`w-16 h-16 rounded-full p-[2px] ${story.isUser ? 'bg-transparent border-2 border-gray-200 border-dashed' : 'bg-gradient-to-tr from-yellow-400 to-purple-600'}`}>
-                <div className="w-full h-full bg-white rounded-full p-[2px] relative">
-                <img src={story.img} alt={story.name} className="w-full h-full rounded-full object-cover" />
-                {story.isUser && <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-2 border-white"><PlusIcon className="w-3 h-3"/></div>}
+            <div key={story.id} onClick={() => handleStoryClick(index)} className="flex flex-col items-center space-y-1 min-w-[72px] cursor-pointer group">
+            <div className={`w-[68px] h-[68px] rounded-full p-[3px] ${story.isUser ? 'bg-transparent' : 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 group-hover:scale-105 transition duration-300'}`}>
+                <div className="w-full h-full bg-white dark:bg-black rounded-full p-[3px] relative">
+                <img src={story.img} alt={story.name} className="w-full h-full rounded-full object-cover border border-gray-200 dark:border-gray-800" />
+                {story.isUser && <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-2 border-white dark:border-gray-900"><PlusIcon className="w-3 h-3"/></div>}
                 </div>
             </div>
-            <span className="text-xs text-gray-600 font-medium">{story.name}</span>
+            <span className="text-xs text-gray-700 dark:text-gray-400 font-medium truncate w-full text-center">{story.name}</span>
             </div>
         ))}
         </div>
 
-        {/* Full Screen Story Viewer Overlay */}
         {viewingStory !== null && (
-            <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+            <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center backdrop-blur-2xl">
                 <div className="absolute top-4 right-4 z-50">
-                    <button onClick={() => setViewingStory(null)} className="text-white p-2">
-                        <CloseIcon className="w-8 h-8" />
+                    <button onClick={() => setViewingStory(null)} className="text-white p-2 bg-black/20 rounded-full hover:bg-black/50">
+                        <CloseIcon className="w-6 h-6" />
                     </button>
                 </div>
                 
-                <div className="relative w-full md:max-w-md h-full md:h-[80vh] bg-gray-900 md:rounded-xl overflow-hidden">
-                    {/* Progress Bar */}
-                    <div className="absolute top-2 left-2 right-2 flex gap-1">
-                         <div className="h-1 bg-white/30 flex-1 rounded-full overflow-hidden">
-                             <div className="h-full bg-white animate-[width_5s_linear]"></div>
-                         </div>
+                <div className="relative w-full md:max-w-[400px] h-full md:h-[85vh] bg-gray-900 md:rounded-2xl overflow-hidden shadow-2xl">
+                    <div className="absolute top-3 left-2 right-2 flex gap-1 z-20">
+                         {stories.map((_, idx) => (
+                             <div key={idx} className="h-1 bg-white/30 flex-1 rounded-full overflow-hidden">
+                                 <div 
+                                    className="h-full bg-white transition-all duration-100 ease-linear"
+                                    style={{ 
+                                        width: idx < viewingStory ? '100%' : idx === viewingStory ? `${progress}%` : '0%' 
+                                    }}
+                                 ></div>
+                             </div>
+                         ))}
                     </div>
                     
-                    {/* User Info */}
-                    <div className="absolute top-6 left-4 flex items-center gap-2">
-                        <img src={stories[viewingStory].img} className="w-8 h-8 rounded-full border border-white" />
-                        <span className="text-white font-bold shadow-sm">{stories[viewingStory].name}</span>
-                        <span className="text-white/70 text-xs">3h</span>
+                    <div className="absolute top-6 left-4 flex items-center gap-3 z-20">
+                        <img src={stories[viewingStory].img} className="w-8 h-8 rounded-full border border-white/50" />
+                        <span className="text-white font-bold shadow-sm text-sm">{stories[viewingStory].name}</span>
+                        <span className="text-white/70 text-xs">5h</span>
                     </div>
 
                     <img src={stories[viewingStory].storyImg} className="w-full h-full object-cover" />
                     
-                    {/* Tap areas */}
-                    <div className="absolute inset-y-0 left-0 w-1/3" onClick={() => setViewingStory(prev => prev && prev > 1 ? prev - 1 : null)}></div>
-                    <div className="absolute inset-y-0 right-0 w-1/3" onClick={() => setViewingStory(prev => prev && prev < stories.length - 1 ? prev + 1 : null)}></div>
+                    <div className="absolute inset-y-0 left-0 w-1/3 z-10" onClick={() => setViewingStory(prev => prev && prev > 1 ? prev - 1 : 1)}></div>
+                    <div className="absolute inset-y-0 right-0 w-1/3 z-10" onClick={() => {
+                        setProgress(100); 
+                        setTimeout(() => {
+                             if (viewingStory < stories.length - 1) setViewingStory(viewingStory + 1);
+                             else setViewingStory(null);
+                        }, 10);
+                    }}></div>
 
-                    {/* Reply */}
-                    <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                        <input type="text" placeholder="Send a message..." className="flex-1 bg-transparent border border-white/50 rounded-full px-4 py-2 text-white placeholder-white/70 focus:border-white outline-none backdrop-blur-sm" />
-                        <button className="text-white p-2">
-                            <HeartIcon className="w-6 h-6" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-20 flex items-center gap-3">
+                        <input type="text" placeholder="Send message" className="flex-1 bg-transparent border border-white/50 rounded-full px-4 py-2.5 text-white placeholder-white/70 focus:border-white outline-none backdrop-blur-sm text-sm" />
+                        <button className="text-white p-2 hover:scale-110 transition">
+                            <HeartIcon className="w-7 h-7" />
+                        </button>
+                        <button className="text-white p-2 hover:scale-110 transition">
+                            <SendIcon className="w-6 h-6" />
                         </button>
                     </div>
                 </div>
@@ -302,85 +406,129 @@ const Stories = () => {
   );
 };
 
-// --- Search Overlay Component ---
-const SearchOverlay = ({ onClose }: { onClose: () => void }) => (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
-        <div className="flex items-center p-4 border-b border-gray-100 gap-2">
-            <div className="bg-gray-100 flex-1 rounded-full flex items-center px-4 py-2">
-                <SearchIcon className="w-5 h-5 text-gray-400 mr-2" />
-                <input autoFocus type="text" placeholder="Search MyConnect..." className="bg-transparent outline-none w-full" />
-            </div>
-            <button onClick={onClose} className="text-blue-600 font-medium">Cancel</button>
-        </div>
-        <div className="p-4">
-            <h3 className="text-sm font-bold text-gray-500 mb-3">Recent Searches</h3>
-            <div className="flex flex-col gap-3">
-                {['React tutorials', 'Hiking trails', 'Best sushi Tokyo', 'Frontend jobs'].map(s => (
-                    <div key={s} className="flex items-center justify-between text-gray-700">
-                        <div className="flex items-center gap-3">
-                             <div className="bg-gray-100 p-2 rounded-full"><SearchIcon className="w-4 h-4 text-gray-500" /></div>
-                             <span>{s}</span>
-                        </div>
-                        <button className="text-gray-400"><CloseIcon className="w-4 h-4" /></button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    </div>
-);
-
 export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPostCreate }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    // Simulate network request
     setTimeout(() => {
         setIsRefreshing(false);
     }, 1500);
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50 relative scrollbar-hide" id="social-feed-container">
-      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
+    <div className="h-full overflow-y-auto bg-white dark:bg-black transition-colors duration-300" id="social-feed-container">
+      {isSearchOpen && (
+          <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col animate-fade-in">
+            <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-800 gap-2">
+                <div className="bg-gray-100 dark:bg-gray-800 flex-1 rounded-full flex items-center px-4 py-2">
+                    <SearchIcon className="w-5 h-5 text-gray-400 mr-2" />
+                    <input autoFocus type="text" placeholder="Search MyConnect..." className="bg-transparent outline-none w-full text-gray-900 dark:text-white" />
+                </div>
+                <button onClick={() => setIsSearchOpen(false)} className="text-blue-600 font-medium">Cancel</button>
+            </div>
+          </div>
+      )}
 
-      {/* Loading Indicator */}
       {isRefreshing && (
-          <div className="absolute top-16 left-0 right-0 flex justify-center z-20">
-             <div className="bg-white rounded-full p-2 shadow-md animate-spin text-blue-600">
+          <div className="absolute top-20 left-0 right-0 flex justify-center z-20 pointer-events-none">
+             <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg animate-spin text-blue-600 border border-gray-100 dark:border-gray-700">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
              </div>
           </div>
       )}
 
-      <div className="max-w-xl mx-auto pt-4 pb-32 px-4 md:px-0 min-h-full">
-        {/* Mobile Header */}
-        <div className="flex items-center justify-between mb-4 md:hidden sticky top-0 bg-gray-50 z-10 py-2">
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">MyConnect</h1>
-            <div className="flex gap-3">
-                <button onClick={handleRefresh} disabled={isRefreshing} className={`bg-gray-200 p-2 rounded-full transition active:scale-90 ${isRefreshing ? 'opacity-50' : ''}`}>
-                    <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                </button>
-                <button onClick={() => setIsSearchOpen(true)} className="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition active:scale-90">
-                    <SearchIcon className="w-5 h-5 text-gray-600" />
-                </button>
+      {/* Main Layout Grid */}
+      <div className="max-w-[1250px] mx-auto min-h-full flex gap-6">
+        
+        {/* Main Feed Column */}
+        <div className="flex-1 max-w-[600px] border-x border-gray-100 dark:border-gray-800 w-full mx-auto lg:mx-0 pt-0 pb-32">
+            
+            {/* Mobile Header */}
+            <div className="md:hidden flex items-center justify-between sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 py-3 px-4 border-b border-gray-100 dark:border-gray-800">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">M</div>
+                <div className="flex gap-4 text-gray-800 dark:text-white">
+                    <button onClick={() => setIsSearchOpen(true)}><SearchIcon className="w-6 h-6" /></button>
+                </div>
+            </div>
+            
+            <div className="border-b border-gray-100 dark:border-gray-800">
+               <div className="pt-4">
+                 <Stories />
+               </div>
+               <div className="px-4">
+                 <CreatePost user={currentUser} onPost={onPostCreate} />
+               </div>
+            </div>
+            
+            <div className="flex flex-col">
+                {posts.map(post => (
+                <PostCard key={post.id} post={post} currentUser={currentUser} />
+                ))}
+            </div>
+
+            <div className="text-center py-10 text-gray-400 text-sm">
+                <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-800 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
             </div>
         </div>
-        
-        <Stories />
-        <CreatePost user={currentUser} onPost={onPostCreate} />
-        
-        <div className="flex flex-col">
-            {posts.map(post => (
-            <PostCard key={post.id} post={post} currentUser={currentUser} />
-            ))}
+
+        {/* Right Sidebar (Desktop) */}
+        <div className="hidden lg:block w-[350px] pt-4 pr-4 space-y-4">
+            {/* Search */}
+            <div className="bg-gray-100 dark:bg-[#16181c] rounded-full flex items-center px-4 py-3 mb-4 group focus-within:ring-1 ring-blue-500">
+                <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-400 group-focus-within:text-blue-500" />
+                <input type="text" placeholder="Search" className="bg-transparent w-full ml-3 outline-none text-gray-900 dark:text-white placeholder-gray-500" />
+            </div>
+
+            {/* Trends */}
+            <div className="bg-gray-50 dark:bg-[#16181c] rounded-2xl p-4">
+                <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4">Trends for you</h2>
+                <div className="space-y-4">
+                    {TRENDING_TOPICS.map(trend => (
+                        <div key={trend.id} className="cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 p-2 -mx-2 rounded-lg transition">
+                            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>{trend.topic} · Trending</span>
+                                <button>...</button>
+                            </div>
+                            <div className="font-bold text-gray-900 dark:text-white text-base">{trend.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{trend.posts} posts</div>
+                        </div>
+                    ))}
+                </div>
+                <button className="text-blue-500 text-sm mt-4 hover:underline">Show more</button>
+            </div>
+
+            {/* Who to follow */}
+            <div className="bg-gray-50 dark:bg-[#16181c] rounded-2xl p-4">
+                <h2 className="font-extrabold text-xl text-gray-900 dark:text-white mb-4">Who to follow</h2>
+                <div className="space-y-4">
+                    {SUGGESTED_USERS.map(user => (
+                        <div key={user.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
+                                <div>
+                                    <div className="font-bold text-sm text-gray-900 dark:text-white hover:underline cursor-pointer">{user.name}</div>
+                                    <div className="text-gray-500 text-xs">{user.handle}</div>
+                                </div>
+                            </div>
+                            <button className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 rounded-full text-sm font-bold hover:opacity-80 transition">Follow</button>
+                        </div>
+                    ))}
+                </div>
+                <button className="text-blue-500 text-sm mt-4 hover:underline">Show more</button>
+            </div>
+            
+            <div className="text-xs text-gray-500 px-4 flex flex-wrap gap-x-3 gap-y-1">
+                <a href="#" className="hover:underline">Terms of Service</a>
+                <a href="#" className="hover:underline">Privacy Policy</a>
+                <a href="#" className="hover:underline">Cookie Policy</a>
+                <a href="#" className="hover:underline">Accessibility</a>
+                <a href="#" className="hover:underline">Ads info</a>
+                <span>© 2025 MyConnect Corp.</span>
+            </div>
         </div>
 
-        <div className="text-center py-6 text-gray-400 text-sm">
-            <p>You're all caught up!</p>
-            <button onClick={handleRefresh} className="text-blue-500 font-medium mt-2">Refresh Feed</button>
-        </div>
       </div>
     </div>
   );

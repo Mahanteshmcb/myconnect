@@ -3,7 +3,9 @@ export enum ViewMode {
   WATCH = 'WATCH',
   CHAT = 'CHAT',
   CREATOR = 'CREATOR',
-  PROFILE = 'PROFILE'
+  PROFILE = 'PROFILE',
+  NOTIFICATIONS = 'NOTIFICATIONS',
+  EXPLORE = 'EXPLORE'
 }
 
 export interface User {
@@ -13,6 +15,11 @@ export interface User {
   avatar: string;
   verified?: boolean;
   subscribers?: string;
+  bio?: string;
+  coverImage?: string;
+  following?: string;
+  postsCount?: number;
+  isOnline?: boolean; // For chat status
 }
 
 export interface Comment {
@@ -20,6 +27,7 @@ export interface Comment {
   author: User;
   text: string;
   timestamp: string;
+  likes?: number;
 }
 
 export interface Post {
@@ -29,7 +37,7 @@ export interface Post {
   image?: string;
   likes: number;
   comments: number;
-  commentsList?: Comment[]; // Added detailed comments
+  commentsList?: Comment[];
   shares: number;
   timestamp: string;
   type: 'text' | 'image' | 'video';
@@ -37,7 +45,7 @@ export interface Post {
 
 export interface Video {
   id: string;
-  url: string; // Placeholder for video source
+  url: string;
   thumbnail: string;
   likes: string;
   comments: string;
@@ -49,12 +57,14 @@ export interface LongFormVideo {
   id: string;
   title: string;
   thumbnail: string;
+  url: string; // Made required for playback
   duration: string;
   views: string;
   uploadedAt: string;
   author: User;
   description: string;
   category: string;
+  likes?: string;
 }
 
 export interface Message {
@@ -63,6 +73,8 @@ export interface Message {
   text: string;
   timestamp: Date;
   isAi?: boolean;
+  status?: 'sent' | 'delivered' | 'read'; // WhatsApp style ticks
+  type?: 'text' | 'image' | 'audio';
 }
 
 export interface ChatSession {
@@ -80,4 +92,21 @@ export interface Product {
   price: string;
   image: string;
   location: string;
+}
+
+export interface Notification {
+  id: string;
+  type: 'like' | 'comment' | 'follow' | 'mention' | 'system';
+  user?: User;
+  content: string;
+  timestamp: string;
+  read: boolean;
+  targetImage?: string;
+}
+
+export interface ExploreItem {
+  id: string;
+  image: string;
+  likes: number;
+  type: 'image' | 'video';
 }
