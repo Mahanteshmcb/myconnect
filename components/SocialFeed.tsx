@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon } from './Icons';
-import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers } from '../services/mockData';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon } from './Icons';
+import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
 interface SocialFeedProps {
@@ -144,7 +144,7 @@ const CommunityMembersModal = ({
     );
 };
 
-// --- Community Dashboard (New) ---
+// --- Community Dashboard ---
 const CommunityDashboard = ({ 
     joinedCommunities, 
     unjoinedCommunities,
@@ -742,6 +742,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Search Filter State
+  const [searchFilter, setSearchFilter] = useState<'all' | 'people' | 'communities' | 'videos' | 'posts'>('all');
+  
   // View Community Members
   const [showMembersModal, setShowMembersModal] = useState(false);
 
@@ -750,38 +753,54 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
      posts.find(p => p.id === activePostIdForComments) || null
   , [posts, activePostIdForComments]);
 
-  // Filter Posts Logic
+  // Combined Search Results Logic
+  const searchResults = useMemo(() => {
+      if (!searchQuery.trim()) return null;
+      const q = searchQuery.toLowerCase();
+
+      const matchedUsers = Object.values(MOCK_USERS).filter(u => 
+          u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)
+      );
+      
+      const matchedCommunities = communities.filter(c => 
+          c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
+      );
+
+      const matchedPosts = posts.filter(p => 
+          p.content.toLowerCase().includes(q) || 
+          p.author.name.toLowerCase().includes(q)
+      );
+
+      return {
+          users: matchedUsers,
+          communities: matchedCommunities,
+          posts: matchedPosts
+      };
+
+  }, [searchQuery, posts, communities]);
+
+  // Main Feed Display Logic (Standard View)
   const displayPosts = useMemo(() => {
       let filtered = posts;
 
-      // 1. Search Filter
-      if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          filtered = filtered.filter(p => 
-              p.content.toLowerCase().includes(q) || 
-              p.author.name.toLowerCase().includes(q) || 
-              p.author.handle.toLowerCase().includes(q)
-          );
-      }
+      // Note: Search is handled separately now, so this filtering mainly handles Tabs
       
-      // 2. Tab Filter
+      // 1. Tab Filter
       if (activeTab === 'Following') {
-          // Strictly show posts from authors in the following list OR the current user's own posts
-          filtered = filtered.filter(p => (currentUser.followingIds?.includes(p.author.id) || p.author.id === currentUser.id));
+          // Strictly show posts from authors in the following list
+          filtered = filtered.filter(p => currentUser.followingIds?.includes(p.author.id));
       } else if (activeTab === 'Communities') {
-          // If a specific community is selected, filter by that ID only
           if (selectedCommunityId) {
               filtered = filtered.filter(p => p.communityId === selectedCommunityId);
           } else {
               filtered = filtered.filter(p => !!p.communityId);
           }
-      } else if (activeTab === 'For You' && !searchQuery) {
-          // Only apply algorithm if not searching
+      } else if (activeTab === 'For You') {
           return getPersonalizedFeed(filtered, currentUser);
       }
 
       return filtered;
-  }, [posts, activeTab, currentUser, selectedCommunityId, searchQuery]);
+  }, [posts, activeTab, currentUser, selectedCommunityId]);
 
   // Derived Community Lists for Dashboard
   const joinedCommunities = communities.filter(c => c.isJoined);
@@ -796,6 +815,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
 
   const handleHashtagClick = (tag: string) => {
       setSearchQuery(tag);
+      setSearchFilter('all');
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -804,7 +824,6 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
       if (user) {
           onViewProfile(user);
       } else {
-          // Fallback if user not found in mock data
           setSearchQuery(handle);
       }
   };
@@ -822,7 +841,95 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
       }
   };
 
-  const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId;
+  const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId && !searchQuery;
+
+  // Render Search Results Helper
+  const renderSearchResults = () => {
+      if (!searchResults) return null;
+      
+      const { users, communities: resultComm, posts: resultPosts } = searchResults;
+      const showAll = searchFilter === 'all';
+
+      return (
+          <div className="pb-20">
+             {/* Filter Tabs */}
+             <div className="flex gap-2 p-3 overflow-x-auto no-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-black sticky top-[60px] z-20">
+                 {['all', 'people', 'communities', 'videos', 'posts'].map(filter => (
+                     <button
+                        key={filter}
+                        onClick={() => setSearchFilter(filter as any)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-bold capitalize transition whitespace-nowrap ${searchFilter === filter ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+                     >
+                         {filter}
+                     </button>
+                 ))}
+             </div>
+
+             {/* Users Section */}
+             {(showAll || searchFilter === 'people') && users.length > 0 && (
+                 <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                     <h3 className="font-bold text-lg mb-3 dark:text-white">People</h3>
+                     <div className="space-y-4">
+                         {users.map(u => (
+                             <div key={u.id} className="flex items-center gap-3">
+                                 <img src={u.avatar} className="w-10 h-10 rounded-full object-cover" />
+                                 <div className="flex-1">
+                                     <h4 className="font-bold text-sm dark:text-white">{u.name}</h4>
+                                     <p className="text-xs text-gray-500">@{u.handle}</p>
+                                 </div>
+                                 <button onClick={() => onViewProfile(u)} className="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs font-bold dark:text-white">View</button>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+             )}
+
+             {/* Communities Section */}
+             {(showAll || searchFilter === 'communities') && resultComm.length > 0 && (
+                 <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                     <h3 className="font-bold text-lg mb-3 dark:text-white">Communities</h3>
+                     <div className="space-y-3">
+                         {resultComm.map(c => (
+                             <div key={c.id} className="flex items-center gap-3">
+                                 <img src={c.avatar} className="w-10 h-10 rounded-xl object-cover" />
+                                 <div className="flex-1">
+                                     <h4 className="font-bold text-sm dark:text-white">{c.name}</h4>
+                                     <p className="text-xs text-gray-500">{formatCompactNumber(c.members)} members</p>
+                                 </div>
+                                 <button onClick={() => { if(onJoinCommunity) onJoinCommunity(c.id); }} className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full text-xs font-bold">
+                                     {c.isJoined ? 'Joined' : 'Join'}
+                                 </button>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+             )}
+
+             {/* Posts Section */}
+             {(showAll || searchFilter === 'posts' || searchFilter === 'videos') && (
+                 <div>
+                     {(showAll || searchFilter === 'posts') && <h3 className="font-bold text-lg p-4 pb-2 dark:text-white">Posts</h3>}
+                     {resultPosts
+                        .filter(p => searchFilter === 'videos' ? p.type === 'video' : true)
+                        .map(post => (
+                         <PostCard 
+                            key={post.id} 
+                            post={post} 
+                            currentUser={currentUser} 
+                            onViewProfile={onViewProfile} 
+                            onCommentClick={setActivePostIdForComments}
+                            onHashtagClick={handleHashtagClick}
+                            onMentionClick={handleMentionClick}
+                        />
+                     ))}
+                     {resultPosts.length === 0 && (
+                         <div className="p-4 text-gray-500 text-sm italic">No posts found.</div>
+                     )}
+                 </div>
+             )}
+          </div>
+      );
+  };
 
   return (
     <div className="h-full bg-white dark:bg-black overflow-y-auto">
@@ -866,7 +973,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
             />
 
             {/* Main Feed */}
-            <div className="flex-1 max-w-[600px] w-full border-x border-gray-100 dark:border-gray-800">
+            <div className="flex-1 max-w-[600px] w-full border-x border-gray-100 dark:border-gray-800 relative">
                  {/* Header & Tabs */}
                  <div className="sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-30 border-b border-gray-100 dark:border-gray-800">
                      <div className="md:hidden px-4 py-3 flex justify-between items-center">
@@ -888,130 +995,124 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                      </div>
                  </div>
 
-                 {/* Stories Tray - Only on 'For You' or 'Following' */}
-                 {activeTab !== 'Communities' && (
-                     <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex gap-4 overflow-x-auto no-scrollbar">
-                         <input type="file" ref={storyInputRef} className="hidden" accept="image/*" onChange={handleStoryUpload} />
-                         {/* Create Story */}
-                         <div onClick={() => storyInputRef.current?.click()} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
-                             <div className="relative w-16 h-16">
-                                 <img src={currentUser.avatar} className="w-full h-full rounded-full border-2 border-gray-200 dark:border-gray-800 opacity-80" />
-                                 <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white dark:border-black">
-                                     <PlusIcon className="w-4 h-4" />
-                                 </div>
-                             </div>
-                             <span className="text-xs text-gray-500 truncate w-full text-center">Your Story</span>
-                         </div>
-
-                         {/* Other Stories */}
-                         {stories.slice(1).map((story, idx) => (
-                             <div key={story.id} onClick={() => setViewingStoryIndex(idx + 1)} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer">
-                                 <div className={`w-16 h-16 rounded-full p-[2px] ${story.isViewed ? 'bg-gray-300 dark:bg-gray-700' : 'bg-gradient-to-tr from-yellow-400 to-fuchsia-600'}`}>
-                                     <img src={story.img} className="w-full h-full rounded-full border-2 border-white dark:border-black object-cover" />
-                                 </div>
-                                 <span className="text-xs text-gray-700 dark:text-gray-300 truncate w-16 text-center">{story.user.name.split(' ')[0]}</span>
-                             </div>
-                         ))}
-                     </div>
-                 )}
-
-                 {/* COMMUNITY DASHBOARD VIEW */}
-                 {showCommunityDashboard ? (
-                     <CommunityDashboard 
-                        joinedCommunities={joinedCommunities}
-                        unjoinedCommunities={unjoinedCommunities}
-                        onJoin={onJoinCommunity || (() => {})}
-                        onSelect={handleSelectCommunity}
-                        onCreate={onCreateCommunity || (() => {})}
-                        currentUserId={currentUser.id}
-                        onDelete={onDeleteCommunity || (() => {})}
-                     />
+                 {/* SEARCH RESULTS VIEW */}
+                 {searchQuery ? (
+                     renderSearchResults()
                  ) : (
-                     /* STANDARD FEED VIEW */
+                     /* STANDARD VIEW */
                      <>
-                        {/* Create Post */}
-                         {activeTab !== 'Communities' && (
-                             <div className="px-4 mt-4">
-                                 <CreatePost 
-                                    user={currentUser} 
-                                    onPost={onPostCreate} 
-                                    onViewProfile={onViewProfile} 
-                                    communities={communities} 
-                                 />
-                             </div>
-                         )}
+                        {/* Stories Tray - Only on 'For You' or 'Following' */}
+                        {activeTab !== 'Communities' && (
+                            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex gap-4 overflow-x-auto no-scrollbar">
+                                <input type="file" ref={storyInputRef} className="hidden" accept="image/*" onChange={handleStoryUpload} />
+                                {/* Create Story */}
+                                <div onClick={() => storyInputRef.current?.click()} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
+                                    <div className="relative w-16 h-16">
+                                        <img src={currentUser.avatar} className="w-full h-full rounded-full border-2 border-gray-200 dark:border-gray-800 opacity-80" />
+                                        <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white dark:border-black">
+                                            <PlusIcon className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-gray-500 truncate w-full text-center">Your Story</span>
+                                </div>
 
-                         {/* Feed Content */}
-                         <div>
-                             {/* Context Filter Banner */}
-                             {selectedCommunityId && (
-                                 <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
-                                     <span className="text-sm text-blue-800 dark:text-blue-300 font-bold flex items-center gap-2">
-                                         <UsersIcon className="w-4 h-4" />
-                                         {communities.find(c => c.id === selectedCommunityId)?.name}
-                                     </span>
-                                     <div className="flex items-center gap-3">
-                                         <button onClick={() => setShowMembersModal(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">View Members</button>
-                                         <span className="text-gray-300">|</span>
-                                         <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
-                                     </div>
-                                 </div>
-                             )}
-                             
-                             {/* Community Post Creator is only visible when inside a community for UX context */}
-                             {selectedCommunityId && (
-                                 <div className="px-4 mb-4">
-                                      <CreatePost 
-                                        user={currentUser} 
-                                        onPost={onPostCreate} 
+                                {/* Other Stories */}
+                                {stories.slice(1).map((story, idx) => (
+                                    <div key={story.id} onClick={() => setViewingStoryIndex(idx + 1)} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer">
+                                        <div className={`w-16 h-16 rounded-full p-[2px] ${story.isViewed ? 'bg-gray-300 dark:bg-gray-700' : 'bg-gradient-to-tr from-yellow-400 to-fuchsia-600'}`}>
+                                            <img src={story.img} className="w-full h-full rounded-full border-2 border-white dark:border-black object-cover" />
+                                        </div>
+                                        <span className="text-xs text-gray-700 dark:text-gray-300 truncate w-16 text-center">{story.user.name.split(' ')[0]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* COMMUNITY DASHBOARD VIEW */}
+                        {showCommunityDashboard ? (
+                            <CommunityDashboard 
+                                joinedCommunities={joinedCommunities}
+                                unjoinedCommunities={unjoinedCommunities}
+                                onJoin={onJoinCommunity || (() => {})}
+                                onSelect={handleSelectCommunity}
+                                onCreate={onCreateCommunity || (() => {})}
+                                currentUserId={currentUser.id}
+                                onDelete={onDeleteCommunity || (() => {})}
+                            />
+                        ) : (
+                            /* FEED LIST */
+                            <div>
+                                {/* Create Post */}
+                                {activeTab !== 'Communities' && (
+                                    <div className="px-4 mt-4">
+                                        <CreatePost 
+                                            user={currentUser} 
+                                            onPost={onPostCreate} 
+                                            onViewProfile={onViewProfile} 
+                                            communities={communities} 
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Context Filter Banner for Community */}
+                                {selectedCommunityId && (
+                                    <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+                                        <span className="text-sm text-blue-800 dark:text-blue-300 font-bold flex items-center gap-2">
+                                            <UsersIcon className="w-4 h-4" />
+                                            {communities.find(c => c.id === selectedCommunityId)?.name}
+                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <button onClick={() => setShowMembersModal(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">View Members</button>
+                                            <span className="text-gray-300">|</span>
+                                            <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* Community Post Creator */}
+                                {selectedCommunityId && (
+                                    <div className="px-4 mb-4">
+                                        <CreatePost 
+                                            user={currentUser} 
+                                            onPost={onPostCreate} 
+                                            onViewProfile={onViewProfile} 
+                                            communities={communities} 
+                                        />
+                                    </div>
+                                )}
+                                
+                                {/* The Post List */}
+                                {displayPosts.length > 0 ? displayPosts.map(post => (
+                                    <PostCard 
+                                        key={post.id} 
+                                        post={post} 
+                                        currentUser={currentUser} 
                                         onViewProfile={onViewProfile} 
-                                        communities={communities} 
-                                     />
-                                 </div>
-                             )}
-                             
-                             {searchQuery && (
-                                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                                     <h3 className="text-sm font-bold text-gray-500">Search results for "{searchQuery}"</h3>
-                                     <button onClick={() => setSearchQuery('')} className="text-xs text-blue-500 hover:underline">Clear</button>
-                                 </div>
-                             )}
-                             
-                             {displayPosts.length > 0 ? displayPosts.map(post => (
-                                 <PostCard 
-                                    key={post.id} 
-                                    post={post} 
-                                    currentUser={currentUser} 
-                                    onViewProfile={onViewProfile} 
-                                    onCommentClick={setActivePostIdForComments}
-                                    onHashtagClick={handleHashtagClick}
-                                    onMentionClick={handleMentionClick}
-                                />
-                             )) : (
-                                 <div className="py-20 text-center text-gray-500">
-                                     {searchQuery ? (
-                                         <>
-                                             <SearchIcon className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                                             <h3 className="text-lg font-bold">No matches found</h3>
-                                             <p className="text-sm">Try searching for something else.</p>
-                                         </>
-                                     ) : (
-                                         <>
-                                            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                <UsersIcon className="w-8 h-8 text-gray-300" />
-                                            </div>
-                                             <h3 className="text-lg font-bold mb-2">No Posts Yet</h3>
-                                             <p>
-                                                {activeTab === 'Following' 
-                                                    ? "Follow more people to see their posts here!" 
-                                                    : "Be the first to post something here!"}
-                                             </p>
-                                         </>
-                                     )}
-                                 </div>
-                             )}
-                             <div className="py-10 text-center text-gray-500 text-sm">You've reached the end!</div>
-                         </div>
+                                        onCommentClick={setActivePostIdForComments}
+                                        onHashtagClick={handleHashtagClick}
+                                        onMentionClick={handleMentionClick}
+                                    />
+                                )) : (
+                                    <div className="py-20 text-center text-gray-500">
+                                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            {activeTab === 'Following' ? <UsersIcon className="w-8 h-8 text-gray-300" /> : <HomeIcon className="w-8 h-8 text-gray-300" />}
+                                        </div>
+                                        <h3 className="text-lg font-bold mb-2">No Posts Yet</h3>
+                                        <p>
+                                            {activeTab === 'Following' 
+                                                ? "Posts from people you follow will appear here." 
+                                                : "Be the first to post something!"}
+                                        </p>
+                                        {activeTab === 'Following' && (
+                                            <button onClick={() => setActiveTab('For You')} className="mt-4 text-blue-500 text-sm font-bold hover:underline">
+                                                Discover people to follow
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                                <div className="py-10 text-center text-gray-500 text-sm">You've reached the end!</div>
+                            </div>
+                        )}
                      </>
                  )}
             </div>
