@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, User, Message } from '../types';
-import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon } from './Icons';
+import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon, ShieldCheckIcon } from './Icons';
 import { MOCK_USERS } from '../services/mockData';
 
 interface ChatAppProps {
@@ -13,6 +13,8 @@ interface ChatAppProps {
   isAiThinking?: boolean;
   onViewProfile: (user?: User) => void;
   selectedSessionId?: string | null;
+  onUpdateGroup?: (sessionId: string, updates: Partial<ChatSession>) => void;
+  onLeaveChat?: (sessionId: string) => void;
 }
 
 // --- Socket Simulation Class ---
@@ -117,6 +119,8 @@ const AudioPlayer = ({ src }: { src: string }) => {
             audio.removeEventListener('timeupdate', onTimeUpdate);
             audio.removeEventListener('ended', onEnded);
             audio.removeEventListener('error', onError);
+            // Safely clear src if needed, but standard cleanup is usually removing listeners and pausing.
+            // audio.src = ''; // Removing this to avoid "The element has no supported sources" in some browsers
             audioRef.current = null;
         };
     }, [src]);
@@ -423,6 +427,8 @@ const GroupModal = ({
         if (mode === 'create' && !groupName) return;
         onSubmit({ name: groupName, members: selectedUsers });
         onClose();
+        setGroupName('');
+        setSelectedUsers([]);
     };
 
     return (
@@ -476,6 +482,7 @@ const GroupModal = ({
                                 </div>
                             </div>
                         ))}
+                        {availableUsers.length === 0 && <p className="text-center text-gray-500 text-xs p-4">No more users found.</p>}
                     </div>
                 </div>
 
@@ -556,7 +563,7 @@ const FilePreviewModal = ({
 };
 
 // --- Main Chat Component ---
-export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, currentUser, onSendMessage, onCreateGroup, onAddContact, isAiThinking, onViewProfile, selectedSessionId }) => {
+export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, currentUser, onSendMessage, onCreateGroup, onAddContact, isAiThinking, onViewProfile, selectedSessionId, onUpdateGroup, onLeaveChat }) => {
   const [sessions, setSessions] = useState<ChatSession[]>(initialSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(selectedSessionId || null);
   const [inputText, setInputText] = useState('');
@@ -676,33 +683,24 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   };
 
   const handleAddMembersSubmit = (data: { members: User[] }) => {
-      if (!activeSessionId) return;
-      const updatedSessions = sessions.map(s => {
-          if (s.id === activeSessionId) {
-              return {
-                  ...s,
-                  participants: [...(s.participants || []), ...data.members]
-              };
-          }
-          return s;
-      });
-      setSessions(updatedSessions);
+      if (!activeSessionId || !activeSession) return;
+      if (onUpdateGroup) {
+          onUpdateGroup(activeSessionId, {
+              participants: [...(activeSession.participants || []), ...data.members]
+          });
+      }
+      setGroupModalOpen(false);
   };
 
   const handleSaveGroupInfo = () => {
       if (!activeSessionId) return;
-      const updatedSessions = sessions.map(s => {
-          if (s.id === activeSessionId) {
-              return {
-                  ...s,
-                  groupName: editGroupName,
-                  groupDescription: editGroupDesc,
-                  groupAvatar: editGroupAvatar
-              };
-          }
-          return s;
-      });
-      setSessions(updatedSessions);
+      if (onUpdateGroup) {
+          onUpdateGroup(activeSessionId, {
+              groupName: editGroupName,
+              groupDescription: editGroupDesc,
+              groupAvatar: editGroupAvatar
+          });
+      }
       setIsEditingGroup(false);
   };
 
@@ -713,18 +711,31 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   };
 
   const handleRemoveMember = (userId: string) => {
-      if (!activeSessionId) return;
+      if (!activeSessionId || !activeSession) return;
       if (!confirm("Remove this user from the group?")) return;
-      const updatedSessions = sessions.map(s => {
-          if (s.id === activeSessionId) {
-              return {
-                  ...s,
-                  participants: s.participants?.filter(p => p.id !== userId)
-              };
+      
+      if (onUpdateGroup) {
+          onUpdateGroup(activeSessionId, {
+              participants: activeSession.participants?.filter(p => p.id !== userId)
+          });
+      }
+  };
+
+  const handleToggleAdmin = (userId: string) => {
+      if (!activeSessionId || !activeSession) return;
+      const isAdmin = activeSession.admins?.includes(userId);
+      
+      if (onUpdateGroup) {
+          let newAdmins = activeSession.admins || [];
+          if (isAdmin) {
+              if(!confirm("Dismiss this user as Admin?")) return;
+              newAdmins = newAdmins.filter(id => id !== userId);
+          } else {
+              if(!confirm("Promote this user to Admin?")) return;
+              newAdmins = [...newAdmins, userId];
           }
-          return s;
-      });
-      setSessions(updatedSessions);
+          onUpdateGroup(activeSessionId, { admins: newAdmins });
+      }
   };
 
   // Handle Voice Recording Logic
@@ -760,6 +771,8 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
 
   const handleDeleteMessage = (msgId: string) => {
       if (!activeSessionId) return;
+      // Simulating deletion by updating parent state (if prop available) or local session state
+      // For now, local update until onUpdateGroup handles messages deep merge or we add onDeleteMessage prop
       const updatedSessions = sessions.map(s => {
           if (s.id === activeSessionId) {
               return { ...s, messages: s.messages.filter(m => m.id !== msgId) };
@@ -773,11 +786,17 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
   const handleBlockOrLeave = (isGroup: boolean) => {
       if (isGroup) {
           if(confirm("Are you sure you want to leave this group?")) {
-              setSessions(sessions.filter(s => s.id !== activeSessionId));
-              setActiveSessionId(null);
+              if (onLeaveChat && activeSessionId) {
+                  onLeaveChat(activeSessionId);
+                  setActiveSessionId(null);
+              }
           }
       } else {
           if(confirm("Block this contact?")) {
+              if (onLeaveChat && activeSessionId) {
+                  onLeaveChat(activeSessionId);
+                  setActiveSessionId(null);
+              }
               alert("Contact blocked.");
           }
       }
@@ -1351,22 +1370,35 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions: initialSessions, cur
                       </div>
                       <div className="divide-y divide-gray-100 dark:divide-gray-800">
                           {activeSession.participants?.map(p => (
-                              <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition" onClick={() => onViewProfile(p)}>
+                              <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition group" onClick={() => onViewProfile(p)}>
                                   <img src={p.avatar} className="w-10 h-10 rounded-full object-cover" />
                                   <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-bold dark:text-white truncate">{p.id === currentUser.id ? 'You' : p.name}</h4>
+                                      <div className="flex items-center gap-1">
+                                          <h4 className="text-sm font-bold dark:text-white truncate">{p.id === currentUser.id ? 'You' : p.name}</h4>
+                                          {activeSession.admins?.includes(p.id) && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-900 font-bold">Admin</span>}
+                                      </div>
                                       <p className="text-xs text-gray-500 truncate">{p.handle}</p>
                                   </div>
-                                  {activeSession.admins?.includes(p.id) && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 rounded border border-green-200 dark:border-green-900">Admin</span>}
                                   
+                                  
+                                  {/* Admin Controls */}
                                   {activeSession.admins?.includes(currentUser.id) && p.id !== currentUser.id && (
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); handleRemoveMember(p.id); }}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition"
-                                        title="Remove"
-                                      >
-                                          <UserMinusIcon className="w-4 h-4" />
-                                      </button>
+                                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); handleToggleAdmin(p.id); }}
+                                            className={`p-1.5 rounded-full transition ${activeSession.admins?.includes(p.id) ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100' : 'text-green-500 bg-green-50 dark:bg-green-900/20 hover:bg-green-100'}`}
+                                            title={activeSession.admins?.includes(p.id) ? "Dismiss as Admin" : "Make Admin"}
+                                          >
+                                              <ShieldCheckIcon className="w-4 h-4" />
+                                          </button>
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); handleRemoveMember(p.id); }}
+                                            className="p-1.5 text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full transition"
+                                            title="Remove"
+                                          >
+                                              <UserMinusIcon className="w-4 h-4" />
+                                          </button>
+                                      </div>
                                   )}
                               </div>
                           ))}

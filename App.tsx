@@ -228,11 +228,21 @@ export default function App() {
           lastMessage: 'Group created',
           unread: 0,
           timestamp: 'Just now',
-          messages: []
+          messages: [],
+          participants: [currentUser], // Start with creator
+          admins: [currentUser.id] // Creator is admin
       };
       setChats([newGroup, ...chats]);
       setActiveTab(ViewMode.CHAT);
       setSelectedChatId(newGroupId);
+  };
+
+  const handleUpdateGroup = (sessionId: string, updates: Partial<ChatSession>) => {
+      setChats(chats.map(c => c.id === sessionId ? { ...c, ...updates } : c));
+  };
+
+  const handleLeaveChat = (sessionId: string) => {
+      setChats(chats.filter(c => c.id !== sessionId));
   };
   
   const handleStartChat = (targetUser: User) => {
@@ -392,6 +402,8 @@ export default function App() {
             isAiThinking={isAiThinking}
             onViewProfile={handleViewProfile}
             selectedSessionId={selectedChatId}
+            onUpdateGroup={handleUpdateGroup}
+            onLeaveChat={handleLeaveChat}
           />
         );
       case ViewMode.CREATOR:
