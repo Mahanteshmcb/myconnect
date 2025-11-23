@@ -137,8 +137,10 @@ export interface Message {
   timestamp: Date;
   isAi?: boolean;
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
-  type?: 'text' | 'image' | 'video' | 'audio';
+  type?: 'text' | 'image' | 'video' | 'audio' | 'document';
   mediaUrl?: string;
+  fileName?: string;
+  fileSize?: string;
   encryptionHash?: string; // Simulating E2EE
   replyToId?: string;
 }
@@ -149,12 +151,14 @@ export interface ChatSession {
   isGroup?: boolean;
   groupName?: string;
   groupAvatar?: string;
+  groupDescription?: string;
   lastMessage: string;
   unread: number;
   timestamp: string;
   lastActiveTimestamp?: number;
   messages: Message[];
   participants?: User[]; // For groups
+  admins?: string[]; // IDs of admins
   typingUsers?: string[]; // IDs of users typing
 }
 
