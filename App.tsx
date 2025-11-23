@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification } from './types';
 import { SocialFeed } from './components/SocialFeed';
@@ -70,7 +71,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.4</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.0.5</p>
         </div>
       </div>
     </div>
@@ -83,6 +84,9 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   
   // Global State
+  const [currentUser, setCurrentUser] = useState<User>(CURRENT_USER);
+  const [viewingUser, setViewingUser] = useState<User>(CURRENT_USER); // State to track which profile is being viewed
+
   const [posts, setPosts] = useState<Post[]>(FEED_POSTS);
   const [chats, setChats] = useState<ChatSession[]>(INITIAL_CHATS);
   const [longFormVideos, setLongFormVideos] = useState<LongFormVideo[]>(LONG_FORM_VIDEOS);
@@ -104,11 +108,26 @@ export default function App() {
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
+  // --- Profile Actions ---
+  const handleUpdateUser = (updatedUser: User) => {
+      setCurrentUser(updatedUser);
+      // If we are updating ourselves, update the viewing user too if we are viewing ourselves
+      if (viewingUser.id === updatedUser.id) {
+          setViewingUser(updatedUser);
+      }
+  };
+  
+  // Updated to accept an optional user to view
+  const handleViewProfile = (user?: User) => {
+      setViewingUser(user || currentUser);
+      setActiveTab(ViewMode.PROFILE);
+  };
+
   // --- Feed Actions ---
   const handleCreatePost = (content: string) => {
     const newPost: Post = {
       id: `new_p_${Date.now()}`,
-      author: CURRENT_USER,
+      author: currentUser,
       content: content,
       likes: 0,
       comments: 0,
@@ -127,7 +146,7 @@ export default function App() {
 
     const newMessage: Message = {
       id: `msg_${Date.now()}`,
-      senderId: CURRENT_USER.id,
+      senderId: currentUser.id,
       text: text,
       timestamp: new Date(),
     };
@@ -184,46 +203,58 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case ViewMode.FEED:
-        return <SocialFeed posts={posts} currentUser={CURRENT_USER} onPostCreate={handleCreatePost} />;
+        return (
+            <SocialFeed 
+                posts={posts} 
+                currentUser={currentUser} 
+                onPostCreate={handleCreatePost} 
+                onViewProfile={handleViewProfile}
+            />
+        );
       case ViewMode.WATCH:
         return (
           <VideoReels 
             videos={reels} 
             isMuted={isReelsMuted} 
             toggleMute={() => setIsReelsMuted(!isReelsMuted)} 
+            onViewProfile={handleViewProfile}
           />
         );
       case ViewMode.CHAT:
         return (
           <ChatApp 
             sessions={chats} 
-            currentUser={CURRENT_USER} 
+            currentUser={currentUser} 
             onSendMessage={handleSendMessage}
             isAiThinking={isAiThinking}
+            onViewProfile={handleViewProfile}
           />
         );
       case ViewMode.CREATOR:
         return (
           <LongFormVideoApp 
             videos={longFormVideos} 
-            currentUser={CURRENT_USER}
-            onUpdateVideo={handleUpdateVideo} 
+            currentUser={currentUser}
+            onUpdateVideo={handleUpdateVideo}
+            onViewProfile={handleViewProfile} 
           />
         );
       case ViewMode.PROFILE:
         return (
           <UserProfile 
-             user={CURRENT_USER} 
+             user={viewingUser} 
+             currentUser={currentUser}
              posts={posts} 
              onBack={() => setActiveTab(ViewMode.FEED)}
+             onUpdateUser={handleUpdateUser}
           />
         );
       case ViewMode.NOTIFICATIONS:
-        return <Notifications notifications={notifications} />;
+        return <Notifications notifications={notifications} onViewProfile={handleViewProfile} />;
       case ViewMode.EXPLORE:
         return <Explore items={EXPLORE_ITEMS} />;
       default:
-        return <SocialFeed posts={posts} currentUser={CURRENT_USER} onPostCreate={handleCreatePost} />;
+        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onViewProfile={handleViewProfile} />;
     }
   };
 
@@ -234,10 +265,10 @@ export default function App() {
       <MobileMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
-        currentUser={CURRENT_USER} 
+        currentUser={currentUser} 
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}
-        onViewProfile={() => setActiveTab(ViewMode.PROFILE)}
+        onViewProfile={() => handleViewProfile(currentUser)}
       />
 
       {/* Desktop Header */}
@@ -274,9 +305,12 @@ export default function App() {
                     <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white dark:ring-gray-900"></span>
                 )}
             </button>
-            <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden border border-gray-300 dark:border-gray-600 cursor-pointer" onClick={() => setIsMenuOpen(true)}>
-                <img src={CURRENT_USER.avatar} alt="Me" className="w-full h-full object-cover" />
+            <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden border border-gray-300 dark:border-gray-600 cursor-pointer" onClick={() => handleViewProfile(currentUser)}>
+                <img src={currentUser.avatar} alt="Me" className="w-full h-full object-cover" />
             </div>
+             <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <MenuIcon className="w-6 h-6" />
+            </button>
         </div>
       </header>
 

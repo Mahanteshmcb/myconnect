@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Video, Comment } from '../types';
+import { Video, Comment, User } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, VolumeUpIcon, VolumeOffIcon, PlayCircleIcon, CloseIcon, SendIcon } from './Icons';
 import { CURRENT_USER } from '../services/mockData';
 
@@ -7,6 +8,7 @@ interface VideoReelsProps {
   videos: Video[];
   isMuted: boolean;
   toggleMute: () => void;
+  onViewProfile: (user: User) => void;
 }
 
 interface ReelItemProps {
@@ -14,6 +16,7 @@ interface ReelItemProps {
   isActive: boolean;
   isMuted: boolean;
   toggleMute: () => void;
+  onViewProfile: (user: User) => void;
 }
 
 // --- Comment Sheet Component ---
@@ -21,12 +24,14 @@ const CommentSheet = ({
     isOpen, 
     onClose, 
     comments, 
-    onAddComment 
+    onAddComment,
+    onViewProfile
 }: { 
     isOpen: boolean; 
     onClose: () => void; 
     comments: Comment[]; 
     onAddComment: (text: string) => void;
+    onViewProfile: (user: User) => void;
 }) => {
     const [text, setText] = useState('');
 
@@ -62,10 +67,10 @@ const CommentSheet = ({
                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
                     {comments.map(comment => (
                         <div key={comment.id} className="flex gap-3 group">
-                            <img src={comment.author.avatar || 'https://via.placeholder.com/40'} className="w-9 h-9 rounded-full object-cover flex-shrink-0" alt={comment.author.name} />
+                            <img onClick={() => onViewProfile(comment.author)} src={comment.author.avatar || 'https://via.placeholder.com/40'} className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer" alt={comment.author.name} />
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-sm font-bold text-gray-900 dark:text-white hover:underline cursor-pointer">{comment.author.name}</span>
+                                    <span onClick={() => onViewProfile(comment.author)} className="text-sm font-bold text-gray-900 dark:text-white hover:underline cursor-pointer">{comment.author.name}</span>
                                     <span className="text-xs text-gray-400">{comment.timestamp}</span>
                                 </div>
                                 <p className="text-sm text-gray-800 dark:text-gray-200 mt-0.5 leading-snug whitespace-pre-wrap">{comment.text}</p>
@@ -118,7 +123,7 @@ const CommentSheet = ({
     );
 };
 
-const ReelItem = ({ video, isActive, isMuted, toggleMute }: ReelItemProps) => {
+const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMute, onViewProfile }) => {
   const [liked, setLiked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(isActive);
   const [progress, setProgress] = useState(0);
@@ -237,8 +242,8 @@ const ReelItem = ({ video, isActive, isMuted, toggleMute }: ReelItemProps) => {
                 {/* Left Side: Info */}
                 <div className="flex-1 pr-12 text-white">
                     <div className="flex items-center gap-2 mb-3">
-                        <img src={video.author.avatar} className="w-10 h-10 rounded-full border border-white" alt="" />
-                        <span className="font-bold text-shadow">{video.author.handle}</span>
+                        <img onClick={() => onViewProfile(video.author)} src={video.author.avatar} className="w-10 h-10 rounded-full border border-white cursor-pointer" alt="" />
+                        <span onClick={() => onViewProfile(video.author)} className="font-bold text-shadow cursor-pointer hover:underline">{video.author.handle}</span>
                         <button className="border border-white/50 bg-transparent text-xs px-3 py-1 rounded-lg font-semibold backdrop-blur-md hover:bg-white/20 transition">Follow</button>
                     </div>
                     <p className="text-sm mb-2 line-clamp-2 leading-snug text-shadow-sm">{video.description}</p>
@@ -279,7 +284,7 @@ const ReelItem = ({ video, isActive, isMuted, toggleMute }: ReelItemProps) => {
                     </div>
 
                     <div className="w-10 h-10 bg-gray-800/80 rounded-full flex items-center justify-center border border-white/20 mt-2 animate-spin-slow">
-                        <img src={video.author.avatar} className="w-6 h-6 rounded-full" />
+                        <img onClick={() => onViewProfile(video.author)} src={video.author.avatar} className="w-6 h-6 rounded-full cursor-pointer" />
                     </div>
                 </div>
             </div>
@@ -299,13 +304,14 @@ const ReelItem = ({ video, isActive, isMuted, toggleMute }: ReelItemProps) => {
             onClose={() => setShowComments(false)}
             comments={comments}
             onAddComment={handleAddComment}
+            onViewProfile={onViewProfile}
           />
       </div>
     </div>
   );
 };
 
-export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute }) => {
+export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -329,6 +335,7 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleM
           isActive={index === activeIndex} 
           isMuted={isMuted}
           toggleMute={toggleMute}
+          onViewProfile={onViewProfile}
         />
       ))}
     </div>

@@ -1,3 +1,4 @@
+
 export enum ViewMode {
   FEED = 'FEED',
   WATCH = 'WATCH',
@@ -19,7 +20,18 @@ export interface User {
   coverImage?: string;
   following?: string;
   postsCount?: number;
-  isOnline?: boolean; // For chat status
+  isOnline?: boolean;
+  // Extended Profile Details
+  website?: string;
+  location?: string;
+  joinedDate?: string;
+  email?: string;
+  statusMessage?: string; // For Chat
+  phoneNumber?: string; // For Chat profile
+  // Social Links
+  twitter?: string;
+  linkedin?: string;
+  github?: string;
 }
 
 export interface Comment {
@@ -57,7 +69,7 @@ export interface LongFormVideo {
   id: string;
   title: string;
   thumbnail: string;
-  url: string; // Made required for playback
+  url: string;
   duration: string;
   views: string;
   uploadedAt: string;
@@ -65,6 +77,7 @@ export interface LongFormVideo {
   description: string;
   category: string;
   likes?: string;
+  type?: 'video' | 'short' | 'live'; // Added for filtering
 }
 
 export interface Message {
@@ -73,7 +86,7 @@ export interface Message {
   text: string;
   timestamp: Date;
   isAi?: boolean;
-  status?: 'sent' | 'delivered' | 'read'; // WhatsApp style ticks
+  status?: 'sent' | 'delivered' | 'read';
   type?: 'text' | 'image' | 'audio';
 }
 

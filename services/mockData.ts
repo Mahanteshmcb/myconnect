@@ -1,3 +1,4 @@
+
 import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem } from '../types';
 
 export const CURRENT_USER: User = {
@@ -11,7 +12,16 @@ export const CURRENT_USER: User = {
   coverImage: 'https://picsum.photos/id/29/1200/400',
   following: '450',
   postsCount: 84,
-  isOnline: true
+  isOnline: true,
+  website: 'https://alexrivera.dev',
+  location: 'San Francisco, CA',
+  joinedDate: 'September 2021',
+  statusMessage: 'Available for freelance work 🚀',
+  phoneNumber: '+1 (555) 012-3456',
+  email: 'hello@alexrivera.dev',
+  twitter: 'https://twitter.com/alexrivera',
+  github: 'https://github.com/alexrivera',
+  linkedin: 'https://linkedin.com/in/alexrivera'
 };
 
 export const MOCK_USERS: Record<string, User> = {
@@ -108,7 +118,8 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     category: 'Technology',
     thumbnail: 'https://picsum.photos/id/1/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    likes: '124K'
+    likes: '124K',
+    type: 'video'
   },
   {
     id: 'lf2',
@@ -121,7 +132,8 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     category: 'Nature',
     thumbnail: 'https://picsum.photos/id/10/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    likes: '22K'
+    likes: '22K',
+    type: 'video'
   },
   {
     id: 'lf3',
@@ -134,7 +146,8 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     category: 'Tech',
     thumbnail: 'https://picsum.photos/id/20/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    likes: '5.6K'
+    likes: '5.6K',
+    type: 'video'
   },
   {
     id: 'lf4',
@@ -147,7 +160,8 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     category: 'Art',
     thumbnail: 'https://picsum.photos/id/104/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    likes: '1.1K'
+    likes: '1.1K',
+    type: 'video'
   },
   {
     id: 'lf5',
@@ -160,7 +174,8 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     category: 'Travel',
     thumbnail: 'https://picsum.photos/id/225/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
-    likes: '200K'
+    likes: '200K',
+    type: 'video'
   },
   {
     id: 'lf6',
@@ -173,7 +188,36 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     category: 'Technology',
     thumbnail: 'https://picsum.photos/id/374/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
-    likes: '15K'
+    likes: '15K',
+    type: 'video'
+  },
+  {
+    id: 'lf7',
+    title: '🔴 LIVE: Coding a React App from Scratch',
+    duration: 'LIVE',
+    views: '1.5K watching',
+    uploadedAt: 'Live',
+    author: MOCK_USERS['u2'],
+    description: 'Join the livestream as we build.',
+    category: 'Technology',
+    thumbnail: 'https://picsum.photos/id/3/640/360',
+    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    likes: '3K',
+    type: 'live'
+  },
+  {
+    id: 'lf8',
+    title: 'Funny Cat Moments 2024',
+    duration: '0:59',
+    views: '5M',
+    uploadedAt: '1 month ago',
+    author: MOCK_USERS['u1'],
+    description: 'Cats being cats.',
+    category: 'Nature',
+    thumbnail: 'https://picsum.photos/id/40/360/640', // Portrait
+    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    likes: '500K',
+    type: 'short'
   }
 ];
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, User, Comment } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, SendIcon, CloseIcon, TrashIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon } from './Icons';
@@ -7,10 +8,11 @@ interface SocialFeedProps {
   posts: Post[];
   currentUser: User;
   onPostCreate: (content: string) => void;
+  onViewProfile: (user?: User) => void;
 }
 
 // --- Create Post Component ---
-const CreatePost = ({ user, onPost }: { user: User, onPost: (content: string) => void }) => {
+const CreatePost = ({ user, onPost, onViewProfile }: { user: User, onPost: (content: string) => void, onViewProfile: (user: User) => void }) => {
   const [content, setContent] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
@@ -37,7 +39,7 @@ const CreatePost = ({ user, onPost }: { user: User, onPost: (content: string) =>
   return (
     <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm mb-6 border border-gray-100 dark:border-gray-800 transition-colors">
       <div className="flex gap-3">
-        <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+        <img onClick={() => onViewProfile(user)} src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition" />
         <div className="flex-1">
           <textarea
             value={content}
@@ -101,7 +103,7 @@ const RichText = ({ text }: { text: string }) => {
 };
 
 // --- Post Card Component ---
-const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
+const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void }> = ({ post, currentUser, onViewProfile }) => {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(post.likes);
   const [bookmarked, setBookmarked] = useState(false);
@@ -160,14 +162,14 @@ const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
   return (
     <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors p-4 cursor-pointer">
       <div className="flex gap-3">
-        <img src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+        <img onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0 cursor-pointer" />
         <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div className="flex items-center gap-1.5 overflow-hidden">
-                    <h3 className="font-bold text-gray-900 dark:text-white truncate">{post.author.name}</h3>
+                    <h3 onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} className="font-bold text-gray-900 dark:text-white truncate cursor-pointer hover:underline">{post.author.name}</h3>
                     {post.author.verified && <span className="text-blue-500 text-[12px]">✔</span>}
-                    <span className="text-gray-500 dark:text-gray-400 text-sm truncate">{post.author.handle} · {post.timestamp}</span>
+                    <span onClick={(e) => { e.stopPropagation(); onViewProfile(post.author); }} className="text-gray-500 dark:text-gray-400 text-sm truncate cursor-pointer hover:underline">{post.author.handle} · {post.timestamp}</span>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); setShowOptions(!showOptions); }} className="text-gray-400 hover:text-blue-500 p-1 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20 relative group">
                     ...
@@ -273,10 +275,10 @@ const PostCard = ({ post, currentUser }: { post: Post, currentUser: User }) => {
                     </div>
                     {comments.map(comment => (
                         <div key={comment.id} className="flex gap-3 mb-3">
-                             <img src={comment.author.avatar} className="w-8 h-8 rounded-full" alt={comment.author.name} />
+                             <img onClick={() => onViewProfile(comment.author)} src={comment.author.avatar} className="w-8 h-8 rounded-full cursor-pointer" alt={comment.author.name} />
                              <div>
                                  <div className="flex items-center gap-2">
-                                     <span className="font-bold text-sm text-gray-900 dark:text-white">{comment.author.name}</span>
+                                     <span onClick={() => onViewProfile(comment.author)} className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{comment.author.name}</span>
                                      <span className="text-xs text-gray-500">{comment.timestamp}</span>
                                  </div>
                                  <p className="text-sm text-gray-800 dark:text-gray-200">{comment.text}</p>
@@ -406,19 +408,61 @@ const Stories = () => {
   );
 };
 
-export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPostCreate }) => {
+export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPostCreate, onViewProfile }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Pull to refresh state
+  const [pullDistance, setPullDistance] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-        setIsRefreshing(false);
-    }, 1500);
+    // Simulate network request
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsRefreshing(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+      // Only capture start if we are at the top
+      if (containerRef.current && containerRef.current.scrollTop === 0) {
+          startY.current = e.touches[0].clientY;
+      }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+      if (!containerRef.current || isRefreshing) return;
+      
+      const currentY = e.touches[0].clientY;
+      const dy = currentY - startY.current;
+
+      // Only act if we started at top, are still at top, and dragging down
+      if (containerRef.current.scrollTop <= 0 && dy > 0) {
+          // Resistance factor for rubber-banding effect
+          setPullDistance(Math.min(dy * 0.45, 120));
+      } else {
+          setPullDistance(0);
+      }
+  };
+
+  const handleTouchEnd = () => {
+      if (isRefreshing) return;
+      if (pullDistance > 60) {
+          handleRefresh();
+      }
+      setPullDistance(0);
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-white dark:bg-black transition-colors duration-300" id="social-feed-container">
+    <div 
+        ref={containerRef}
+        id="social-feed-container"
+        className="h-full overflow-y-auto bg-white dark:bg-black transition-colors duration-300 relative overscroll-y-contain"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+    >
       {isSearchOpen && (
           <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col animate-fade-in">
             <div className="flex items-center p-4 border-b border-gray-100 dark:border-gray-800 gap-2">
@@ -431,13 +475,24 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
           </div>
       )}
 
-      {isRefreshing && (
-          <div className="absolute top-20 left-0 right-0 flex justify-center z-20 pointer-events-none">
-             <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg animate-spin text-blue-600 border border-gray-100 dark:border-gray-700">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-             </div>
-          </div>
-      )}
+      {/* Pull to Refresh Indicator */}
+      <div 
+          className="absolute left-0 right-0 flex justify-center z-30 pointer-events-none transition-all duration-300 ease-out"
+          style={{ 
+              top: '60px', 
+              transform: `translateY(${isRefreshing ? 20 : pullDistance - 40}px)`,
+              opacity: (pullDistance > 10 || isRefreshing) ? 1 : 0
+          }}
+      >
+         <div 
+            className={`bg-white dark:bg-gray-800 rounded-full p-2.5 shadow-xl border border-gray-100 dark:border-gray-700 text-blue-500 flex items-center justify-center ${isRefreshing ? 'animate-spin' : ''}`}
+            style={{ transform: !isRefreshing ? `rotate(${pullDistance * 3}deg)` : undefined }}
+         >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+         </div>
+      </div>
 
       {/* Main Layout Grid */}
       <div className="max-w-[1250px] mx-auto min-h-full flex gap-6">
@@ -446,8 +501,8 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
         <div className="flex-1 max-w-[600px] border-x border-gray-100 dark:border-gray-800 w-full mx-auto lg:mx-0 pt-0 pb-32">
             
             {/* Mobile Header */}
-            <div className="md:hidden flex items-center justify-between sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 py-3 px-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">M</div>
+            <div className="md:hidden flex items-center justify-between sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-20 py-3 px-4 border-b border-gray-100 dark:border-gray-800">
+                <img onClick={() => onViewProfile(currentUser)} src={currentUser.avatar} className="w-8 h-8 rounded-full object-cover cursor-pointer" alt="Me" />
                 <div className="flex gap-4 text-gray-800 dark:text-white">
                     <button onClick={() => setIsSearchOpen(true)}><SearchIcon className="w-6 h-6" /></button>
                 </div>
@@ -458,13 +513,13 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
                  <Stories />
                </div>
                <div className="px-4">
-                 <CreatePost user={currentUser} onPost={onPostCreate} />
+                 <CreatePost user={currentUser} onPost={onPostCreate} onViewProfile={onViewProfile} />
                </div>
             </div>
             
             <div className="flex flex-col">
                 {posts.map(post => (
-                <PostCard key={post.id} post={post} currentUser={currentUser} />
+                <PostCard key={post.id} post={post} currentUser={currentUser} onViewProfile={onViewProfile} />
                 ))}
             </div>
 
@@ -506,9 +561,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({ posts, currentUser, onPo
                     {SUGGESTED_USERS.map(user => (
                         <div key={user.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
+                                <img onClick={() => onViewProfile(user)} src={user.avatar} className="w-10 h-10 rounded-full object-cover cursor-pointer" alt="" />
                                 <div>
-                                    <div className="font-bold text-sm text-gray-900 dark:text-white hover:underline cursor-pointer">{user.name}</div>
+                                    <div onClick={() => onViewProfile(user)} className="font-bold text-sm text-gray-900 dark:text-white hover:underline cursor-pointer">{user.name}</div>
                                     <div className="text-gray-500 text-xs">{user.handle}</div>
                                 </div>
                             </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, User } from '../types';
 import { SendIcon, SparklesIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon } from './Icons';
@@ -7,9 +8,10 @@ interface ChatAppProps {
   currentUser: User;
   onSendMessage: (sessionId: string, text: string) => void;
   isAiThinking?: boolean;
+  onViewProfile: (user?: User) => void;
 }
 
-export const ChatApp: React.FC<ChatAppProps> = ({ sessions, currentUser, onSendMessage, isAiThinking }) => {
+export const ChatApp: React.FC<ChatAppProps> = ({ sessions, currentUser, onSendMessage, isAiThinking, onViewProfile }) => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(sessions[0]?.id || null);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions, currentUser, onSendM
         {/* Header */}
         <div className="p-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
             <div className="flex items-center gap-3">
-                 <img src={currentUser.avatar} className="w-10 h-10 rounded-full border border-gray-300 dark:border-gray-600" alt="Me" />
+                 <img onClick={() => onViewProfile(currentUser)} src={currentUser.avatar} className="w-10 h-10 rounded-full border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-80 transition" alt="Me" />
                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chats</h2>
             </div>
             <div className="flex gap-2">
@@ -78,7 +80,7 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions, currentUser, onSendM
               className={`p-3 flex gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition relative group ${activeSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
             >
               <div className="relative">
-                <img src={session.user.avatar} alt={session.user.name} className="w-12 h-12 rounded-full object-cover" />
+                <img onClick={(e) => {e.stopPropagation(); onViewProfile(session.user)}} src={session.user.avatar} alt={session.user.name} className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80" />
                 {session.user.isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></div>}
               </div>
               <div className="flex-1 min-w-0 border-b border-gray-100 dark:border-gray-800 pb-3 group-last:border-0">
@@ -109,9 +111,9 @@ export const ChatApp: React.FC<ChatAppProps> = ({ sessions, currentUser, onSendM
               <button onClick={() => setActiveSessionId(null)} className="md:hidden text-gray-500 dark:text-gray-400">
                 ←
               </button>
-              <img src={activeSession.user.avatar} alt={activeSession.user.name} className="w-10 h-10 rounded-full cursor-pointer" />
-              <div className="flex-1 cursor-pointer">
-                <h3 className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1">
+              <img onClick={() => onViewProfile(activeSession.user)} src={activeSession.user.avatar} alt={activeSession.user.name} className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80" />
+              <div onClick={() => onViewProfile(activeSession.user)} className="flex-1 cursor-pointer">
+                <h3 className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-1 hover:underline">
                   {activeSession.user.name} 
                   {activeSession.user.verified && <span className="text-blue-500 text-xs">✔</span>}
                 </h3>

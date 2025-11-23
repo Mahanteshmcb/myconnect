@@ -1,12 +1,14 @@
+
 import React from 'react';
-import { Notification } from '../types';
+import { Notification, User } from '../types';
 import { HeartIcon, CommentIcon, CheckIcon, BellIcon, PlusIcon } from './Icons';
 
 interface NotificationsProps {
   notifications: Notification[];
+  onViewProfile: (user?: User) => void;
 }
 
-const NotificationItem = ({ notification }: { notification: Notification }) => {
+const NotificationItem: React.FC<{ notification: Notification, onViewProfile: (user?: User) => void }> = ({ notification, onViewProfile }) => {
   let icon;
   let iconBg;
 
@@ -34,7 +36,7 @@ const NotificationItem = ({ notification }: { notification: Notification }) => {
 
   return (
     <div className={`p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer border-b border-gray-50 dark:border-gray-900 ${!notification.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
-      <div className="relative">
+      <div className="relative" onClick={() => notification.user && onViewProfile(notification.user)}>
         {notification.user ? (
           <img src={notification.user.avatar} className="w-12 h-12 rounded-full object-cover border border-gray-100 dark:border-gray-800" alt="" />
         ) : (
@@ -49,7 +51,7 @@ const NotificationItem = ({ notification }: { notification: Notification }) => {
       
       <div className="flex-1">
          <p className="text-sm text-gray-900 dark:text-white leading-snug">
-            {notification.user && <span className="font-bold mr-1">{notification.user.name}</span>}
+            {notification.user && <span className="font-bold mr-1 hover:underline" onClick={() => onViewProfile(notification.user)}>{notification.user.name}</span>}
             <span className="text-gray-600 dark:text-gray-300">{notification.content}</span>
          </p>
          <span className="text-xs text-gray-400 mt-1 block">{notification.timestamp}</span>
@@ -68,7 +70,7 @@ const NotificationItem = ({ notification }: { notification: Notification }) => {
   );
 };
 
-export const Notifications: React.FC<NotificationsProps> = ({ notifications }) => {
+export const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewProfile }) => {
   return (
     <div className="max-w-2xl mx-auto h-full bg-white dark:bg-black flex flex-col transition-colors">
        <div className="p-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-10 flex justify-between items-center">
@@ -79,13 +81,13 @@ export const Notifications: React.FC<NotificationsProps> = ({ notifications }) =
        <div className="flex-1 overflow-y-auto pb-20">
            <div className="px-4 py-2 text-sm font-bold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">New</div>
            {notifications.filter(n => !n.read).length > 0 ? 
-             notifications.filter(n => !n.read).map(n => <NotificationItem key={n.id} notification={n} />) :
+             notifications.filter(n => !n.read).map(n => <NotificationItem key={n.id} notification={n} onViewProfile={onViewProfile} />) :
              <div className="p-8 text-center text-gray-400 text-sm italic">No new notifications</div>
            }
            
            <div className="px-4 py-2 text-sm font-bold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 mt-2">Earlier</div>
            {notifications.filter(n => n.read).map(n => (
-               <NotificationItem key={n.id} notification={n} />
+               <NotificationItem key={n.id} notification={n} onViewProfile={onViewProfile} />
            ))}
        </div>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { LongFormVideo, User } from '../types';
 import { SearchIcon, MenuIcon, BellIcon, ThumbsUpIcon, ThumbsDownIcon, ShareIcon, YouTubeLogo, MicrophoneIcon, CreateVideoIcon, SettingsIcon, SendIcon } from './Icons';
@@ -6,6 +7,7 @@ interface LongFormVideoProps {
   videos: LongFormVideo[];
   currentUser: User;
   onUpdateVideo: (video: LongFormVideo) => void;
+  onViewProfile: (user?: User) => void;
 }
 
 const SidebarItem = ({ icon, label, active, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
@@ -32,11 +34,12 @@ const VideoPlayer = ({ video, autoPlay }: { video: LongFormVideo, autoPlay: bool
     );
 };
 
-export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, currentUser }) => {
+export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, currentUser, onViewProfile }) => {
   const [currentView, setCurrentView] = useState<'BROWSE' | 'WATCH'>('BROWSE');
   const [selectedVideo, setSelectedVideo] = useState<LongFormVideo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeType, setActiveType] = useState<'all' | 'video' | 'short' | 'live'>('all');
   
   // Watch State
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -48,7 +51,13 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
   const filteredVideos = videos.filter(v => {
       const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.author.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = activeCategory === 'All' || v.category === activeCategory;
-      return matchesSearch && matchesCategory;
+      const matchesType = activeType === 'all' || v.type === activeType;
+      
+      // Fallback: if video doesn't have a type property (older data), treat as 'video'
+      const videoType = v.type || 'video';
+      const effectiveMatchType = activeType === 'all' || videoType === activeType;
+
+      return matchesSearch && matchesCategory && effectiveMatchType;
   });
 
   const handleVideoClick = (video: LongFormVideo) => {
@@ -91,7 +100,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full">
                   <MenuIcon className="w-6 h-6 text-gray-900 dark:text-white" />
               </button>
-              <div onClick={() => { setCurrentView('BROWSE'); setSearchQuery(''); setActiveCategory('All'); }} className="flex items-center gap-1 cursor-pointer" title="StreamHub Home">
+              <div onClick={() => { setCurrentView('BROWSE'); setSearchQuery(''); setActiveCategory('All'); setActiveType('all'); }} className="flex items-center gap-1 cursor-pointer" title="StreamHub Home">
                   <div className="w-8 h-6 bg-red-600 rounded-lg flex items-center justify-center">
                     <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[8px] border-l-white border-b-[4px] border-b-transparent ml-0.5"></div>
                   </div>
@@ -129,7 +138,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full">
                   <BellIcon className="w-6 h-6 text-gray-900 dark:text-white" />
               </button>
-              <img src={currentUser.avatar} className="w-8 h-8 rounded-full cursor-pointer" alt="Profile" />
+              <img onClick={() => onViewProfile(currentUser)} src={currentUser.avatar} className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 ring-red-500 transition" alt="Profile" />
           </div>
       </div>
   );
@@ -152,9 +161,9 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
                     
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                             <img src={selectedVideo.author.avatar} className="w-10 h-10 rounded-full cursor-pointer" alt="" />
-                             <div className="flex flex-col mr-4">
-                                 <h3 className="font-bold text-gray-900 dark:text-white text-sm cursor-pointer hover:text-gray-700">{selectedVideo.author.name}</h3>
+                             <img onClick={() => onViewProfile(selectedVideo.author)} src={selectedVideo.author.avatar} className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80" alt="" />
+                             <div onClick={() => onViewProfile(selectedVideo.author)} className="flex flex-col mr-4 cursor-pointer group">
+                                 <h3 className="font-bold text-gray-900 dark:text-white text-sm group-hover:text-gray-700">{selectedVideo.author.name}</h3>
                                  <span className="text-xs text-gray-600 dark:text-[#aaa]">{selectedVideo.author.subscribers} subscribers</span>
                              </div>
                              <button 
@@ -277,10 +286,11 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
       <div className="flex flex-1 overflow-hidden">
           {/* Desktop Sidebar */}
           <div className="hidden md:flex w-60 flex-col px-3 hover:overflow-y-auto overflow-hidden sticky top-14 h-full pb-4">
-            <SidebarItem icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>} label="Home" active={true} onClick={() => { setActiveCategory('All'); setSearchQuery(''); }} />
-            <SidebarItem icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.77 10.32l-1.2-.5L18 9.06a3.74 3.74 0 0 0-3.5-6.62L6 6.94a3.74 3.74 0 0 0 .36 7.4l1.2.5L6.04 15.66a3.74 3.74 0 0 0 3.5 6.62l8.5-4.5a3.74 3.74 0 0 0-.36-7.4l-1.9.94zM8.7 19.84l-1.5.8-1.2-.5a2.12 2.12 0 0 1-1-2.1 2.12 2.12 0 0 1 1.1-1.9l8.5-4.5 1.2-.64.5.26.3.16.4.2.4.24.4.26.3.3.3.3.2.3.2.4.1.4a2.12 2.12 0 0 1-1 2.1l-1.2.5-.5.3-.4.16-.4.2-.4.2-.4.25-.3.3-.3.3-.2.3-.2.4-.1.4zm1-7.3l-1.2-.64-.5-.26-.3-.16-.4-.2-.4-.24-.4-.26-.3-.3-.3-.3-.2-.3-.2-.4-.1-.4a2.12 2.12 0 0 1 1-2.1l1.2-.5 1.5-.8a2.12 2.12 0 0 1 2.1 1 2.12 2.12 0 0 1-1.1 1.9l-8.5 4.5z" /></svg>} label="Shorts" />
+            <SidebarItem icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>} label="Home" active={true} onClick={() => { setActiveCategory('All'); setSearchQuery(''); setActiveType('all'); }} />
+            <SidebarItem icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M17.77 10.32l-1.2-.5L18 9.06a3.74 3.74 0 0 0-3.5-6.62L6 6.94a3.74 3.74 0 0 0 .36 7.4l1.2.5L6.04 15.66a3.74 3.74 0 0 0 3.5 6.62l8.5-4.5a3.74 3.74 0 0 0-.36-7.4l-1.9.94zM8.7 19.84l-1.5.8-1.2-.5a2.12 2.12 0 0 1-1-2.1 2.12 2.12 0 0 1 1.1-1.9l8.5-4.5 1.2-.64.5.26.3.16.4.2.4.24.4.26.3.3.3.3.2.3.2.4.1.4a2.12 2.12 0 0 1-1 2.1l-1.2.5-.5.3-.4.16-.4.2-.4.2-.4.25-.3.3-.3.3-.2.3-.2.4-.1.4zm1-7.3l-1.2-.64-.5-.26-.3-.16-.4-.2-.4-.24-.4-.26-.3-.3-.3-.3-.2-.3-.2-.4-.1-.4a2.12 2.12 0 0 1 1-2.1l1.2-.5 1.5-.8a2.12 2.12 0 0 1 2.1 1 2.12 2.12 0 0 1-1.1 1.9l-8.5 4.5z" /></svg>} label="Shorts" onClick={() => setActiveType('short')} active={activeType === 'short'} />
             <SidebarItem icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M18.7 8.7H5.3V7h13.4v1.7zm-1.7-5H7v1.6h10V3.7zm3.3 8.3v6.7c0 1-.7 1.6-1.6 1.6H5.3c-1 0-1.6-.7-1.6-1.6V12c0-1 .7-1.7 1.6-1.7h13.4c1 0 1.6.8 1.6 1.7zm-5 3.3l-5-2.7v5.4l5-2.7z" /></svg>} label="Subscriptions" />
             <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-3"></div>
+            <SidebarItem icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>} label="Your Channel" onClick={() => onViewProfile(currentUser)} />
             <SidebarItem icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10h4v4H4v-4zm0 6h4v4H4v-4zm0-12h4v4H4V4zm6 12h4v4h-4v-4zm0-6h4v4h-4v-4zm0-6h4v4h-4V4zm6 12h4v4h-4v-4zm0-6h4v4h-4v-4zm0-6h4v4h-4V4z" /></svg>} label="Library" />
             <SidebarItem icon={<svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M14.97 16.95 10 13.87V7h2v5.76l4.03 2.49-.69 1.22-.37.48zM12 3c-4.96 0-9 4.04-9 9s4.04 9 9 9 9-4.04 9-9-4.04-9-9-9m0-1c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z" /></svg>} label="History" />
             <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-3"></div>
@@ -292,9 +302,27 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
 
           {/* Main Feed */}
           <div className="flex-1 overflow-y-auto pb-20">
-             {/* Filter Chips */}
-             <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-sm py-3 px-4 flex gap-3 overflow-x-auto no-scrollbar border-b border-transparent dark:border-[#3f3f3f]">
-                  {['All', 'Technology', 'Nature', 'Travel', 'Art', 'Tech', 'Music', 'Live', 'News'].map((tag, i) => (
+             {/* Format Filter Bar (New) */}
+             <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-sm px-4 pt-3 flex gap-2 overflow-x-auto no-scrollbar">
+                  {[
+                      { id: 'all', label: 'All' },
+                      { id: 'video', label: 'Videos' },
+                      { id: 'short', label: 'Shorts' },
+                      { id: 'live', label: 'Live' }
+                  ].map((type) => (
+                      <button
+                          key={type.id}
+                          onClick={() => setActiveType(type.id as any)}
+                          className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${activeType === type.id ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-200 dark:bg-[#272727] text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3f3f3f]'}`}
+                      >
+                          {type.label}
+                      </button>
+                  ))}
+             </div>
+
+             {/* Category Filter Chips */}
+             <div className="sticky top-12 z-10 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-sm py-3 px-4 flex gap-3 overflow-x-auto no-scrollbar border-b border-transparent dark:border-[#3f3f3f]">
+                  {['All', 'Technology', 'Nature', 'Travel', 'Art', 'Tech', 'Music', 'News'].map((tag, i) => (
                       <button 
                         key={i} 
                         onClick={() => setActiveCategory(tag)}
@@ -309,16 +337,16 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
                      {filteredVideos.map(video => (
                          <div key={video.id} onClick={() => handleVideoClick(video)} className="cursor-pointer group flex flex-col gap-3">
-                             <div className="relative aspect-video rounded-xl overflow-hidden">
+                             <div className={`relative rounded-xl overflow-hidden ${video.type === 'short' ? 'aspect-[9/16] max-w-[200px]' : 'aspect-video'}`}>
                                  <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" alt="" />
-                                 <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded">{video.duration}</span>
+                                 <span className={`absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded ${video.type === 'live' ? 'bg-red-600' : ''}`}>{video.duration}</span>
                              </div>
                              <div className="flex gap-3 items-start">
-                                 <img src={video.author.avatar} className="w-9 h-9 rounded-full mt-1" alt="" />
+                                 {video.type !== 'short' && <img src={video.author.avatar} className="w-9 h-9 rounded-full mt-1" alt="" />}
                                  <div className="flex flex-col">
                                      <h3 className="font-bold text-gray-900 dark:text-white text-base leading-snug line-clamp-2">{video.title}</h3>
                                      <div className="text-sm text-gray-600 dark:text-[#aaa] mt-1">
-                                         <p className="hover:text-gray-900 dark:hover:text-white">{video.author.name}</p>
+                                         {video.type !== 'short' && <p className="hover:text-gray-900 dark:hover:text-white">{video.author.name}</p>}
                                          <p>{video.views} views • {video.uploadedAt}</p>
                                      </div>
                                  </div>
@@ -329,7 +357,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos, current
              ) : (
                  <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
                      <SearchIcon className="w-12 h-12 mb-4 opacity-50" />
-                     <p>No videos found matching "{searchQuery}"</p>
+                     <p>No videos found matching filters.</p>
                  </div>
              )}
           </div>
