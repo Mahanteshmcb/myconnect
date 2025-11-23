@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Comment, User } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, VolumeUpIcon, VolumeOffIcon, PlayCircleIcon, CloseIcon, SendIcon, PlusIcon, CameraIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, VolumeUpIcon, VolumeOffIcon, PlayCircleIcon, CloseIcon, SendIcon, PlusIcon, CameraIcon, MusicIcon, CheckIcon } from './Icons';
 import { CURRENT_USER } from '../services/mockData';
 
 interface VideoReelsProps {
@@ -10,6 +10,8 @@ interface VideoReelsProps {
   toggleMute: () => void;
   onViewProfile: (user: User) => void;
   onCreateReel: () => void;
+  onSubscribe?: (userId: string) => void;
+  onUseSound?: (video: Video) => void;
 }
 
 interface ReelItemProps {
@@ -18,6 +20,8 @@ interface ReelItemProps {
   isMuted: boolean;
   toggleMute: () => void;
   onViewProfile: (user: User) => void;
+  onSubscribe?: (userId: string) => void;
+  onUseSound?: (video: Video) => void;
 }
 
 // --- Create Reel Interface ---
@@ -59,6 +63,7 @@ export const CreateReel = ({ onBack, onPost, currentUser }: { onBack: () => void
             filter: activeFilter
         };
         onPost(newVideo);
+        onBack();
     };
 
     return (
@@ -323,11 +328,12 @@ const ShareSheet = ({ isOpen, onClose, video }: { isOpen: boolean, onClose: () =
     );
 };
 
-const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMute, onViewProfile }) => {
+const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMute, onViewProfile, onSubscribe, onUseSound }) => {
   const [liked, setLiked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(isActive);
   const [progress, setProgress] = useState(0);
   const [showHeartOverlay, setShowHeartOverlay] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   
   // Interaction Sheets
   const [showComments, setShowComments] = useState(false);
@@ -404,6 +410,22 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
       setComments([newComment, ...comments]);
   };
 
+  const handleSubscribeClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsSubscribed(!isSubscribed);
+      if (onSubscribe) {
+          onSubscribe(video.author.id);
+      }
+  };
+
+  const handleUseSoundClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onUseSound) {
+          onUseSound(video);
+      }
+      setShowAudioInfo(false);
+  };
+
   return (
     <div className="relative w-full h-full snap-start flex items-center justify-center bg-black overflow-hidden">
       {/* Video Layer */}
@@ -448,7 +470,12 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                     <div className="flex items-center gap-2 mb-3">
                         <img onClick={() => onViewProfile(video.author)} src={video.author.avatar} className="w-10 h-10 rounded-full border border-white cursor-pointer" alt="" />
                         <span onClick={() => onViewProfile(video.author)} className="font-bold text-shadow cursor-pointer hover:underline">{video.author.handle}</span>
-                        <button className="border border-white/50 bg-transparent text-xs px-3 py-1 rounded-lg font-semibold backdrop-blur-md hover:bg-white/20 transition">Subscribe</button>
+                        <button 
+                            onClick={handleSubscribeClick}
+                            className={`border border-white/50 text-xs px-3 py-1 rounded-lg font-semibold backdrop-blur-md hover:bg-white/20 transition ${isSubscribed ? 'bg-white/20 text-white' : 'bg-transparent'}`}
+                        >
+                            {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                        </button>
                     </div>
                     <p className="text-sm mb-2 line-clamp-2 leading-snug text-shadow-sm">{video.description}</p>
                     <div 
@@ -456,7 +483,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                         onClick={(e) => { e.stopPropagation(); setShowAudioInfo(true); }}
                     >
                         <div className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                           <span>♫</span>
+                           <MusicIcon className="w-3 h-3" />
                            <div className="w-24 overflow-hidden whitespace-nowrap">
                                <span className="animate-marquee">Original Sound - {video.author.name}</span>
                            </div>
@@ -533,7 +560,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                   <div className="bg-white dark:bg-gray-900 w-full p-6 rounded-t-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-4">
                           <div className="w-20 h-20 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                              <span className="text-2xl">♫</span>
+                              <MusicIcon className="w-8 h-8 text-gray-500" />
                           </div>
                           <div>
                               <h3 className="font-bold text-lg dark:text-white">Original Sound</h3>
@@ -541,7 +568,12 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
                               <p className="text-xs text-gray-400 mt-2">10.5K videos made with this sound</p>
                           </div>
                       </div>
-                      <button className="w-full mt-6 bg-red-500 text-white py-3 rounded-xl font-bold">Use this sound</button>
+                      <button 
+                        onClick={handleUseSoundClick} 
+                        className="w-full mt-6 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 transition"
+                      >
+                          Use this sound
+                      </button>
                   </div>
               </div>
           )}
@@ -550,7 +582,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
   );
 };
 
-export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile, onCreateReel }) => {
+export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile, onCreateReel, onSubscribe, onUseSound }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -587,6 +619,8 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleM
             isMuted={isMuted}
             toggleMute={toggleMute}
             onViewProfile={onViewProfile}
+            onSubscribe={onSubscribe}
+            onUseSound={onUseSound}
             />
         ))}
         </div>

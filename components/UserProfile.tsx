@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Post, Video } from '../types';
-import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, PlusIcon, HeartIcon, CommentIcon, BookmarkIcon } from './Icons';
+import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, PlusIcon, HeartIcon, CommentIcon, BookmarkIcon, QrCodeIcon, ShareIcon, LinkIcon } from './Icons';
 import { MOCK_USERS, getFollowersForUser, getFollowingForUser } from '../services/mockData';
 
 interface UserProfileProps {
@@ -60,6 +60,46 @@ const UserListModal = ({
     );
 };
 
+// --- Profile QR Code Modal ---
+const ProfileQRModal = ({ user, onClose }: { user: User, onClose: () => void }) => {
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`https://myconnect.app/${user.handle.replace('@','')}`);
+        alert("Profile link copied!");
+    };
+
+    return (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-[#1a1a1a] w-full max-w-sm rounded-[32px] shadow-2xl p-8 flex flex-col items-center relative animate-slide-up" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500">
+                    <CloseIcon className="w-5 h-5" />
+                </button>
+                
+                <div className="w-24 h-24 rounded-full border-4 border-white dark:border-[#1a1a1a] shadow-lg -mt-16 mb-4 overflow-hidden">
+                    <img src={user.avatar} className="w-full h-full object-cover" />
+                </div>
+                
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{user.name}</h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">{user.handle}</p>
+                
+                <div className="w-64 h-64 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 rounded-xl mb-6">
+                    <div className="w-full h-full bg-white rounded-lg flex items-center justify-center">
+                        <QrCodeIcon className="w-48 h-48 text-black opacity-80" />
+                    </div>
+                </div>
+                
+                <div className="flex gap-4 w-full">
+                    <button onClick={handleCopy} className="flex-1 bg-gray-100 dark:bg-gray-800 py-3 rounded-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                        <LinkIcon className="w-5 h-5" /> Copy Link
+                    </button>
+                    <button className="flex-1 bg-blue-600 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 hover:bg-blue-700 transition">
+                        <ShareIcon className="w-5 h-5" /> Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Content Detail Modal (Lightbox) ---
 const ContentDetailModal = ({ 
     item, 
@@ -70,8 +110,6 @@ const ContentDetailModal = ({
     onClose: () => void,
     type: 'post' | 'reel' | 'tagged'
 }) => {
-    // For demo purposes, we treat all items similarly, but in a real app, `item` structure varies.
-    // Assuming 'item' has basic props like image/thumbnail, likes, etc.
     const imgSrc = item.image || item.thumbnail || 'https://via.placeholder.com/600';
 
     return (
@@ -91,7 +129,7 @@ const ContentDetailModal = ({
                      )}
                  </div>
 
-                 {/* Details Side (Hidden on mobile for full immersion, usually overlaid) */}
+                 {/* Details Side */}
                  <div className="hidden md:flex w-[400px] flex-col border-l border-gray-100 dark:border-gray-800">
                      {/* Header */}
                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
@@ -133,8 +171,7 @@ const ContentDetailModal = ({
     );
 };
 
-// --- Advanced Settings Modal (formerly EditProfileModal) ---
-// Kept for settings not available inline (Channel, Chat, etc.)
+// --- Advanced Settings Modal ---
 const SettingsModal = ({ 
     isOpen, 
     onClose, 
@@ -288,6 +325,7 @@ const StoryHighlights = () => {
 export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, posts, onBack, onUpdateUser, onStartChat }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   
   // Inline Edit State
@@ -365,6 +403,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
               title={listModalType === 'followers' ? 'Followers' : 'Following'}
               users={getFollowList(listModalType)}
               onClose={() => setListModalType(null)}
+          />
+      )}
+
+      {showQR && (
+          <ProfileQRModal 
+              user={user}
+              onClose={() => setShowQR(false)}
           />
       )}
 
@@ -480,6 +525,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                                </button>
                            )}
                            <button 
+                                onClick={() => setShowQR(true)}
+                                className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                                title="Share Profile"
+                           >
+                               <QrCodeIcon className="w-6 h-6" />
+                           </button>
+                           <button 
                                 onClick={() => setIsSettingsModalOpen(true)}
                                 className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                            >
@@ -500,8 +552,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                            >
                                Message
                            </button>
-                           <button className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                               <SettingsIcon className="w-6 h-6" />
+                           <button onClick={() => setShowQR(true)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                               <QrCodeIcon className="w-6 h-6" />
                            </button>
                        </>
                    )}
@@ -629,13 +681,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
             
             {/* Stats - Now Clickable */}
             <div className="flex gap-8 mt-6 border-b border-gray-100 dark:border-gray-800 pb-6">
-                <div className="flex items-center gap-1 cursor-default">
+                <div className="flex items-center gap-1 cursor-default hover:opacity-70 transition active:scale-95">
                     <span className="font-bold text-gray-900 dark:text-white">{userPosts.length}</span>
                     <span className="text-gray-500 dark:text-gray-400 text-sm">Posts</span>
                 </div>
                 <div 
                     onClick={() => setListModalType('followers')}
-                    className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition"
+                    className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition active:scale-95"
                     title="View Followers"
                 >
                     <span className="font-bold text-gray-900 dark:text-white">{user.subscribers || '0'}</span>
@@ -643,7 +695,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                 </div>
                 <div 
                     onClick={() => setListModalType('following')}
-                    className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition"
+                    className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition active:scale-95"
                     title="View Following"
                 >
                     <span className="font-bold text-gray-900 dark:text-white">{user.following || '0'}</span>

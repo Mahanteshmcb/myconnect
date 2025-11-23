@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { LongFormVideo, User, Video } from '../types';
-import { SearchIcon, MenuIcon, BellIcon, BellRingIcon, ThumbsUpIcon, ThumbsDownIcon, ShareIcon, StreamHubLogo, MicrophoneIcon, CreateVideoIcon, SettingsIcon, UploadIcon, HomeIcon, HistoryIcon, LibraryIcon, CheckIcon, CloseIcon, QualityIcon, CCIcon, PlayCircleIcon, SignalIcon, AnalyticsIcon, EyeIcon, GlobeIcon, LockClosedIcon, DashboardIcon } from './Icons';
-import { VideoReels } from './VideoReels';
+import { LongFormVideo, User, Video, Comment } from '../types';
+import { SearchIcon, MenuIcon, BellIcon, BellRingIcon, ThumbsUpIcon, ThumbsDownIcon, ShareIcon, StreamHubLogo, MicrophoneIcon, CreateVideoIcon, SettingsIcon, UploadIcon, HomeIcon, HistoryIcon, LibraryIcon, CheckIcon, CloseIcon, QualityIcon, CCIcon, PlayCircleIcon, SignalIcon, AnalyticsIcon, EyeIcon, GlobeIcon, LockClosedIcon, DashboardIcon, DownloadIcon, ClockIcon, ReplyIcon, PlaylistIcon, MicActiveIcon, ToggleLeftIcon, CheckCircleIcon, MoreVerticalIcon, ListPlusIcon } from './Icons';
+import { VideoReels, CreateReel } from './VideoReels';
 import { REELS_VIDEOS, MOCK_USERS } from '../services/mockData';
 
 interface LongFormVideoProps {
@@ -11,6 +11,48 @@ interface LongFormVideoProps {
   onUpdateVideo: (video: LongFormVideo) => void;
   onViewProfile: (user?: User) => void;
 }
+
+// --- Share Video Modal ---
+const VideoShareModal = ({ isOpen, onClose, video }: { isOpen: boolean, onClose: () => void, video: LongFormVideo | null }) => {
+    if (!isOpen || !video) return null;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(video.url);
+        alert("Link copied to clipboard!");
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-[#1f1f1f] w-full max-w-sm rounded-2xl shadow-xl p-5 animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Share</h3>
+                     <button onClick={onClose}><CloseIcon className="w-5 h-5 text-gray-500" /></button>
+                </div>
+                
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 mb-2">
+                     {['WhatsApp', 'Twitter', 'Facebook', 'Email', 'Reddit'].map(platform => (
+                         <div key={platform} className="flex flex-col items-center gap-2 min-w-[60px] cursor-pointer hover:opacity-80">
+                             <div className="w-12 h-12 bg-gray-100 dark:bg-[#333] rounded-full flex items-center justify-center text-xl shadow-sm">
+                                 🔗
+                             </div>
+                             <span className="text-xs text-gray-500 dark:text-gray-400">{platform}</span>
+                         </div>
+                     ))}
+                </div>
+                
+                <div className="bg-gray-50 dark:bg-[#121212] p-3 rounded-xl flex items-center gap-3 border border-gray-100 dark:border-[#333]">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">https://streamhub.app/v/{video.id}</p>
+                    </div>
+                    <button onClick={handleCopy} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                        Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // --- Live Studio Component ---
 const LiveStudio = ({ onClose, currentUser }: { onClose: () => void, currentUser: User }) => {
@@ -22,10 +64,7 @@ const LiveStudio = ({ onClose, currentUser }: { onClose: () => void, currentUser
         // Mock camera access
         const startCamera = async () => {
             try {
-                // In a real app we would use navigator.mediaDevices.getUserMedia
-                // For this demo, we can't easily mock a stream without permissions, so we'll just use a placeholder if stream fails or just UI.
                 if (videoRef.current) {
-                    // Placeholder for UI demo
                     videoRef.current.src = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; 
                     videoRef.current.loop = true;
                     videoRef.current.muted = true;
@@ -126,58 +165,75 @@ const LiveStudio = ({ onClose, currentUser }: { onClose: () => void, currentUser
 // --- Channel Analytics Component ---
 const ChannelAnalytics = ({ currentUser }: { currentUser: User }) => {
     return (
-        <div className="p-8 max-w-6xl mx-auto">
+        <div className="p-8 max-w-6xl mx-auto pb-20">
             <h2 className="text-2xl font-bold dark:text-white mb-6 flex items-center gap-3">
                 <AnalyticsIcon className="w-8 h-8 text-blue-500" /> Channel Analytics
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: 'Total Views', value: '1.2M', change: '+12%' },
-                    { label: 'Watch Time (hours)', value: '45.2K', change: '+8%' },
-                    { label: 'Subscribers', value: currentUser.subscribers || '1.2K', change: '+150' },
-                    { label: 'Estimated Revenue', value: '$3,402.50', change: '+5%' }
+                    { label: 'Total Views', value: '1.2M', change: '+12%', color: 'text-green-500' },
+                    { label: 'Watch Time (hours)', value: '45.2K', change: '+8%', color: 'text-green-500' },
+                    { label: 'Subscribers', value: currentUser.subscribers || '1.2K', change: '+150', color: 'text-blue-500' },
+                    { label: 'Estimated Revenue', value: '$3,402.50', change: '+5%', color: 'text-green-500' }
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333]">
+                    <div key={i} className="bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333] shadow-sm">
                         <h3 className="text-gray-500 text-sm font-medium">{stat.label}</h3>
                         <div className="text-2xl font-bold dark:text-white mt-1">{stat.value}</div>
-                        <div className="text-green-500 text-xs font-bold mt-2">{stat.change} this month</div>
+                        <div className={`${stat.color} text-xs font-bold mt-2`}>{stat.change} this month</div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333]">
-                    <h3 className="font-bold dark:text-white mb-4">Views (Last 28 Days)</h3>
-                    <div className="h-64 flex items-end gap-2">
-                        {Array.from({ length: 28 }).map((_, i) => (
-                            <div 
-                                key={i} 
-                                className="flex-1 bg-blue-500/20 hover:bg-blue-500 transition rounded-t-sm relative group"
-                                style={{ height: `${Math.random() * 100}%` }}
-                            >
-                                <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded pointer-events-none">
-                                    {Math.floor(Math.random() * 5000)}
-                                </div>
-                            </div>
-                        ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                 <div className="lg:col-span-2 bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333]">
+                     <h3 className="font-bold dark:text-white mb-4">Realtime Activity</h3>
+                     <div className="h-64 flex items-end justify-between gap-1">
+                         {Array.from({length: 48}).map((_, i) => (
+                             <div key={i} className="w-full bg-blue-500 rounded-t" style={{ height: `${Math.random() * 100}%`, opacity: 0.5 + Math.random() * 0.5 }}></div>
+                         ))}
+                     </div>
+                     <p className="text-xs text-gray-500 mt-2 text-right">Last 48 hours</p>
+                 </div>
+                 
+                 <div className="bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333]">
+                     <h3 className="font-bold dark:text-white mb-4">Top Content</h3>
+                     <div className="space-y-4">
+                         {[1,2,3,4,5].map(i => (
+                             <div key={i} className="flex items-center gap-3">
+                                 <div className="w-16 h-9 bg-gray-200 dark:bg-[#333] rounded overflow-hidden">
+                                     <img src={`https://picsum.photos/id/${10 + i}/100/100`} className="w-full h-full object-cover" />
+                                 </div>
+                                 <div className="flex-1">
+                                     <div className="text-sm font-bold dark:text-white truncate">How to build a startup in 2025</div>
+                                     <div className="text-xs text-gray-500">12K views • 98% likes</div>
+                                 </div>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333]">
+                <h3 className="font-bold dark:text-white mb-4">Audience Demographics</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Age</h4>
+                        <div className="space-y-2">
+                             <div className="flex justify-between text-sm dark:text-gray-300"><span>18-24</span> <span>45%</span></div>
+                             <div className="w-full h-2 bg-gray-100 dark:bg-[#333] rounded-full overflow-hidden"><div className="h-full bg-blue-500 w-[45%]"></div></div>
+                             <div className="flex justify-between text-sm dark:text-gray-300"><span>25-34</span> <span>30%</span></div>
+                             <div className="w-full h-2 bg-gray-100 dark:bg-[#333] rounded-full overflow-hidden"><div className="h-full bg-purple-500 w-[30%]"></div></div>
+                        </div>
                     </div>
-                </div>
-                
-                <div className="bg-white dark:bg-[#1f1f1f] p-6 rounded-xl border border-gray-200 dark:border-[#333]">
-                    <h3 className="font-bold dark:text-white mb-4">Top Videos</h3>
-                    <div className="space-y-4">
-                        {[1,2,3,4,5].map(i => (
-                            <div key={i} className="flex gap-3">
-                                <div className="w-24 h-14 bg-gray-200 dark:bg-[#333] rounded overflow-hidden">
-                                     <img src={`https://picsum.photos/id/${10 + i}/100/60`} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-sm font-bold dark:text-white line-clamp-1">Video Title Example {i}</div>
-                                    <div className="text-xs text-gray-500">12K views • {i} days ago</div>
-                                </div>
-                            </div>
-                        ))}
+                    <div>
+                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Gender</h4>
+                        <div className="space-y-2">
+                             <div className="flex justify-between text-sm dark:text-gray-300"><span>Male</span> <span>60%</span></div>
+                             <div className="w-full h-2 bg-gray-100 dark:bg-[#333] rounded-full overflow-hidden"><div className="h-full bg-green-500 w-[60%]"></div></div>
+                             <div className="flex justify-between text-sm dark:text-gray-300"><span>Female</span> <span>35%</span></div>
+                             <div className="w-full h-2 bg-gray-100 dark:bg-[#333] rounded-full overflow-hidden"><div className="h-full bg-pink-500 w-[35%]"></div></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -403,6 +459,8 @@ const ChannelPage = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'Home' | 'Videos' | 'Reels'>('Home');
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [notificationLevel, setNotificationLevel] = useState<'all' | 'personalized' | 'none'>('personalized');
+    const [showSubMenu, setShowSubMenu] = useState(false);
 
     const channelVideos = videos.filter(v => v.author.id === user.id);
     const shorts = channelVideos.filter(v => v.type === 'short');
@@ -411,35 +469,71 @@ const ChannelPage = ({
     return (
         <div className="flex-1 bg-white dark:bg-[#0f0f0f] overflow-y-auto">
             {/* Banner */}
-            <div className="h-40 md:h-60 w-full bg-gray-800 relative group">
+            <div className="h-40 md:h-60 w-full bg-gray-800 relative group overflow-hidden">
                 {user.coverImage ? (
                     <img src={user.coverImage} className="w-full h-full object-cover" alt="Banner" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-900 to-purple-900">
-                        <span className="text-white font-bold text-2xl">{user.name}'s Channel</span>
+                        <span className="text-white font-bold text-2xl drop-shadow-md">{user.name}'s Channel</span>
                     </div>
                 )}
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition"></div>
             </div>
 
             {/* Header Info */}
-            <div className="max-w-6xl mx-auto px-6 py-6 border-b border-gray-200 dark:border-[#3f3f3f]">
+            <div className="max-w-6xl mx-auto px-6 pt-0 pb-6 border-b border-gray-200 dark:border-[#3f3f3f]">
                 <div className="flex flex-col md:flex-row items-start gap-6">
-                    <img src={user.avatar} className="w-32 h-32 rounded-full border-4 border-white dark:border-[#0f0f0f] -mt-16" alt={user.name} />
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{user.name} {user.verified && <CheckIcon className="inline w-5 h-5 text-gray-500" />}</h1>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">@{user.handle} • {user.subscribers || '1K'} subscribers • {channelVideos.length} videos</p>
+                    <img src={user.avatar} className="w-32 h-32 rounded-full border-4 border-white dark:border-[#0f0f0f] -mt-16 z-10" alt={user.name} />
+                    <div className="flex-1 mt-4">
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{user.name} {user.verified && <CheckIcon className="inline w-6 h-6 text-gray-500" />}</h1>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-3 font-medium">@{user.handle} • {user.subscribers || '1K'} subscribers • {channelVideos.length} videos</p>
                         <p className="text-gray-600 dark:text-gray-300 text-sm max-w-2xl line-clamp-2 mb-4">{user.bio || "Welcome to my official channel! I post videos about technology and lifestyle."}</p>
-                        <button 
-                            onClick={() => setIsSubscribed(!isSubscribed)}
-                            className={`px-8 py-2.5 rounded-full font-bold text-sm transition ${isSubscribed ? 'bg-gray-200 dark:bg-[#272727] text-gray-900 dark:text-white' : 'bg-black dark:bg-white text-white dark:text-black'}`}
-                        >
-                            {isSubscribed ? 'Subscribed' : 'Subscribe'}
-                        </button>
+                        
+                        <div className="flex items-center gap-2 relative">
+                            <div className="flex rounded-full overflow-hidden">
+                                <button 
+                                    onClick={() => setIsSubscribed(!isSubscribed)}
+                                    className={`px-6 py-2.5 font-bold text-sm transition ${isSubscribed ? 'bg-gray-200 dark:bg-[#272727] text-gray-900 dark:text-white' : 'bg-black dark:bg-white text-white dark:text-black hover:opacity-90'}`}
+                                >
+                                    {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                                </button>
+                                {isSubscribed && (
+                                    <button 
+                                        onClick={() => setShowSubMenu(!showSubMenu)}
+                                        className="bg-gray-200 dark:bg-[#272727] px-3 border-l border-gray-300 dark:border-[#444] text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-[#333]"
+                                    >
+                                        {notificationLevel === 'all' && <BellRingIcon className="w-5 h-5" />}
+                                        {notificationLevel === 'personalized' && <BellIcon className="w-5 h-5" />}
+                                        {notificationLevel === 'none' && <BellIcon className="w-5 h-5 opacity-50" />}
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {showSubMenu && isSubscribed && (
+                                <div className="absolute top-12 left-20 bg-white dark:bg-[#282828] shadow-xl rounded-xl border border-gray-200 dark:border-[#444] z-20 py-1 w-48">
+                                    <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase">Notifications</div>
+                                    <button onClick={() => { setNotificationLevel('all'); setShowSubMenu(false) }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#333] text-sm dark:text-white flex items-center gap-2">
+                                        <BellRingIcon className="w-4 h-4" /> All
+                                    </button>
+                                    <button onClick={() => { setNotificationLevel('personalized'); setShowSubMenu(false) }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#333] text-sm dark:text-white flex items-center gap-2">
+                                        <BellIcon className="w-4 h-4" /> Personalized
+                                    </button>
+                                    <button onClick={() => { setNotificationLevel('none'); setShowSubMenu(false) }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#333] text-sm dark:text-white flex items-center gap-2">
+                                        <BellIcon className="w-4 h-4 opacity-50" /> None
+                                    </button>
+                                    <div className="border-t dark:border-[#444] mt-1 pt-1">
+                                        <button onClick={() => { setIsSubscribed(false); setShowSubMenu(false) }} className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#333] text-sm text-red-500 font-bold">
+                                            Unsubscribe
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-8 mt-8">
+                <div className="flex gap-8 mt-8 border-b border-transparent">
                     {['Home', 'Videos', 'Reels', 'Playlists', 'Community'].map(tab => (
                         <button 
                             key={tab}
@@ -453,9 +547,9 @@ const ChannelPage = ({
             </div>
 
             {/* Content */}
-            <div className="max-w-6xl mx-auto px-6 py-8">
+            <div className="max-w-6xl mx-auto px-6 py-8 pb-20">
                 {activeTab === 'Home' && (
-                    <div className="space-y-8">
+                    <div className="space-y-10">
                          {shorts.length > 0 && (
                              <div>
                                  <h3 className="text-xl font-bold dark:text-white mb-4 flex items-center gap-2"><StreamHubLogo className="w-6 h-6 text-red-600" /> Reels</h3>
@@ -473,7 +567,7 @@ const ChannelPage = ({
                              </div>
                          )}
                          <div>
-                             <h3 className="text-xl font-bold dark:text-white mb-4">Videos</h3>
+                             <h3 className="text-xl font-bold dark:text-white mb-4">Recent Videos</h3>
                              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                  {longVideos.map(v => (
                                      <div key={v.id} onClick={() => onVideoClick(v)} className="cursor-pointer group">
@@ -494,10 +588,15 @@ const ChannelPage = ({
     );
 };
 
-const SidebarItem = ({ icon, label, active, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
-  <div onClick={onClick} className={`flex items-center gap-5 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${active ? 'bg-gray-100 dark:bg-[#272727] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[#272727]'} text-gray-900 dark:text-white`}>
+const SidebarItem = ({ icon, label, active, onClick, collapsed }: { icon: any, label: string, active?: boolean, onClick?: () => void, collapsed: boolean }) => (
+  <div onClick={onClick} className={`flex items-center ${collapsed ? 'justify-center' : 'gap-5 px-3'} py-2.5 rounded-lg cursor-pointer transition-colors ${active ? 'bg-gray-100 dark:bg-[#272727] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[#272727]'} text-gray-900 dark:text-white group relative`}>
     <div className="w-6 h-6 flex items-center justify-center">{icon}</div>
-    <span className="text-sm truncate">{label}</span>
+    {!collapsed && <span className="text-sm truncate">{label}</span>}
+    {collapsed && (
+        <div className="absolute left-14 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+            {label}
+        </div>
+    )}
   </div>
 );
 
@@ -509,7 +608,7 @@ const EnhancedVideoPlayer = ({ video, autoPlay }: { video: LongFormVideo, autoPl
     const [captions, setCaptions] = useState(false);
 
     return (
-        <div className="relative w-full aspect-video bg-black group rounded-xl overflow-hidden">
+        <div className="relative w-full aspect-video bg-black group rounded-xl overflow-hidden shadow-2xl">
             <video
                 key={video.id}
                 ref={videoRef}
@@ -571,16 +670,127 @@ const EnhancedVideoPlayer = ({ video, autoPlay }: { video: LongFormVideo, autoPl
     );
 };
 
+// --- Recursive Comment Component ---
+const VideoComment = ({ comment, onReply }: { comment: Comment, onReply: (id: string, text: string) => void }) => {
+    const [isReplying, setIsReplying] = useState(false);
+    const [replyText, setReplyText] = useState('');
+
+    const handleReplySubmit = () => {
+        if (!replyText.trim()) return;
+        onReply(comment.id, replyText);
+        setReplyText('');
+        setIsReplying(false);
+    };
+
+    return (
+        <div className="flex gap-4 group">
+            <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {comment.author.name[0]}
+            </div>
+            <div className="flex-1">
+                <div className="flex items-baseline gap-2">
+                    <span className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{comment.author.name}</span>
+                    <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                </div>
+                <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{comment.text}</p>
+                <div className="flex items-center gap-4 mt-2">
+                    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
+                        <ThumbsUpIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
+                        <ThumbsDownIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                        onClick={() => setIsReplying(!isReplying)} 
+                        className="text-xs font-bold text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                        Reply
+                    </button>
+                </div>
+
+                {isReplying && (
+                    <div className="mt-2 flex gap-2">
+                        <input 
+                            className="bg-gray-100 dark:bg-[#272727] text-sm p-2 rounded w-full dark:text-white outline-none focus:border-blue-500 border border-transparent"
+                            placeholder="Add a reply..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            autoFocus
+                        />
+                        <button onClick={handleReplySubmit} className="bg-blue-600 text-white px-3 rounded text-xs font-bold">Reply</button>
+                        <button onClick={() => setIsReplying(false)} className="text-gray-500 text-xs hover:text-gray-700">Cancel</button>
+                    </div>
+                )}
+
+                {/* Nested Replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                    <div className="mt-3 space-y-3">
+                        {comment.replies.map(reply => (
+                            <VideoComment key={reply.id} comment={reply} onReply={onReply} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- Video Context Menu ---
+const VideoContextMenu = ({ 
+    video, 
+    onClose,
+    onWatchLater,
+    onDownload,
+    onShare,
+    onSaveToPlaylist
+}: { 
+    video: LongFormVideo, 
+    onClose: () => void,
+    onWatchLater: () => void,
+    onDownload: () => void,
+    onShare: () => void,
+    onSaveToPlaylist: () => void
+}) => {
+    return (
+        <div 
+            className="absolute bottom-10 right-2 z-20 bg-white dark:bg-[#282828] rounded-xl shadow-xl border border-gray-100 dark:border-[#333] w-48 overflow-hidden animate-fade-in flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <button onClick={() => { onWatchLater(); onClose(); }} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#333] text-sm text-gray-800 dark:text-gray-200">
+                <ClockIcon className="w-4 h-4" /> Watch Later
+            </button>
+            <button onClick={() => { onSaveToPlaylist(); onClose(); }} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#333] text-sm text-gray-800 dark:text-gray-200">
+                <ListPlusIcon className="w-4 h-4" /> Save to Playlist
+            </button>
+            <button onClick={() => { onDownload(); onClose(); }} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#333] text-sm text-gray-800 dark:text-gray-200">
+                <DownloadIcon className="w-4 h-4" /> Download
+            </button>
+            <button onClick={() => { onShare(); onClose(); }} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#333] text-sm text-gray-800 dark:text-gray-200">
+                <ShareIcon className="w-4 h-4" /> Share
+            </button>
+            <div className="h-px bg-gray-100 dark:bg-[#333]"></div>
+            <button onClick={onClose} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-[#333] text-sm text-red-500">
+                Cancel
+            </button>
+        </div>
+    );
+};
+
 export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initialVideos, currentUser, onViewProfile }) => {
   const [videos, setVideos] = useState(initialVideos);
-  const [currentView, setCurrentView] = useState<'HOME' | 'WATCH' | 'REELS' | 'CHANNEL' | 'LIBRARY' | 'HISTORY' | 'LIVE' | 'ANALYTICS'>('HOME');
+  const [currentView, setCurrentView] = useState<'HOME' | 'WATCH' | 'REELS' | 'CHANNEL' | 'LIBRARY' | 'LIVE' | 'ANALYTICS' | 'CREATE_REEL'>('HOME');
   const [selectedVideo, setSelectedVideo] = useState<LongFormVideo | null>(null);
   const [viewingChannel, setViewingChannel] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeType, setActiveType] = useState<'all' | 'video' | 'short' | 'live'>('all');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
+  // Header State
+  const [isListening, setIsListening] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
   // Watch State
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isBellOn, setIsBellOn] = useState(false);
@@ -588,16 +798,26 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
   const [isDisliked, setIsDisliked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [comments, setComments] = useState<{user: string, text: string, time: string}[]>([]);
-  
-  // History State
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [autoPlayNext, setAutoPlayNext] = useState(true);
+
+  // Library State
   const [history, setHistory] = useState<LongFormVideo[]>([]);
+  const [watchLater, setWatchLater] = useState<LongFormVideo[]>([]);
+  const [downloads, setDownloads] = useState<LongFormVideo[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   
+  // Sharing & Menu
+  const [sharingVideo, setSharingVideo] = useState<LongFormVideo | null>(null);
+  const [activeMenuVideoId, setActiveMenuVideoId] = useState<string | null>(null);
+
   // Local Subscriptions List (IDs)
   const [subscriptions, setSubscriptions] = useState<string[]>(currentUser.subscriptions || ['u2', 'u5']);
 
   // Shorts/Reels State
   const [isReelsMuted, setIsReelsMuted] = useState(false);
+  // Reels video list - in real app this would be separate API but we filter videos
+  const [reelsVideos, setReelsVideos] = useState<Video[]>(REELS_VIDEOS);
 
   const filteredVideos = videos.filter(v => {
       const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.author.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -627,10 +847,14 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
         setIsLiked(false);
         setIsDisliked(false);
         setDescriptionExpanded(false);
-        setComments([
-            { user: "TechFan99", text: "Great content as always!", time: "2 hours ago" },
-            { user: "Sarah J.", text: "Can you do a tutorial on the advanced features?", time: "5 hours ago" }
-        ]);
+        
+        // Mock Comments with updated structure
+        const mockComments: Comment[] = [
+            { id: 'c1', author: { ...currentUser, name: "TechFan99" }, text: "Great content as always!", timestamp: "2 hours ago", replies: [] },
+            { id: 'c2', author: { ...currentUser, name: "Sarah J." }, text: "Can you do a tutorial on the advanced features?", timestamp: "5 hours ago", replies: [] }
+        ];
+        setComments(mockComments);
+        
         window.scrollTo(0, 0);
     }
   };
@@ -664,34 +888,93 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
   const handlePostComment = () => {
       if (!commentText.trim()) return;
-      setComments([{ user: currentUser.name, text: commentText, time: 'Just now' }, ...comments]);
+      const newComment: Comment = {
+          id: `nc_${Date.now()}`,
+          author: currentUser,
+          text: commentText,
+          timestamp: 'Just now',
+          replies: []
+      };
+      setComments([newComment, ...comments]);
       setCommentText('');
+  };
+
+  const handleReplyToComment = (parentId: string, text: string) => {
+      const addReply = (list: Comment[]): Comment[] => {
+          return list.map(c => {
+              if (c.id === parentId) {
+                  return {
+                      ...c,
+                      replies: [...(c.replies || []), {
+                          id: `r_${Date.now()}`,
+                          author: currentUser,
+                          text,
+                          timestamp: 'Just now'
+                      }]
+                  };
+              } else if (c.replies) {
+                  return { ...c, replies: addReply(c.replies) };
+              }
+              return c;
+          });
+      };
+      setComments(addReply(comments));
   };
 
   const handleUploadVideo = (newVideo: LongFormVideo) => {
       setVideos([newVideo, ...videos]);
   };
 
-  // Convert LongFormVideo 'short' type to generic Video type for Reels player
-  const reelsVideos: Video[] = REELS_VIDEOS; // Or map from videos.filter(v => v.type === 'short')
+  const handlePostReel = (newVideo: Video) => {
+      setReelsVideos([newVideo, ...reelsVideos]);
+      setCurrentView('REELS'); // Return to reels view after posting
+  };
+
+  const toggleWatchLater = (video: LongFormVideo) => {
+      setWatchLater(prev => {
+          const exists = prev.find(v => v.id === video.id);
+          if (exists) return prev.filter(v => v.id !== video.id);
+          return [video, ...prev];
+      });
+  };
+
+  const handleDownload = (video: LongFormVideo) => {
+      setDownloadingId(video.id);
+      setTimeout(() => {
+          setDownloads(prev => [video, ...prev]);
+          setDownloadingId(null);
+      }, 2000);
+  };
+
+  const startVoiceSearch = () => {
+      setIsListening(true);
+      // Simulate listening
+      setTimeout(() => {
+          setSearchQuery("New Technology Trends");
+          setIsListening(false);
+      }, 2500);
+  };
 
   // --- Header Component ---
   const Header = () => (
       <div className="sticky top-0 z-20 bg-white dark:bg-[#0f0f0f] px-4 h-14 flex items-center justify-between border-b border-transparent dark:border-none">
           <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full">
-                  <MenuIcon className="w-6 h-6 text-gray-900 dark:text-white" />
+              <button 
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full"
+              >
+                  {isSidebarCollapsed ? <ToggleLeftIcon className="w-6 h-6 text-gray-900 dark:text-white" /> : <MenuIcon className="w-6 h-6 text-gray-900 dark:text-white" />}
               </button>
               <div onClick={() => { setCurrentView('HOME'); setSearchQuery(''); setActiveCategory('All'); setActiveType('all'); }} className="flex items-center gap-2 cursor-pointer" title="StreamHub Home">
                   <div className="text-red-600">
                     <StreamHubLogo className="w-8 h-8" />
                   </div>
-                  <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white font-sans">StreamHub</span>
+                  <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white font-sans hidden sm:block">StreamHub</span>
               </div>
           </div>
 
           <div className="hidden md:flex flex-1 max-w-2xl items-center gap-4 ml-10">
-              <div className="flex flex-1 items-center">
+              <div className="flex flex-1 items-center relative">
                   <div className="flex flex-1 items-center px-4 bg-white dark:bg-[#121212] border border-gray-300 dark:border-[#303030] rounded-l-full h-10 shadow-inner focus-within:border-blue-500 ml-8">
                       <input 
                         type="text" 
@@ -707,9 +990,18 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                   <button onClick={() => setCurrentView('HOME')} className="h-10 px-6 bg-gray-100 dark:bg-[#222222] border border-l-0 border-gray-300 dark:border-[#303030] rounded-r-full hover:bg-gray-200 dark:hover:bg-[#303030] flex items-center justify-center">
                       <SearchIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                   </button>
+                  
+                  {isListening && (
+                      <div className="absolute top-12 left-0 right-0 bg-red-600 text-white p-2 rounded-lg text-center shadow-lg animate-pulse z-50">
+                          Listening...
+                      </div>
+                  )}
               </div>
-              <button className="p-2.5 bg-gray-100 dark:bg-[#181818] rounded-full hover:bg-gray-200 dark:hover:bg-[#303030]">
-                  <MicrophoneIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+              <button 
+                onClick={startVoiceSearch}
+                className={`p-2.5 bg-gray-100 dark:bg-[#181818] rounded-full hover:bg-gray-200 dark:hover:bg-[#303030] transition ${isListening ? 'bg-red-100 text-red-600' : ''}`}
+              >
+                  {isListening ? <MicActiveIcon className="w-5 h-5" /> : <MicrophoneIcon className="w-5 h-5 text-gray-900 dark:text-white" />}
               </button>
           </div>
 
@@ -728,18 +1020,86 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
               >
                   <CreateVideoIcon className="w-6 h-6 text-gray-900 dark:text-white" />
               </button>
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full">
-                  <BellIcon className="w-6 h-6 text-gray-900 dark:text-white" />
-              </button>
+              <div className="relative">
+                  <button 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full"
+                  >
+                      <BellIcon className="w-6 h-6 text-gray-900 dark:text-white" />
+                  </button>
+                  {showNotifications && (
+                      <div className="absolute top-12 right-0 w-80 bg-white dark:bg-[#282828] rounded-xl shadow-2xl border border-gray-100 dark:border-[#333] z-50 overflow-hidden">
+                          <div className="p-3 border-b border-gray-100 dark:border-[#333] font-bold dark:text-white">Notifications</div>
+                          <div className="max-h-80 overflow-y-auto">
+                              {/* Mock Notifications */}
+                              {[1,2,3].map(i => (
+                                  <div key={i} className="p-3 hover:bg-gray-50 dark:hover:bg-[#333] flex gap-3 cursor-pointer">
+                                      <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                                      <div className="flex-1">
+                                          <p className="text-sm dark:text-white">TechDaily uploaded: "New iPhone Review"</p>
+                                          <span className="text-xs text-gray-500">2 hours ago</span>
+                                      </div>
+                                      <img src="https://picsum.photos/50/50" className="w-10 h-10 rounded object-cover" />
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )}
+              </div>
               <img onClick={() => handleChannelClick(currentUser)} src={currentUser.avatar} className="w-8 h-8 rounded-full cursor-pointer hover:ring-2 ring-blue-500 transition" alt="Profile" />
           </div>
       </div>
   );
 
+  const renderVideoList = (videoList: LongFormVideo[], emptyMessage: string) => {
+      if (videoList.length === 0) return <p className="text-gray-500 p-6">{emptyMessage}</p>;
+      
+      return (
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {videoList.map(video => (
+                  <div key={video.id} onClick={() => handleVideoClick(video)} className="cursor-pointer group flex flex-col gap-3 relative">
+                      <div className="aspect-video rounded-xl overflow-hidden mb-2 relative">
+                          <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">{video.duration}</span>
+                          
+                          {/* Three Dot Context Menu Trigger (Bottom Right of Thumbnail) */}
+                          <button 
+                             onClick={(e) => { e.stopPropagation(); setActiveMenuVideoId(activeMenuVideoId === video.id ? null : video.id); }}
+                             className="absolute bottom-1 left-1 p-1 bg-black/70 hover:bg-black/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                              <MoreVerticalIcon className="w-4 h-4" />
+                          </button>
+                      </div>
+
+                      {activeMenuVideoId === video.id && (
+                          <VideoContextMenu 
+                              video={video}
+                              onClose={() => setActiveMenuVideoId(null)}
+                              onWatchLater={() => toggleWatchLater(video)}
+                              onDownload={() => handleDownload(video)}
+                              onShare={() => setSharingVideo(video)}
+                              onSaveToPlaylist={() => alert("Added to Playlist")}
+                          />
+                      )}
+
+                      <h3 className="font-bold text-gray-900 dark:text-white line-clamp-2">{video.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{video.author.name}</p>
+                  </div>
+              ))}
+          </div>
+      );
+  };
+
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#0f0f0f]">
+    <div className="flex flex-col h-full bg-white dark:bg-[#0f0f0f]" onClick={() => setActiveMenuVideoId(null)}>
       {currentView === 'LIVE' ? (
           <LiveStudio onClose={() => setCurrentView('HOME')} currentUser={currentUser} />
+      ) : currentView === 'CREATE_REEL' ? (
+          <CreateReel 
+            onBack={() => setCurrentView('REELS')}
+            onPost={handlePostReel}
+            currentUser={currentUser}
+          />
       ) : (
       <>
       <Header />
@@ -749,21 +1109,36 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
         currentUser={currentUser}
         onUpload={handleUploadVideo}
       />
+
+      <VideoShareModal 
+        isOpen={!!sharingVideo}
+        onClose={() => setSharingVideo(null)}
+        video={sharingVideo}
+      />
       
       <div className="flex flex-1 overflow-hidden">
-          {/* Desktop Sidebar */}
-          <div className={`hidden md:flex w-60 flex-col px-3 hover:overflow-y-auto overflow-hidden sticky top-14 h-full pb-4 ${currentView === 'WATCH' ? 'hidden xl:flex' : ''}`}>
-            <SidebarItem icon={<HomeIcon className="w-6 h-6" />} label="Home" active={currentView === 'HOME'} onClick={() => setCurrentView('HOME')} />
-            <SidebarItem icon={<StreamHubLogo className="w-6 h-6 text-red-600" />} label="Reels" active={currentView === 'REELS'} onClick={() => setCurrentView('REELS')} />
-            <SidebarItem icon={<LibraryIcon className="w-6 h-6" />} label="Library" active={currentView === 'LIBRARY'} onClick={() => setCurrentView('LIBRARY')} />
-            <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-3"></div>
+          {/* Collapsible Sidebar */}
+          <div 
+            className={`hidden md:flex flex-col px-3 hover:overflow-y-auto overflow-hidden sticky top-14 h-full pb-4 transition-all duration-300 ease-in-out border-r border-transparent dark:border-[#1f1f1f]
+            ${isSidebarCollapsed ? 'w-20 items-center' : 'w-60'} 
+            ${currentView === 'WATCH' ? 'hidden xl:flex' : ''}`}
+          >
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<HomeIcon className="w-6 h-6" />} label="Home" active={currentView === 'HOME'} onClick={() => setCurrentView('HOME')} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<StreamHubLogo className="w-6 h-6 text-red-600" />} label="Reels" active={currentView === 'REELS'} onClick={() => setCurrentView('REELS')} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<LibraryIcon className="w-6 h-6" />} label="Library" active={currentView === 'LIBRARY'} onClick={() => setCurrentView('LIBRARY')} />
             
-            <SidebarItem icon={<CheckIcon className="w-6 h-6" />} label="Your Channel" active={currentView === 'CHANNEL' && viewingChannel?.id === currentUser.id} onClick={() => handleChannelClick(currentUser)} />
-            <SidebarItem icon={<HistoryIcon className="w-6 h-6" />} label="History" active={currentView === 'HISTORY'} onClick={() => setCurrentView('HISTORY')} />
-            <SidebarItem icon={<DashboardIcon className="w-6 h-6" />} label="Analytics" active={currentView === 'ANALYTICS'} onClick={() => setCurrentView('ANALYTICS')} />
+            <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-3 w-full"></div>
             
-            <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-3"></div>
-            <div className="px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-300">Subscriptions</div>
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<CheckIcon className="w-6 h-6" />} label="Your Channel" active={currentView === 'CHANNEL' && viewingChannel?.id === currentUser.id} onClick={() => handleChannelClick(currentUser)} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<HistoryIcon className="w-6 h-6" />} label="History" active={false} onClick={() => setCurrentView('LIBRARY')} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<ClockIcon className="w-6 h-6" />} label="Watch Later" active={false} onClick={() => setCurrentView('LIBRARY')} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<DownloadIcon className="w-6 h-6" />} label="Downloads" active={false} onClick={() => setCurrentView('LIBRARY')} />
+            <SidebarItem collapsed={isSidebarCollapsed} icon={<DashboardIcon className="w-6 h-6" />} label="Analytics" active={currentView === 'ANALYTICS'} onClick={() => setCurrentView('ANALYTICS')} />
+            
+            <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-3 w-full"></div>
+            
+            {!isSidebarCollapsed && <div className="px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-300">Subscriptions</div>}
+            
             {/* Dynamic Subscription List */}
             {subscriptions.map(subId => {
                 const subUser = Object.values(MOCK_USERS).find(u => u.id === subId) || { id: subId, name: 'Unknown User', avatar: 'https://via.placeholder.com/30' } as User;
@@ -771,10 +1146,11 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                     <div 
                         key={subId} 
                         onClick={() => { setSearchQuery(subUser.name); setCurrentView('HOME'); }}
-                        className="flex items-center gap-4 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#272727] cursor-pointer"
+                        className={`flex items-center gap-4 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#272727] cursor-pointer w-full ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                        title={subUser.name}
                     >
                         <img src={subUser.avatar} className="w-6 h-6 rounded-full object-cover" />
-                        <span className="text-sm truncate text-gray-900 dark:text-white">{subUser.name}</span>
+                        {!isSidebarCollapsed && <span className="text-sm truncate text-gray-900 dark:text-white">{subUser.name}</span>}
                     </div>
                 );
             })}
@@ -782,9 +1158,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto bg-white dark:bg-[#0f0f0f]">
-              {currentView === 'ANALYTICS' && (
-                  <ChannelAnalytics currentUser={currentUser} />
-              )}
+              {currentView === 'ANALYTICS' && <ChannelAnalytics currentUser={currentUser} />}
               
               {currentView === 'REELS' && (
                   <div className="h-full bg-black">
@@ -793,29 +1167,91 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                         isMuted={isReelsMuted} 
                         toggleMute={() => setIsReelsMuted(!isReelsMuted)} 
                         onViewProfile={handleChannelClick}
-                        onCreateReel={() => {}}
+                        onCreateReel={() => setCurrentView('CREATE_REEL')}
+                        onSubscribe={(id) => {
+                            if (!subscriptions.includes(id)) setSubscriptions([...subscriptions, id]);
+                            else setSubscriptions(subscriptions.filter(s => s !== id));
+                        }}
+                        onUseSound={() => setCurrentView('CREATE_REEL')}
                       />
                   </div>
               )}
 
-              {currentView === 'HISTORY' && (
-                  <div className="p-6">
-                      <h2 className="text-2xl font-bold dark:text-white mb-6">Watch History</h2>
-                      <div className="space-y-4">
-                          {history.length === 0 ? <p className="text-gray-500">No watch history yet.</p> : history.map(video => (
-                              <div key={video.id} onClick={() => handleVideoClick(video)} className="flex gap-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1f1f1f] p-2 rounded-lg group">
-                                  <div className="w-40 aspect-video relative rounded-lg overflow-hidden flex-shrink-0">
-                                      <img src={video.thumbnail} className="w-full h-full object-cover" />
-                                      <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">{video.duration}</span>
-                                  </div>
-                                  <div className="flex-1">
-                                      <h3 className="font-bold text-gray-900 dark:text-white line-clamp-2">{video.title}</h3>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{video.author.name} • {video.views} views</p>
-                                      <p className="text-xs text-gray-500 mt-2 line-clamp-1">{video.description}</p>
-                                  </div>
-                              </div>
-                          ))}
+              {currentView === 'LIBRARY' && (
+                  <div className="p-6 space-y-10 pb-20">
+                      <div className="flex items-center gap-4 mb-6">
+                           <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                               <LibraryIcon className="w-8 h-8 text-red-600" />
+                           </div>
+                           <div>
+                               <h1 className="text-3xl font-bold dark:text-white">Library</h1>
+                               <p className="text-gray-500">Manage your history, watch later list, and downloads.</p>
+                           </div>
                       </div>
+
+                      <section>
+                          <div className="flex justify-between items-center mb-4">
+                              <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><HistoryIcon className="w-5 h-5" /> History</h2>
+                              <button className="text-blue-500 text-sm font-bold">See all</button>
+                          </div>
+                          {history.length === 0 ? <p className="text-gray-500 text-sm italic">No watch history.</p> : (
+                              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+                                  {history.map(video => (
+                                      <div key={video.id} onClick={() => handleVideoClick(video)} className="min-w-[250px] cursor-pointer group">
+                                          <div className="aspect-video rounded-lg overflow-hidden relative">
+                                              <img src={video.thumbnail} className="w-full h-full object-cover" />
+                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition"></div>
+                                              <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">{video.duration}</span>
+                                          </div>
+                                          <h3 className="font-bold text-sm mt-2 dark:text-white line-clamp-2">{video.title}</h3>
+                                          <p className="text-xs text-gray-500">{video.author.name}</p>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
+                      </section>
+
+                      <section>
+                          <div className="flex justify-between items-center mb-4">
+                              <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><ClockIcon className="w-5 h-5" /> Watch Later</h2>
+                              <button className="text-blue-500 text-sm font-bold">See all</button>
+                          </div>
+                          {watchLater.length === 0 ? <p className="text-gray-500 text-sm italic">Your list is empty.</p> : (
+                              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+                                  {watchLater.map(video => (
+                                      <div key={video.id} onClick={() => handleVideoClick(video)} className="min-w-[250px] cursor-pointer group">
+                                          <div className="aspect-video rounded-lg overflow-hidden relative">
+                                              <img src={video.thumbnail} className="w-full h-full object-cover" />
+                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition"></div>
+                                          </div>
+                                          <h3 className="font-bold text-sm mt-2 dark:text-white line-clamp-2">{video.title}</h3>
+                                          <p className="text-xs text-gray-500">{video.author.name}</p>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
+                      </section>
+
+                      <section>
+                          <div className="flex justify-between items-center mb-4">
+                              <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><DownloadIcon className="w-5 h-5" /> Downloads</h2>
+                              <button className="text-blue-500 text-sm font-bold">See all</button>
+                          </div>
+                          {downloads.length === 0 ? <p className="text-gray-500 text-sm italic">No downloaded videos.</p> : (
+                              <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+                                  {downloads.map(video => (
+                                      <div key={video.id} onClick={() => handleVideoClick(video)} className="min-w-[250px] cursor-pointer group">
+                                          <div className="aspect-video rounded-lg overflow-hidden relative">
+                                              <img src={video.thumbnail} className="w-full h-full object-cover" />
+                                              <div className="absolute top-2 right-2 bg-green-500 p-1 rounded-full"><CheckIcon className="w-3 h-3 text-white" /></div>
+                                          </div>
+                                          <h3 className="font-bold text-sm mt-2 dark:text-white line-clamp-2">{video.title}</h3>
+                                          <p className="text-xs text-gray-500">{video.author.name}</p>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
+                      </section>
                   </div>
               )}
 
@@ -860,7 +1296,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
                                         <div className="flex items-center bg-gray-100 dark:bg-[#272727] rounded-full h-9">
                                             <button 
                                                 onClick={handleLike}
@@ -876,9 +1312,34 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                                 <ThumbsDownIcon className="w-5 h-5" />
                                             </button>
                                         </div>
-                                        <button className="flex items-center gap-2 bg-gray-100 dark:bg-[#272727] px-4 h-9 rounded-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f]">
+                                        <button onClick={() => setSharingVideo(selectedVideo)} className="flex items-center gap-2 bg-gray-100 dark:bg-[#272727] px-4 h-9 rounded-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f]">
                                             <ShareIcon className="w-5 h-5 text-gray-900 dark:text-white" />
                                             <span className="text-sm font-medium text-gray-900 dark:text-white">Share</span>
+                                        </button>
+                                        <button onClick={() => handleDownload(selectedVideo)} className="flex items-center gap-2 bg-gray-100 dark:bg-[#272727] px-4 h-9 rounded-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f]">
+                                            {downloadingId === selectedVideo.id ? (
+                                                <span className="text-xs text-blue-500 animate-pulse">Downloading...</span>
+                                            ) : downloads.find(d => d.id === selectedVideo.id) ? (
+                                                <>
+                                                    <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Saved</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <DownloadIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">Download</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <button onClick={() => toggleWatchLater(selectedVideo)} className="p-2 bg-gray-100 dark:bg-[#272727] rounded-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f]">
+                                            {watchLater.find(v => v.id === selectedVideo.id) ? (
+                                                 <CheckIcon className="w-5 h-5 text-blue-500" />
+                                            ) : (
+                                                 <ClockIcon className="w-5 h-5 text-gray-900 dark:text-white" />
+                                            )}
+                                        </button>
+                                        <button className="p-2 bg-gray-100 dark:bg-[#272727] rounded-full hover:bg-gray-200 dark:hover:bg-[#3f3f3f]">
+                                            <PlaylistIcon className="w-5 h-5 text-gray-900 dark:text-white" />
                                         </button>
                                     </div>
                                 </div>
@@ -921,25 +1382,8 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                     </div>
 
                                     <div className="space-y-6">
-                                        {comments.map((c, i) => (
-                                            <div key={i} className="flex gap-4 group">
-                                                <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                                    {c.user[0]}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{c.user}</span>
-                                                        <span className="text-xs text-gray-500">{c.time}</span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{c.text}</p>
-                                                    <div className="flex items-center gap-4 mt-2">
-                                                        <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
-                                                            <ThumbsUpIcon className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <span className="text-xs font-bold text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">Reply</span>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        {comments.map((c) => (
+                                            <VideoComment key={c.id} comment={c} onReply={handleReplyToComment} />
                                         ))}
                                     </div>
                                 </div>
@@ -948,6 +1392,19 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
                         {/* Right Column: Recommendations */}
                         <div className="w-full lg:w-[400px] px-4 lg:px-0 flex flex-col gap-3 pb-20">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-bold dark:text-white">Up Next</h3>
+                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <span>Autoplay</span>
+                                    <button 
+                                        onClick={() => setAutoPlayNext(!autoPlayNext)} 
+                                        className={`w-10 h-5 rounded-full relative transition ${autoPlayNext ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                    >
+                                        <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${autoPlayNext ? 'left-5.5' : 'left-0.5'}`}></div>
+                                    </button>
+                                </div>
+                            </div>
+
                             {filteredVideos.filter(v => v.id !== selectedVideo.id).map(video => (
                                 <div key={video.id} onClick={() => handleVideoClick(video)} className="flex gap-2 cursor-pointer group">
                                     <div className="w-40 h-24 relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-[#272727]">
@@ -1001,11 +1458,32 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                      {filteredVideos.length > 0 ? (
                          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
                              {filteredVideos.map(video => (
-                                 <div key={video.id} onClick={() => handleVideoClick(video)} className="cursor-pointer group flex flex-col gap-3">
+                                 <div key={video.id} onClick={() => handleVideoClick(video)} className="cursor-pointer group flex flex-col gap-3 transition-transform duration-200 hover:scale-[1.01] relative">
                                      <div className={`relative rounded-xl overflow-hidden ${video.type === 'short' ? 'aspect-[9/16] max-w-[200px]' : 'aspect-video'}`}>
-                                         <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition duration-200" alt="" />
+                                         <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-in-out" alt="" />
                                          <span className={`absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded ${video.type === 'live' ? 'bg-red-600' : ''}`}>{video.duration}</span>
+
+                                         {/* Three Dot Context Menu Trigger */}
+                                         <button 
+                                            onClick={(e) => { e.stopPropagation(); setActiveMenuVideoId(activeMenuVideoId === video.id ? null : video.id); }}
+                                            className="absolute bottom-1 left-1 p-1 bg-black/70 hover:bg-black/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                         >
+                                             <MoreVerticalIcon className="w-4 h-4" />
+                                         </button>
                                      </div>
+
+                                     {/* Context Menu Dropdown */}
+                                     {activeMenuVideoId === video.id && (
+                                         <VideoContextMenu 
+                                             video={video}
+                                             onClose={() => setActiveMenuVideoId(null)}
+                                             onWatchLater={() => toggleWatchLater(video)}
+                                             onDownload={() => handleDownload(video)}
+                                             onShare={() => setSharingVideo(video)}
+                                             onSaveToPlaylist={() => alert("Added to playlist")}
+                                         />
+                                     )}
+
                                      <div className="flex gap-3 items-start">
                                          {video.type !== 'short' && <img onClick={(e) => {e.stopPropagation(); handleChannelClick(video.author)}} src={video.author.avatar} className="w-9 h-9 rounded-full mt-1 hover:opacity-80 transition" alt="" />}
                                          <div className="flex flex-col">

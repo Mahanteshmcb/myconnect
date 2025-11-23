@@ -66,6 +66,7 @@ export interface Comment {
   timestamp: string;
   unixTimestamp?: number; // For sorting
   likes?: number;
+  replies?: Comment[]; // Nested replies
 }
 
 export interface Post {
