@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon } from './Icons';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon } from './Icons';
 import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
@@ -869,7 +869,8 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   
   // Search Filter State
-  const [searchFilter, setSearchFilter] = useState<'all' | 'people' | 'communities' | 'videos' | 'posts'>('all');
+  const [searchFilter, setSearchFilter] = useState<'all' | 'people' | 'communities' | 'videos' | 'posts' | 'tags'>('all');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   
   // View Community Members
   const [showMembersModal, setShowMembersModal] = useState(false);
@@ -896,23 +897,38 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
       if (!searchQuery.trim()) return null;
       const q = searchQuery.toLowerCase();
 
+      // Accounts / People
       const matchedUsers = Object.values(MOCK_USERS).filter(u => 
           u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)
       );
       
+      // Communities
       const matchedCommunities = communities.filter(c => 
           c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
       );
 
+      // Posts
       const matchedPosts = posts.filter(p => 
           p.content.toLowerCase().includes(q) || 
           p.author.name.toLowerCase().includes(q)
       );
 
+      // Tags (Extract unique hashtags from post content)
+      const allTags = new Set<string>();
+      posts.forEach(p => {
+          const tags = p.content.match(/#[a-z0-9_]+/gi);
+          if (tags) {
+              tags.forEach(t => allTags.add(t.toLowerCase()));
+          }
+      });
+      // Filter tags that match query or just all tags if query matches the tag content
+      const matchedTags = Array.from(allTags).filter(t => t.includes(q) || t.replace('#', '').includes(q));
+
       return {
           users: matchedUsers,
           communities: matchedCommunities,
-          posts: matchedPosts
+          posts: matchedPosts,
+          tags: matchedTags
       };
 
   }, [searchQuery, posts, communities]);
@@ -954,6 +970,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const handleHashtagClick = (tag: string) => {
       setSearchQuery(tag);
       setSearchFilter('all');
+      setShowMobileSearch(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -963,6 +980,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
           onViewProfile(user);
       } else {
           setSearchQuery(handle);
+          setShowMobileSearch(true);
       }
   };
 
@@ -1024,28 +1042,28 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const renderSearchResults = () => {
       if (!searchResults) return null;
       
-      const { users, communities: resultComm, posts: resultPosts } = searchResults;
+      const { users, communities: resultComm, posts: resultPosts, tags } = searchResults;
       const showAll = searchFilter === 'all';
 
       return (
           <div className="pb-20">
              {/* Filter Tabs */}
              <div className="flex gap-2 p-3 overflow-x-auto no-scrollbar border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-black sticky top-[60px] z-20">
-                 {['all', 'people', 'communities', 'videos', 'posts'].map(filter => (
+                 {['all', 'people', 'communities', 'videos', 'posts', 'tags'].map(filter => (
                      <button
                         key={filter}
                         onClick={() => setSearchFilter(filter as any)}
                         className={`px-4 py-1.5 rounded-full text-sm font-bold capitalize transition whitespace-nowrap ${searchFilter === filter ? 'bg-black dark:bg-white text-white dark:text-black' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
                      >
-                         {filter}
+                         {filter === 'people' ? 'Accounts' : filter}
                      </button>
                  ))}
              </div>
 
-             {/* Users Section */}
+             {/* Users Section (Accounts) */}
              {(showAll || searchFilter === 'people') && users.length > 0 && (
                  <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                     <h3 className="font-bold text-lg mb-3 dark:text-white">People</h3>
+                     <h3 className="font-bold text-lg mb-3 dark:text-white">Accounts</h3>
                      <div className="space-y-4">
                          {users.map(u => (
                              <div key={u.id} className="flex items-center gap-3">
@@ -1076,6 +1094,30 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                                  <button onClick={() => { if(onJoinCommunity) onJoinCommunity(c.id); }} className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full text-xs font-bold">
                                      {c.isJoined ? 'Joined' : 'Join'}
                                  </button>
+                             </div>
+                         ))}
+                     </div>
+                 </div>
+             )}
+
+            {/* Tags Section */}
+            {(showAll || searchFilter === 'tags') && tags.length > 0 && (
+                 <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                     <h3 className="font-bold text-lg mb-3 dark:text-white">Tags</h3>
+                     <div className="space-y-3">
+                         {tags.map(tag => (
+                             <div 
+                                key={tag} 
+                                onClick={() => { setSearchQuery(tag); setSearchFilter('posts'); }}
+                                className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-xl transition"
+                             >
+                                 <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                     <TagIcon className="w-5 h-5" />
+                                 </div>
+                                 <div className="flex-1">
+                                     <h4 className="font-bold text-sm dark:text-white">{tag}</h4>
+                                     <p className="text-xs text-gray-500">Trending</p>
+                                 </div>
                              </div>
                          ))}
                      </div>
@@ -1198,22 +1240,46 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                  {/* Header & Tabs */}
                  <div className="sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-md z-30 border-b border-gray-100 dark:border-gray-800">
                      <div className="md:hidden px-4 py-3 flex justify-between items-center">
-                         <img src={currentUser.avatar} className="w-8 h-8 rounded-full" onClick={() => onViewProfile(currentUser)} />
-                         <span className="font-bold text-lg dark:text-white">Home</span>
-                         <button><SettingsIcon className="w-6 h-6 dark:text-white" /></button>
+                         <div className="flex items-center gap-3">
+                             <img src={currentUser.avatar} className="w-8 h-8 rounded-full" onClick={() => onViewProfile(currentUser)} />
+                             <span className="font-bold text-lg dark:text-white">Home</span>
+                         </div>
+                         <button onClick={() => setShowMobileSearch(!showMobileSearch)}>
+                             {showMobileSearch ? <CloseIcon className="w-6 h-6 dark:text-white" /> : <SearchIcon className="w-6 h-6 dark:text-white" />}
+                         </button>
                      </div>
-                     <div className="flex">
-                        {['For You', 'Following', 'Communities'].map(tab => (
-                            <button 
-                                key={tab}
-                                onClick={() => { setActiveTab(tab as any); if(tab !== 'Communities') setSelectedCommunityId(null); setSearchQuery(''); }}
-                                className="flex-1 py-4 text-sm font-bold relative hover:bg-gray-50 dark:hover:bg-white/5 transition"
-                            >
-                                <span className={activeTab === tab ? 'text-gray-900 dark:text-white' : 'text-gray-500'}>{tab}</span>
-                                {activeTab === tab && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full"></div>}
-                            </button>
-                        ))}
-                     </div>
+                     
+                     {/* Mobile Search Input */}
+                     {showMobileSearch && (
+                         <div className="md:hidden px-4 pb-3 animate-fade-in">
+                             <div className="bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 flex items-center gap-2">
+                                 <SearchIcon className="w-4 h-4 text-gray-400" />
+                                 <input 
+                                    type="text" 
+                                    placeholder="Search..." 
+                                    className="bg-transparent w-full outline-none text-sm dark:text-white"
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    autoFocus
+                                 />
+                             </div>
+                         </div>
+                     )}
+
+                     {!showMobileSearch && !searchQuery && (
+                         <div className="flex">
+                            {['For You', 'Following', 'Communities'].map(tab => (
+                                <button 
+                                    key={tab}
+                                    onClick={() => { setActiveTab(tab as any); if(tab !== 'Communities') setSelectedCommunityId(null); setSearchQuery(''); }}
+                                    className="flex-1 py-4 text-sm font-bold relative hover:bg-gray-50 dark:hover:bg-white/5 transition"
+                                >
+                                    <span className={activeTab === tab ? 'text-gray-900 dark:text-white' : 'text-gray-500'}>{tab}</span>
+                                    {activeTab === tab && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full"></div>}
+                                </button>
+                            ))}
+                         </div>
+                     )}
                  </div>
 
                  {/* SEARCH RESULTS VIEW */}
