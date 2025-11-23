@@ -34,6 +34,17 @@ export const CURRENT_USER: User = {
   linkedin: 'https://linkedin.com/in/alexrivera'
 };
 
+export const getUserByHandle = (handle: string): User | undefined => {
+    // Normalize handle (remove @ if present)
+    const normalized = handle.startsWith('@') ? handle : `@${handle}`;
+    // Search in mock users
+    const user = Object.values(MOCK_USERS).find(u => u.handle.toLowerCase() === normalized.toLowerCase());
+    if (user) return user;
+    // Check current user
+    if (normalized.toLowerCase() === CURRENT_USER.handle.toLowerCase()) return CURRENT_USER;
+    return undefined;
+};
+
 export const MOCK_COMMUNITIES: Community[] = [
   { id: 'g1', name: 'React Developers', members: 15400, avatar: 'https://picsum.photos/id/0/200/200', description: 'Everything React.js, Next.js and more.', isJoined: true, creatorId: 'u2' },
   { id: 'g2', name: 'Digital Art Hub', members: 8200, avatar: 'https://picsum.photos/id/106/200/200', description: 'Share your art and get feedback.', isJoined: false, creatorId: 'u4' },

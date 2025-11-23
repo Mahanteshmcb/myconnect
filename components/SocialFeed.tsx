@@ -2,7 +2,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon } from './Icons';
-import { TRENDING_TOPICS, SUGGESTED_USERS } from '../services/mockData';
+import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
 interface SocialFeedProps {
@@ -602,18 +602,30 @@ const FeedCommentModal = ({ post, currentUser, isOpen, onClose, onAddComment }: 
 };
 
 // --- Post Card ---
-const PostCard: React.FC<{ post: Post, currentUser: User, onViewProfile: (user: User) => void, onCommentClick: (postId: string) => void }> = ({ post, currentUser, onViewProfile, onCommentClick }) => {
+const PostCard: React.FC<{ 
+    post: Post, 
+    currentUser: User, 
+    onViewProfile: (user: User) => void, 
+    onCommentClick: (postId: string) => void,
+    onHashtagClick: (tag: string) => void,
+    onMentionClick: (handle: string) => void 
+}> = ({ post, currentUser, onViewProfile, onCommentClick, onHashtagClick, onMentionClick }) => {
     const [liked, setLiked] = useState(false);
     const [likes, setLikes] = useState(post.likes);
     const [retweeted, setRetweeted] = useState(false);
     
     // Parse hashtags in content
     const renderContent = (text: string) => {
-        const parts = text.split(/(\s+)/);
+        const regex = /([#@][\w_]+)/g;
+        const parts = text.split(regex);
         return parts.map((part, i) => {
-            if (part.startsWith('#')) return <span key={i} className="text-blue-500 cursor-pointer hover:underline">{part}</span>;
-            if (part.startsWith('@')) return <span key={i} className="text-blue-500 cursor-pointer hover:underline">{part}</span>;
-            return part;
+            if (part.startsWith('#')) {
+                return <span key={i} onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }} className="text-blue-500 cursor-pointer hover:underline">{part}</span>;
+            }
+            if (part.startsWith('@')) {
+                return <span key={i} onClick={(e) => { e.stopPropagation(); onMentionClick(part); }} className="text-blue-500 cursor-pointer hover:underline">{part}</span>;
+            }
+            return <span key={i}>{part}</span>;
         });
     };
 
@@ -681,6 +693,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const [activeTab, setActiveTab] = useState<'For You' | 'Following' | 'Communities'>('For You');
   const [stories, setStories] = useState<Story[]>(generateMockStories(currentUser, SUGGESTED_USERS));
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
+  const storyInputRef = useRef<HTMLInputElement>(null);
   
   // Use Post ID instead of Post object to ensure reactivity when comments are added
   const [activePostIdForComments, setActivePostIdForComments] = useState<string | null>(null);
@@ -736,6 +749,39 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
       setActiveTab('Communities');
       setSearchQuery(''); // Clear search when switching context
       window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleHashtagClick = (tag: string) => {
+      setSearchQuery(tag);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleMentionClick = (handle: string) => {
+      const user = getUserByHandle(handle);
+      if (user) {
+          onViewProfile(user);
+      } else {
+          // Fallback if user not found in mock data
+          setSearchQuery(handle);
+      }
+  };
+
+  const handleStoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const newStory: Story = {
+              id: `s_${Date.now()}`,
+              user: currentUser,
+              img: URL.createObjectURL(file),
+              isViewed: false
+          };
+          // Add to start of stories list (after user circle logic which is handled in render by mapping slice(1) usually, but here we update the list)
+          // The component renders `stories.slice(1)` for "Other Stories".
+          // We will update the state to include the new story.
+          // Since the first item `stories[0]` is currentUser placeholder in `generateMockStories`, 
+          // we insert at index 1.
+          setStories(prev => [prev[0], newStory, ...prev.slice(1)]);
+      }
   };
 
   const showCommunityDashboard = activeTab === 'Communities' && !selectedCommunityId;
@@ -799,8 +845,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                  {/* Stories Tray - Only on 'For You' or 'Following' */}
                  {activeTab !== 'Communities' && (
                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex gap-4 overflow-x-auto no-scrollbar">
+                         <input type="file" ref={storyInputRef} className="hidden" accept="image/*" onChange={handleStoryUpload} />
                          {/* Create Story */}
-                         <div className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
+                         <div onClick={() => storyInputRef.current?.click()} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
                              <div className="relative w-16 h-16">
                                  <img src={currentUser.avatar} className="w-full h-full rounded-full border-2 border-gray-200 dark:border-gray-800 opacity-80" />
                                  <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-0.5 border-2 border-white dark:border-black">
@@ -860,8 +907,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                              )}
                              
                              {searchQuery && (
-                                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                                      <h3 className="text-sm font-bold text-gray-500">Search results for "{searchQuery}"</h3>
+                                     <button onClick={() => setSearchQuery('')} className="text-xs text-blue-500 hover:underline">Clear</button>
                                  </div>
                              )}
                              
@@ -872,6 +920,8 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                                     currentUser={currentUser} 
                                     onViewProfile={onViewProfile} 
                                     onCommentClick={setActivePostIdForComments}
+                                    onHashtagClick={handleHashtagClick}
+                                    onMentionClick={handleMentionClick}
                                 />
                              )) : (
                                  <div className="py-20 text-center text-gray-500">
