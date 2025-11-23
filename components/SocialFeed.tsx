@@ -2,7 +2,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon } from './Icons';
-import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle } from '../services/mockData';
+import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
 interface SocialFeedProps {
@@ -96,6 +96,48 @@ const StoryViewer = ({ stories, initialIndex, onClose }: { stories: Story[], ini
                 {/* Reply */}
                 <div className="absolute bottom-4 left-4 right-4 z-20">
                      <input type="text" placeholder="Send message" className="w-full bg-transparent border border-white/50 rounded-full px-4 py-3 text-white placeholder-white/70 outline-none focus:border-white" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Community Members Modal ---
+const CommunityMembersModal = ({ 
+    communityId, 
+    onClose, 
+    onViewProfile 
+}: { 
+    communityId: string, 
+    onClose: () => void, 
+    onViewProfile: (u: User) => void 
+}) => {
+    const members = useMemo(() => getCommunityMembers(communityId), [communityId]);
+    
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl flex flex-col max-h-[70vh] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800">
+                    <h3 className="font-bold text-lg dark:text-white">Community Members</h3>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                        <CloseIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2">
+                    {members.map(u => (
+                        <div key={u.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition cursor-pointer" onClick={() => { onClose(); onViewProfile(u); }}>
+                            <img src={u.avatar} className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">{u.name}</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{u.handle}</p>
+                            </div>
+                        </div>
+                    ))}
+                    {members.length === 0 && (
+                         <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                            No members found.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -699,6 +741,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const [activePostIdForComments, setActivePostIdForComments] = useState<string | null>(null);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // View Community Members
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   // Derived active post for modal
   const activePostForComments = useMemo(() => 
@@ -728,8 +773,6 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
           if (selectedCommunityId) {
               filtered = filtered.filter(p => p.communityId === selectedCommunityId);
           } else {
-              // If no community is selected (Dashboard mode), we usually show nothing here or mixed posts.
-              // But we are rendering a dashboard instead. If we wanted mixed posts, we'd do:
               filtered = filtered.filter(p => !!p.communityId);
           }
       } else if (activeTab === 'For You' && !searchQuery) {
@@ -775,11 +818,6 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
               img: URL.createObjectURL(file),
               isViewed: false
           };
-          // Add to start of stories list (after user circle logic which is handled in render by mapping slice(1) usually, but here we update the list)
-          // The component renders `stories.slice(1)` for "Other Stories".
-          // We will update the state to include the new story.
-          // Since the first item `stories[0]` is currentUser placeholder in `generateMockStories`, 
-          // we insert at index 1.
           setStories(prev => [prev[0], newStory, ...prev.slice(1)]);
       }
   };
@@ -803,6 +841,14 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 isOpen={!!activePostForComments}
                 onClose={() => setActivePostIdForComments(null)}
                 onAddComment={onAddComment}
+            />
+        )}
+        
+        {showMembersModal && selectedCommunityId && (
+            <CommunityMembersModal 
+                communityId={selectedCommunityId}
+                onClose={() => setShowMembersModal(false)}
+                onViewProfile={onViewProfile}
             />
         )}
 
@@ -884,25 +930,43 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                      /* STANDARD FEED VIEW */
                      <>
                         {/* Create Post */}
-                         <div className="px-4 mt-4">
-                             <CreatePost 
-                                user={currentUser} 
-                                onPost={onPostCreate} 
-                                onViewProfile={onViewProfile} 
-                                communities={communities} 
-                             />
-                         </div>
+                         {activeTab !== 'Communities' && (
+                             <div className="px-4 mt-4">
+                                 <CreatePost 
+                                    user={currentUser} 
+                                    onPost={onPostCreate} 
+                                    onViewProfile={onViewProfile} 
+                                    communities={communities} 
+                                 />
+                             </div>
+                         )}
 
                          {/* Feed Content */}
                          <div>
                              {/* Context Filter Banner */}
                              {selectedCommunityId && (
-                                 <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+                                 <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/10 mb-2 border-y border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
                                      <span className="text-sm text-blue-800 dark:text-blue-300 font-bold flex items-center gap-2">
                                          <UsersIcon className="w-4 h-4" />
                                          {communities.find(c => c.id === selectedCommunityId)?.name}
                                      </span>
-                                     <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
+                                     <div className="flex items-center gap-3">
+                                         <button onClick={() => setShowMembersModal(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">View Members</button>
+                                         <span className="text-gray-300">|</span>
+                                         <button onClick={() => setSelectedCommunityId(null)} className="text-xs text-blue-500 hover:underline">Clear Filter</button>
+                                     </div>
+                                 </div>
+                             )}
+                             
+                             {/* Community Post Creator is only visible when inside a community for UX context */}
+                             {selectedCommunityId && (
+                                 <div className="px-4 mb-4">
+                                      <CreatePost 
+                                        user={currentUser} 
+                                        onPost={onPostCreate} 
+                                        onViewProfile={onViewProfile} 
+                                        communities={communities} 
+                                     />
                                  </div>
                              )}
                              

@@ -2,12 +2,12 @@
 import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community } from '../types';
 
 export const MOCK_USERS: Record<string, User> = {
-  'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true },
-  'u2': { id: 'u2', name: 'David Chen', handle: '@dchen_tech', avatar: 'https://picsum.photos/id/91/100/100', verified: true, subscribers: '850K', isOnline: false },
-  'u3': { id: 'u3', name: 'MyConnect AI', handle: '@ai_assistant', avatar: 'https://picsum.photos/id/2/100/100', verified: true, isOnline: true },
-  'u4': { id: 'u4', name: 'Emma Wilson', handle: '@emma_art', avatar: 'https://picsum.photos/id/129/100/100', subscribers: '45K', isOnline: true },
-  'u5': { id: 'u5', name: 'TechDaily', handle: '@techdaily', avatar: 'https://picsum.photos/id/201/100/100', verified: true, subscribers: '2.1M', isOnline: false },
-  'u6': { id: 'u6', name: 'Cooking w/ James', handle: '@chefjames', avatar: 'https://picsum.photos/id/292/100/100', subscribers: '500K', isOnline: true },
+  'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true, followingIds: ['u2', 'u4'] },
+  'u2': { id: 'u2', name: 'David Chen', handle: '@dchen_tech', avatar: 'https://picsum.photos/id/91/100/100', verified: true, subscribers: '850K', isOnline: false, followingIds: ['u1', 'u5', 'me'] },
+  'u3': { id: 'u3', name: 'MyConnect AI', handle: '@ai_assistant', avatar: 'https://picsum.photos/id/2/100/100', verified: true, isOnline: true, followingIds: [] },
+  'u4': { id: 'u4', name: 'Emma Wilson', handle: '@emma_art', avatar: 'https://picsum.photos/id/129/100/100', subscribers: '45K', isOnline: true, followingIds: ['u1', 'me'] },
+  'u5': { id: 'u5', name: 'TechDaily', handle: '@techdaily', avatar: 'https://picsum.photos/id/201/100/100', verified: true, subscribers: '2.1M', isOnline: false, followingIds: ['u2'] },
+  'u6': { id: 'u6', name: 'Cooking w/ James', handle: '@chefjames', avatar: 'https://picsum.photos/id/292/100/100', subscribers: '500K', isOnline: true, followingIds: [] },
 };
 
 export const CURRENT_USER: User = {
@@ -44,6 +44,34 @@ export const getUserByHandle = (handle: string): User | undefined => {
     if (normalized.toLowerCase() === CURRENT_USER.handle.toLowerCase()) return CURRENT_USER;
     return undefined;
 };
+
+// --- Relational Data Helpers ---
+
+export const getFollowingForUser = (userId: string): User[] => {
+    let targetUser = userId === 'me' ? CURRENT_USER : MOCK_USERS[userId];
+    if (!targetUser) return [];
+    
+    // In a real DB this is a join. Here we map IDs to objects.
+    return (targetUser.followingIds || []).map(id => 
+        id === 'me' ? CURRENT_USER : MOCK_USERS[id]
+    ).filter(Boolean);
+};
+
+export const getFollowersForUser = (userId: string): User[] => {
+    // Find all users who have userId in their followingIds list
+    const allUsers = [CURRENT_USER, ...Object.values(MOCK_USERS)];
+    return allUsers.filter(u => u.followingIds?.includes(userId));
+};
+
+export const getCommunityMembers = (communityId: string): User[] => {
+    // Simulate members deterministically based on community ID length/char codes
+    // In a real app, this is a DB query.
+    const allUsers = [CURRENT_USER, ...Object.values(MOCK_USERS)];
+    // Randomly select 50% of users to be "members" for demo purposes, seeded by ID
+    return allUsers.filter((u, i) => (communityId.charCodeAt(0) + i) % 2 === 0);
+};
+
+// --- Content Data ---
 
 export const MOCK_COMMUNITIES: Community[] = [
   { id: 'g1', name: 'React Developers', members: 15400, avatar: 'https://picsum.photos/id/0/200/200', description: 'Everything React.js, Next.js and more.', isJoined: true, creatorId: 'u2' },
@@ -119,7 +147,7 @@ export const FEED_POSTS: Post[] = [
     shares: 45,
     timestamp: '30m ago',
     type: 'image',
-    communityId: 'g3' // Mistake in mock data context but good for filtering test
+    communityId: 'g3' 
   },
   {
     id: 'p6',
@@ -341,7 +369,6 @@ const EXPLORE_CATEGORIES = ['Decor', 'Travel', 'Architecture', 'Food', 'Art', 'S
 
 export const EXPLORE_ITEMS: ExploreItem[] = Array.from({ length: 60 }).map((_, i) => ({
   id: `e${i}`,
-  // Generate different aspect ratios for masonry feel by changing height
   image: `https://picsum.photos/id/${10 + i}/400/${[400, 500, 600, 300][i % 4]}`,
   likes: Math.floor(Math.random() * 5000) + 100,
   type: i % 5 === 0 ? 'video' : 'image',

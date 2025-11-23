@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, Post, Video } from '../types';
-import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, PlusIcon } from './Icons';
-import { MOCK_USERS } from '../services/mockData';
+import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, PlusIcon, HeartIcon, CommentIcon, BookmarkIcon } from './Icons';
+import { MOCK_USERS, getFollowersForUser, getFollowingForUser } from '../services/mockData';
 
 interface UserProfileProps {
   user: User; // The user profile being viewed
@@ -56,6 +56,79 @@ const UserListModal = ({
                     )}
                 </div>
             </div>
+        </div>
+    );
+};
+
+// --- Content Detail Modal (Lightbox) ---
+const ContentDetailModal = ({ 
+    item, 
+    onClose,
+    type
+}: { 
+    item: any, 
+    onClose: () => void,
+    type: 'post' | 'reel' | 'tagged'
+}) => {
+    // For demo purposes, we treat all items similarly, but in a real app, `item` structure varies.
+    // Assuming 'item' has basic props like image/thumbnail, likes, etc.
+    const imgSrc = item.image || item.thumbnail || 'https://via.placeholder.com/600';
+
+    return (
+        <div className="fixed inset-0 z-[90] bg-black/90 backdrop-blur-md flex items-center justify-center p-0 md:p-8 animate-fade-in" onClick={onClose}>
+             <button onClick={onClose} className="absolute top-4 right-4 text-white z-20 p-2 bg-black/50 rounded-full">
+                 <CloseIcon className="w-6 h-6" />
+             </button>
+
+             <div className="flex w-full max-w-6xl h-full md:h-[85vh] bg-black md:bg-white md:dark:bg-gray-900 overflow-hidden md:rounded-xl shadow-2xl flex-col md:flex-row" onClick={e => e.stopPropagation()}>
+                 {/* Media Side */}
+                 <div className="flex-1 bg-black flex items-center justify-center relative">
+                     <img src={imgSrc} className="max-w-full max-h-full object-contain" />
+                     {type === 'reel' && (
+                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                             <PlayCircleIcon className="w-20 h-20 text-white/80" />
+                         </div>
+                     )}
+                 </div>
+
+                 {/* Details Side (Hidden on mobile for full immersion, usually overlaid) */}
+                 <div className="hidden md:flex w-[400px] flex-col border-l border-gray-100 dark:border-gray-800">
+                     {/* Header */}
+                     <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3">
+                         <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                         <span className="font-bold text-gray-900 dark:text-white text-sm">Author Name</span>
+                     </div>
+                     
+                     {/* Comments Area */}
+                     <div className="flex-1 p-4 overflow-y-auto">
+                         <div className="space-y-4">
+                             <p className="text-sm text-gray-800 dark:text-gray-200"><span className="font-bold">Author Name</span> This is the caption for the content shown on the left.</p>
+                             <div className="text-center text-gray-400 text-sm py-10">No comments yet.</div>
+                         </div>
+                     </div>
+
+                     {/* Action Bar */}
+                     <div className="p-4 border-t border-gray-100 dark:border-gray-800">
+                         <div className="flex justify-between mb-2">
+                             <div className="flex gap-4">
+                                 <HeartIcon className="w-6 h-6 text-gray-900 dark:text-white" />
+                                 <CommentIcon className="w-6 h-6 text-gray-900 dark:text-white" />
+                                 <SendIcon className="w-6 h-6 text-gray-900 dark:text-white" />
+                             </div>
+                             <BookmarkIcon className="w-6 h-6 text-gray-900 dark:text-white" />
+                         </div>
+                         <div className="font-bold text-sm text-gray-900 dark:text-white mb-1">1,234 likes</div>
+                         <div className="text-xs text-gray-500 uppercase">2 HOURS AGO</div>
+                         
+                         {/* Input */}
+                         <div className="flex items-center mt-4 gap-2">
+                             <div className="text-xl">😊</div>
+                             <input type="text" placeholder="Add a comment..." className="flex-1 bg-transparent text-sm outline-none dark:text-white" />
+                             <button className="text-blue-500 font-bold text-sm">Post</button>
+                         </div>
+                     </div>
+                 </div>
+             </div>
         </div>
     );
 };
@@ -224,6 +297,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
   // List Modal State
   const [listModalType, setListModalType] = useState<'followers' | 'following' | null>(null);
 
+  // Content Viewer State
+  const [viewingItem, setViewingItem] = useState<{item: any, type: 'post' | 'reel' | 'tagged'} | null>(null);
+
   useEffect(() => {
       if (!isEditing) setEditData(user);
   }, [user, isEditing]);
@@ -246,15 +322,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
   // Resolve Follow Lists
   const getFollowList = (type: 'followers' | 'following'): User[] => {
       if (type === 'following') {
-          // If viewing my profile, show who I follow using my real IDs
-          if (isOwnProfile && currentUser.followingIds) {
-              return currentUser.followingIds.map(id => MOCK_USERS[id]).filter(Boolean);
-          }
-          // For other users, mock a list of 5-10 users
-          return Object.values(MOCK_USERS).filter(u => u.id !== user.id).slice(0, 8);
+          return getFollowingForUser(user.id);
       } else {
-           // Followers: Mock logic for demo
-           return Object.values(MOCK_USERS).filter(u => u.id !== user.id).slice(0, 12);
+           return getFollowersForUser(user.id);
       }
   };
 
@@ -295,6 +365,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
               title={listModalType === 'followers' ? 'Followers' : 'Following'}
               users={getFollowList(listModalType)}
               onClose={() => setListModalType(null)}
+          />
+      )}
+
+      {viewingItem && (
+          <ContentDetailModal 
+            item={viewingItem.item}
+            type={viewingItem.type}
+            onClose={() => setViewingItem(null)}
           />
       )}
 
@@ -600,7 +678,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                 {activeTab === 'posts' && (
                     <div className="grid grid-cols-3 gap-1 md:gap-4">
                         {userPosts.length > 0 ? userPosts.map(post => (
-                            <div key={post.id} className="aspect-square bg-gray-100 dark:bg-gray-900 relative group cursor-pointer overflow-hidden">
+                            <div key={post.id} onClick={() => setViewingItem({item: post, type: 'post'})} className="aspect-square bg-gray-100 dark:bg-gray-900 relative group cursor-pointer overflow-hidden">
                                 {post.image ? (
                                     <img src={post.image} alt="Post" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                 ) : (
@@ -626,7 +704,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                 {activeTab === 'reels' && (
                      <div className="grid grid-cols-3 gap-1 md:gap-4">
                          {mockReels.map(reel => (
-                             <div key={reel.id} className="aspect-[9/16] bg-gray-900 relative cursor-pointer group overflow-hidden">
+                             <div key={reel.id} onClick={() => setViewingItem({item: reel, type: 'reel'})} className="aspect-[9/16] bg-gray-900 relative cursor-pointer group overflow-hidden">
                                  <img src={reel.thumbnail} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition" />
                                  <div className="absolute bottom-2 left-2 text-white text-xs font-bold flex items-center gap-1 drop-shadow-md">
                                      <PlayCircleIcon className="w-3 h-3" /> {reel.views}
@@ -639,7 +717,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, currentUser, pos
                 {activeTab === 'tagged' && (
                      <div className="grid grid-cols-3 gap-1 md:gap-4">
                          {mockTagged.map(tag => (
-                             <div key={tag.id} className="aspect-square bg-gray-100 dark:bg-gray-900 relative cursor-pointer group overflow-hidden">
+                             <div key={tag.id} onClick={() => setViewingItem({item: tag, type: 'tagged'})} className="aspect-square bg-gray-100 dark:bg-gray-900 relative cursor-pointer group overflow-hidden">
                                  <img src={tag.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                  <div className="absolute top-2 right-2">
                                      <TagIcon className="w-4 h-4 text-white drop-shadow-md" />
