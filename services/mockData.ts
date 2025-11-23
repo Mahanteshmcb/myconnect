@@ -32,7 +32,24 @@ export const CURRENT_USER: User = {
   twitter: 'https://twitter.com/alexrivera',
   github: 'https://github.com/alexrivera',
   linkedin: 'https://linkedin.com/in/alexrivera',
-  savedPostIds: []
+  savedPostIds: [],
+  
+  // New Profile Fields - Set to Trigger Onboarding
+  isProfileComplete: false,
+  firstName: 'Alex',
+  lastName: 'Rivera',
+  dob: '',
+  countryCode: '+1',
+  pincode: '',
+  address: '',
+  
+  privacySettings: {
+      email: 'private',
+      phoneNumber: 'private',
+      dob: 'contacts',
+      address: 'private',
+      lastActive: 'public'
+  }
 };
 
 export const getUserByHandle = (handle: string): User | undefined => {

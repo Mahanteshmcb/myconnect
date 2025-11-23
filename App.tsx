@@ -9,12 +9,29 @@ import { UserProfile } from './components/UserProfile';
 import { Notifications } from './components/Notifications';
 import { Marketplace } from './components/Marketplace';
 import { Explore } from './components/Explore';
+import { SettingsModal, OnboardingModal } from './components/Settings'; // Import new components
 import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES, MARKET_ITEMS } from './services/mockData';
 import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, StreamHubIcon, ShoppingBagIcon } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
-// ... (Keep MobileMenu component)
-const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, onViewProfile }: { isOpen: boolean; onClose: () => void; currentUser: User; isDarkMode: boolean; toggleDarkMode: () => void; onViewProfile: () => void }) => {
+// Updated MobileMenu to support settings triggers
+const MobileMenu = ({ 
+    isOpen, 
+    onClose, 
+    currentUser, 
+    isDarkMode, 
+    toggleDarkMode, 
+    onViewProfile,
+    onOpenSettings 
+}: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    currentUser: User; 
+    isDarkMode: boolean; 
+    toggleDarkMode: () => void; 
+    onViewProfile: () => void;
+    onOpenSettings: () => void;
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -32,7 +49,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <div className="flex items-center gap-3 mb-2">
             <img src={currentUser.avatar} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700" />
             <div>
-              <h3 className="font-bold text-gray-900 dark:text-white">{currentUser.name}</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">{currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : currentUser.name}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">{currentUser.handle}</p>
             </div>
           </div>
@@ -45,17 +62,22 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-           {[
-             { icon: <SettingsIcon className="w-6 h-6" />, label: "Settings & Privacy" },
-             { icon: <BookmarkIcon className="w-6 h-6" />, label: "Saved" },
-             { icon: <HelpIcon className="w-6 h-6" />, label: "Help & Support" },
-             { icon: <TrashIcon className="w-6 h-6" />, label: "Recycle Bin" },
-           ].map((item, idx) => (
-             <button key={idx} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
-               <span className="text-gray-500 dark:text-gray-400">{item.icon}</span>
-               {item.label}
-             </button>
-           ))}
+           <button onClick={() => { onOpenSettings(); onClose(); }} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
+               <span className="text-gray-500 dark:text-gray-400"><SettingsIcon className="w-6 h-6" /></span>
+               Settings & Privacy
+           </button>
+           <button className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
+               <span className="text-gray-500 dark:text-gray-400"><BookmarkIcon className="w-6 h-6" /></span>
+               Saved
+           </button>
+           <button onClick={() => { onOpenSettings(); onClose(); }} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
+               <span className="text-gray-500 dark:text-gray-400"><HelpIcon className="w-6 h-6" /></span>
+               Help & Support
+           </button>
+           <button className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
+               <span className="text-gray-500 dark:text-gray-400"><TrashIcon className="w-6 h-6" /></span>
+               Recycle Bin
+           </button>
             <button onClick={toggleDarkMode} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200 font-medium">
                <span className="text-gray-500 dark:text-gray-400"><MoonIcon className="w-6 h-6" /></span>
                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
@@ -66,7 +88,7 @@ const MobileMenu = ({ isOpen, onClose, currentUser, isDarkMode, toggleDarkMode, 
           <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.1.0</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.2.0</p>
         </div>
       </div>
     </div>
@@ -77,6 +99,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ViewMode>(ViewMode.FEED);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   
   const [currentUser, setCurrentUser] = useState<User>(CURRENT_USER);
   const [viewingUser, setViewingUser] = useState<User>(CURRENT_USER); 
@@ -102,6 +126,13 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Check profile completeness on mount
+  useEffect(() => {
+      if (!currentUser.isProfileComplete) {
+          setIsOnboardingOpen(true);
+      }
+  }, []);
+
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   const handleUpdateUser = (updatedUser: User) => {
@@ -111,6 +142,11 @@ export default function App() {
       }
   };
   
+  const handleProfileComplete = (completedUser: User) => {
+      handleUpdateUser(completedUser);
+      setIsOnboardingOpen(false);
+  };
+
   const handleViewProfile = (user?: User) => {
       setViewingUser(user || currentUser);
       setActiveTab(ViewMode.PROFILE);
@@ -450,6 +486,19 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-black transition-colors duration-300">
+      <OnboardingModal 
+        isOpen={isOnboardingOpen}
+        currentUser={currentUser}
+        onComplete={handleProfileComplete}
+      />
+
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentUser={currentUser}
+        onUpdateUser={handleUpdateUser}
+      />
+
       <MobileMenu 
         isOpen={isMenuOpen} 
         onClose={() => setIsMenuOpen(false)} 
@@ -457,6 +506,7 @@ export default function App() {
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}
         onViewProfile={() => handleViewProfile(currentUser)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       <header className="hidden md:flex bg-white dark:bg-gray-900 shadow-sm z-50 px-6 h-16 items-center justify-between sticky top-0 border-b dark:border-gray-800 transition-colors">

@@ -11,6 +11,16 @@ export enum ViewMode {
   MARKET = 'MARKET'
 }
 
+export type PrivacyLevel = 'public' | 'contacts' | 'private';
+
+export interface PrivacySettings {
+  email: PrivacyLevel;
+  phoneNumber: PrivacyLevel;
+  dob: PrivacyLevel;
+  address: PrivacyLevel;
+  lastActive: PrivacyLevel;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -30,6 +40,15 @@ export interface User {
   affinityScore?: number; // Dynamic score relative to current user
   
   // Extended Profile Details
+  firstName?: string;
+  lastName?: string;
+  dob?: string; // YYYY-MM-DD
+  age?: number;
+  countryCode?: string;
+  pincode?: string;
+  address?: string;
+  optionalPhoneNumber?: string;
+  
   website?: string;
   location?: string;
   joinedDate?: string;
@@ -37,6 +56,10 @@ export interface User {
   statusMessage?: string;
   phoneNumber?: string;
   
+  // Configuration
+  isProfileComplete?: boolean;
+  privacySettings?: PrivacySettings;
+
   // Social Links
   twitter?: string;
   linkedin?: string;
