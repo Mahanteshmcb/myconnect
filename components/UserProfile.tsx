@@ -1,6 +1,9 @@
-import React, { useState, useRef } from 'react';
+
+
+
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Post, Video, LongFormVideo, Product } from '../types';
-import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, LinkIcon, MapIcon, FilmIcon, ShoppingBagIcon, PencilIcon, HeartIcon, CommentIcon } from './Icons';
+import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, LinkIcon, MapIcon, FilmIcon, ShoppingBagIcon, PencilIcon, HeartIcon, CommentIcon, TrashIcon, PlusIcon } from './Icons';
 import { REELS_VIDEOS } from '../services/mockData';
 import { getFollowersForUser, getFollowingForUser } from '../services/mockData';
 
@@ -61,20 +64,19 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const [listModal, setListModal] = useState<{ open: boolean, title: string, users: User[] }>({ open: false, title: '', users: [] });
   const [isFollowing, setIsFollowing] = useState(currentUser.followingIds?.includes(user.id) || false);
   
-  const [isEditingStatus, setIsEditingStatus] = useState(false);
-  const [statusText, setStatusText] = useState(user.statusMessage || '');
-
   const isCurrentUser = user.id === currentUser.id;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState<User>(user);
+  
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   
   const followers = getFollowersForUser(user.id);
   const following = getFollowingForUser(user.id);
 
-  // FIX: Access social links from the socialLinks array.
-  const twitterUrl = user.socialLinks?.find(link => link.type === 'twitter')?.url;
-  const linkedinUrl = user.socialLinks?.find(link => link.type === 'linkedin')?.url;
-  const githubUrl = user.socialLinks?.find(link => link.type === 'github')?.url;
+  useEffect(() => {
+    setEditedUser(user); // Reset local state if the user prop changes, e.g. on navigation
+  }, [user]);
 
   const userPosts = posts.filter(p => p.author.id === user.id);
   const userVideos = longFormVideos.filter(v => v.author.id === user.id);
@@ -104,10 +106,31 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       }
   };
 
-  const handleStatusSave = () => {
-    onUpdateUser({ ...user, statusMessage: statusText });
-    setIsEditingStatus(false);
-  };
+    const handleSocialLinkChange = (index: number, field: 'type' | 'url', value: string) => {
+        const newLinks = [...(editedUser.socialLinks || [])];
+        newLinks[index] = { ...newLinks[index], [field]: value };
+        setEditedUser({ ...editedUser, socialLinks: newLinks });
+    };
+
+    const addSocialLink = () => {
+        const newLinks = [...(editedUser.socialLinks || []), { type: 'website', url: '' }];
+        setEditedUser({ ...editedUser, socialLinks: newLinks });
+    };
+
+    const removeSocialLink = (index: number) => {
+        const newLinks = (editedUser.socialLinks || []).filter((_, i) => i !== index);
+        setEditedUser({ ...editedUser, socialLinks: newLinks });
+    };
+
+    const handleSave = () => {
+        onUpdateUser(editedUser);
+        setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+        setEditedUser(user); // Revert changes
+        setIsEditing(false);
+    };
   
   const renderContent = () => {
     const activeContent = contentMap[activeTab];
@@ -160,6 +183,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     );
   };
 
+  const socialIconMap = {
+    twitter: <TwitterIcon className="w-4 h-4" />,
+    linkedin: <LinkedInIcon className="w-4 h-4" />,
+    github: <GitHubIcon className="w-4 h-4" />,
+    website: <LinkIcon className="w-4 h-4" />,
+  };
+
   return (
     <div className="h-full bg-white dark:bg-black overflow-y-auto pb-16">
         {listModal.open && <UserListModal title={listModal.title} users={listModal.users} onClose={() => setListModal({ ...listModal, open: false })} />}
@@ -202,13 +232,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                         <p className="text-gray-500">@{user.handle}</p>
                     </div>
                      <div className="flex gap-2">
-                        {twitterUrl && <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><TwitterIcon className="w-5 h-5" /></a>}
-                        {linkedinUrl && <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><LinkedInIcon className="w-5 h-5" /></a>}
-                        {githubUrl && <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><GitHubIcon className="w-5 h-5" /></a>}
                         {isCurrentUser ? (
-                            <button onClick={onOpenSettings} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                                <SettingsIcon className="w-5 h-5" />
-                            </button>
+                            <>
+                                <button onClick={() => setIsEditing(true)} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                    <PencilIcon className="w-5 h-5" />
+                                </button>
+                                <button onClick={onOpenSettings} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                    <SettingsIcon className="w-5 h-5" />
+                                </button>
+                            </>
                         ) : (
                              <button onClick={() => onStartChat(user)} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                                 <SendIcon className="w-5 h-5" />
@@ -217,40 +249,82 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                     </div>
                 </div>
 
-                <div className="mt-4 text-sm leading-relaxed">{user.bio}</div>
+                {isEditing ? (
+                    <div className="mt-4 space-y-4 animate-fade-in">
+                        <textarea
+                            value={editedUser.bio || ''}
+                            onChange={(e) => setEditedUser({ ...editedUser, bio: e.target.value })}
+                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm"
+                            rows={3}
+                            placeholder="Your bio..."
+                        />
+                        <input
+                            type="text"
+                            value={editedUser.location || ''}
+                            onChange={(e) => setEditedUser({ ...editedUser, location: e.target.value })}
+                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm"
+                            placeholder="Location"
+                        />
+                        <input
+                            type="text"
+                            value={editedUser.website || ''}
+                            onChange={(e) => setEditedUser({ ...editedUser, website: e.target.value })}
+                            className="w-full p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm"
+                            placeholder="Website URL"
+                        />
+                        
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-bold text-gray-500">Social Links</h3>
+                            {editedUser.socialLinks?.map((link, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <select 
+                                        value={link.type} 
+                                        onChange={(e) => handleSocialLinkChange(index, 'type', e.target.value)}
+                                        className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-bold w-32"
+                                    >
+                                        <option value="twitter">Twitter</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="github">GitHub</option>
+                                        <option value="website">Website</option>
+                                    </select>
+                                    <input 
+                                        type="text" 
+                                        value={link.url}
+                                        onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                                        placeholder="https://..."
+                                        className="flex-1 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm"
+                                    />
+                                    <button onClick={() => removeSocialLink(index)} className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-full">
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button onClick={addSocialLink} className="w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg text-sm font-bold text-gray-500 hover:border-blue-500 hover:text-blue-500 transition flex items-center justify-center gap-2">
+                                <PlusIcon className="w-4 h-4" /> Add Social Link
+                            </button>
+                        </div>
 
-                {isCurrentUser ? (
-                    isEditingStatus ? (
-                        <div className="mt-2 flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <input
-                                type="text"
-                                value={statusText}
-                                onChange={(e) => setStatusText(e.target.value)}
-                                className="flex-1 bg-transparent dark:bg-gray-800 rounded-lg px-2 py-1 text-sm outline-none focus:ring-1 ring-blue-500"
-                                placeholder="Set a status..."
-                                autoFocus
-                            />
-                            <button onClick={handleStatusSave} className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Save</button>
-                            <button onClick={() => setIsEditingStatus(false)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                        <div className="flex gap-2 justify-end">
+                            <button onClick={handleCancel} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-black dark:text-white font-bold rounded-lg text-sm">Cancel</button>
+                            <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg text-sm">Save Changes</button>
                         </div>
-                    ) : (
-                        <div onClick={() => setIsEditingStatus(true)} className="mt-2 text-sm text-gray-500 italic flex items-center gap-2 cursor-pointer p-2 -ml-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 group">
-                             <span className="opacity-50 group-hover:opacity-100 transition"><PencilIcon className="w-4 h-4" /> </span>
-                             <span>{user.statusMessage || 'Set a status...'}</span>
+                    </div>
+                ) : (
+                    <>
+                        <div className="mt-4 text-sm leading-relaxed">{user.bio}</div>
+                        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
+                            {user.location && <span className="flex items-center gap-1.5"><MapIcon className="w-4 h-4" /> {user.location}</span>}
+                            {user.website && <a href={user.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-500 hover:underline"><LinkIcon className="w-4 h-4" /> {user.website.replace('https://','')}</a>}
+                             {user.socialLinks?.map(link => (
+                                <a key={link.type} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-500 hover:underline">
+                                    {socialIconMap[link.type as keyof typeof socialIconMap] || <LinkIcon className="w-4 h-4" />}
+                                    <span className="capitalize">{link.type}</span>
+                                </a>
+                            ))}
                         </div>
-                    )
-                ) : user.statusMessage && (
-                     <div className="mt-2 text-sm text-gray-500 italic bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                         "{user.statusMessage}"
-                     </div>
+                    </>
                 )}
 
-
-                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
-                    {user.location && <span className="flex items-center gap-1"><MapIcon className="w-4 h-4" /> {user.location}</span>}
-                    {user.website && <a href={user.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline"><LinkIcon className="w-4 h-4" /> {user.website.replace('https://','')}</a>}
-                    <span className="flex items-center gap-1">Joined {user.joinedDate}</span>
-                </div>
 
                 <div className="mt-4 flex gap-4 text-sm">
                     <button onClick={() => setListModal({ open: true, title: 'Following', users: following })} className="hover:underline">

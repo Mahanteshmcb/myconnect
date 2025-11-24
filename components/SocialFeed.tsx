@@ -1,6 +1,8 @@
 
+
+
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Post, User, Comment, Community, Product, Story } from '../types';
+import { Post, User, Comment, Community, Product, Story, PollElement, QuizElement, MentionElement } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon, ShoppingBagIcon, MoreVerticalIcon, DocumentIcon, DownloadIcon, PlayCircleIcon, VolumeUpIcon, MusicIcon } from './Icons';
 import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS, MARKET_ITEMS, MOCK_COMMUNITIES, MOCK_STORIES } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
@@ -31,14 +33,18 @@ const StoryViewer = ({
     onClose, 
     currentUser,
     onDeleteStory,
-    onUpdateStory
+    onUpdateStory,
+    onViewProfile,
+    getUserByHandle
 }: { 
     stories: Story[], 
     initialIndex: number, 
     onClose: () => void,
     currentUser: User,
     onDeleteStory: (id: string) => void,
-    onUpdateStory: (id: string, updates: Partial<Story>) => void
+    onUpdateStory: (id: string, updates: Partial<Story>) => void,
+    onViewProfile: (user: User) => void,
+    getUserByHandle: (handle: string) => User | undefined
 }) => {
     const [activeIndex, setActiveIndex] = useState(initialIndex);
     const [progress, setProgress] = useState(0);
@@ -46,12 +52,17 @@ const StoryViewer = ({
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [isEditingCaption, setIsEditingCaption] = useState(false);
     const [editedCaption, setEditedCaption] = useState('');
+    const [storyResponses, setStoryResponses] = useState<Record<string, string>>({});
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
 
     const activeStory = stories[activeIndex];
     const isCurrentUserStory = activeStory.user.id === currentUser.id;
+    
+    // Key for interactive element state, simple version assuming one element per story for state tracking
+    const interactiveElementKey = `${activeStory.id}_${activeStory.interactiveElements?.[0]?.type}`;
+
 
     useEffect(() => {
         // Main playback and progress timer effect
@@ -152,6 +163,130 @@ const StoryViewer = ({
             // Viewer will close via the main component logic
         }
     };
+    
+    // --- Interactive Element Components ---
+
+    const PollComponent = ({ poll }: { poll: PollElement }) => {
+        const response = storyResponses[interactiveElementKey];
+        const totalVotes = poll.options.reduce((sum, opt) => sum + opt.votes, 0);
+
+        const handleVote = (optionId: string) => {
+            setStoryResponses(prev => ({ ...prev, [interactiveElementKey]: optionId }));
+        };
+        
+        const style = {
+            position: 'absolute' as 'absolute',
+            top: `${poll.position.y}%`,
+            left: `${poll.position.x}%`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'auto' as 'auto'
+        };
+
+        return (
+            <div style={style}>
+                <div className="bg-white/80 backdrop-blur-md p-4 rounded-xl w-64 text-black text-center shadow-lg animate-fade-in">
+                    <p className="font-bold mb-3 text-lg">{poll.question}</p>
+                    <div className="space-y-2">
+                        {poll.options.map(option => {
+                            const isVoted = response === option.id;
+                            const percentage = response && totalVotes > 0 ? ((option.votes + (isVoted ? 1 : 0)) / (totalVotes + 1) * 100) : 0;
+                            return (
+                                <button 
+                                    key={option.id}
+                                    onClick={() => !response && handleVote(option.id)}
+                                    disabled={!!response}
+                                    className="w-full relative text-left p-2.5 border-2 border-gray-400/50 rounded-lg text-sm font-bold transition-all duration-300"
+                                >
+                                    {response && <div className="absolute inset-0 bg-gray-200/70 rounded-md" style={{ width: `${percentage}%` }}></div>}
+                                    <span className="relative z-10">{option.text}</span>
+                                    {response && <span className="absolute right-2 top-2.5 z-10 text-xs font-black">{percentage.toFixed(0)}%</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
+    const QuizComponent = ({ quiz }: { quiz: QuizElement }) => {
+        const response = storyResponses[interactiveElementKey];
+
+        const handleAnswer = (optionId: string) => {
+            setStoryResponses(prev => ({...prev, [interactiveElementKey]: optionId}));
+        };
+
+        const style = {
+            position: 'absolute' as 'absolute',
+            top: `${quiz.position.y}%`,
+            left: `${quiz.position.x}%`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'auto' as 'auto'
+        };
+        
+        return (
+            <div style={style}>
+                <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl w-64 text-black text-center shadow-lg animate-fade-in">
+                    <p className="font-extrabold mb-3 text-lg">{quiz.question}</p>
+                    <div className="space-y-2">
+                        {quiz.options.map(option => {
+                            let buttonClass = "w-full p-3 border-2 rounded-lg text-sm font-bold transition-all duration-300";
+                            if (response) {
+                                if (option.id === quiz.correctOptionId) {
+                                    buttonClass += " bg-green-200 border-green-400 text-green-800 scale-105"; // Correct answer
+                                } else if (option.id === response) {
+                                    buttonClass += " bg-red-200 border-red-400 text-red-800"; // Incorrect user choice
+                                } else {
+                                    buttonClass += " opacity-60 bg-gray-100 border-gray-300";
+                                }
+                            } else {
+                                buttonClass += " border-gray-400/50 hover:bg-gray-100"
+                            }
+                            return (
+                                <button
+                                    key={option.id}
+                                    onClick={() => !response && handleAnswer(option.id)}
+                                    disabled={!!response}
+                                    className={buttonClass}
+                                >
+                                    {option.text}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const MentionComponent = ({ mention }: { mention: MentionElement }) => {
+        const handleMentionClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const user = getUserByHandle(mention.userHandle);
+            if (user) {
+                onViewProfile(user);
+                onClose();
+            }
+        };
+
+        const style = {
+            position: 'absolute' as 'absolute',
+            top: `${mention.position.y}%`,
+            left: `${mention.position.x}%`,
+            transform: 'translate(-50%, -50%) rotate(-10deg)',
+            pointerEvents: 'auto' as 'auto'
+        };
+
+        return (
+            <button 
+                onClick={handleMentionClick} 
+                style={style} 
+                className="bg-black/60 text-white px-4 py-1.5 rounded-lg font-bold backdrop-blur-sm text-lg shadow-lg hover:scale-105 transition"
+            >
+                {mention.userHandle}
+            </button>
+        );
+    };
 
     const renderMedia = () => {
         switch (activeStory.type) {
@@ -175,6 +310,27 @@ const StoryViewer = ({
             default:
                 return <img src={activeStory.url} className="w-full h-full object-cover" />;
         }
+    };
+    
+    const renderInteractiveElements = () => {
+        if (!activeStory.interactiveElements) return null;
+    
+        return (
+            <div className="absolute inset-0 z-30">
+                {activeStory.interactiveElements.map((element, index) => {
+                    switch (element.type) {
+                        case 'poll':
+                            return <PollComponent key={index} poll={element} />;
+                        case 'quiz':
+                            return <QuizComponent key={index} quiz={element} />;
+                        case 'mention':
+                            return <MentionComponent key={index} mention={element} />;
+                        default:
+                            return null;
+                    }
+                })}
+            </div>
+        );
     };
 
     return (
@@ -223,6 +379,7 @@ const StoryViewer = ({
                 </div>
 
                 {renderMedia()}
+                {renderInteractiveElements()}
                 
                 {(activeStory.caption || isEditingCaption) && (
                     <div className="absolute bottom-20 left-4 right-4 z-20 text-center">
@@ -1437,6 +1594,8 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 currentUser={currentUser}
                 onDeleteStory={handleDeleteStory}
                 onUpdateStory={handleUpdateStory}
+                onViewProfile={onViewProfile}
+                getUserByHandle={getUserByHandle}
             />
         )}
         

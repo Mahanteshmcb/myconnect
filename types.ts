@@ -1,6 +1,8 @@
 
 
 
+
+
 export enum ViewMode {
   FEED = 'FEED',
   WATCH = 'WATCH',
@@ -126,6 +128,40 @@ export interface Post {
   taggedProductId?: string;
 }
 
+export interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+export interface PollElement {
+  type: 'poll';
+  question: string;
+  options: PollOption[];
+  position: { x: number; y: number }; // Position as percentage { x: 50, y: 50 } -> center
+}
+
+export interface QuizOption {
+  id: string;
+  text: string;
+}
+
+export interface QuizElement {
+  type: 'quiz';
+  question: string;
+  options: QuizOption[];
+  correctOptionId: string;
+  position: { x: number; y: number };
+}
+
+export interface MentionElement {
+  type: 'mention';
+  userHandle: string; // e.g. '@dchen_tech'
+  position: { x: number; y: number };
+}
+
+export type InteractiveElement = PollElement | QuizElement | MentionElement;
+
 export interface Story {
   id: string;
   user: User;
@@ -135,6 +171,7 @@ export interface Story {
   caption?: string;
   isViewed?: boolean;
   duration?: number; // in seconds
+  interactiveElements?: InteractiveElement[];
 }
 
 export interface Video {

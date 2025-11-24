@@ -1,6 +1,8 @@
 
 
 
+
+
 import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community, Store, Order, Story } from '../types';
 
 export const MOCK_USERS: Record<string, User> = {
@@ -105,8 +107,52 @@ export const getCommunityMembers = (communityId: string): User[] => {
 
 export const MOCK_STORIES: Story[] = [
     { id: 's_me', user: CURRENT_USER, type: 'image', url: 'https://picsum.photos/id/101/350/600', isViewed: false, duration: 5, caption: 'My new setup!'},
-    { id: 's1', user: MOCK_USERS['u1'], type: 'video', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', isViewed: false, duration: 10, caption: 'Beach day! 🏖️'},
-    { id: 's2', user: MOCK_USERS['u4'], type: 'image', url: 'https://picsum.photos/id/103/350/600', isViewed: true, duration: 5, caption: 'Art in progress.'},
+    { 
+      id: 's1', 
+      user: MOCK_USERS['u1'], 
+      type: 'video', 
+      url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 
+      isViewed: false, 
+      duration: 10, 
+      caption: 'Beach day! 🏖️',
+      interactiveElements: [
+        {
+          type: 'poll',
+          question: 'Best beach activity?',
+          options: [
+            { id: 'opt1', text: 'Swimming', votes: 25 },
+            { id: 'opt2', text: 'Sunbathing', votes: 50 }
+          ],
+          position: { x: 50, y: 50 }
+        }
+      ]
+    },
+    { 
+      id: 's2', 
+      user: MOCK_USERS['u4'], 
+      type: 'image', 
+      url: 'https://picsum.photos/id/103/350/600', 
+      isViewed: true, 
+      duration: 5, 
+      caption: 'Art in progress.',
+      interactiveElements: [
+        {
+          type: 'quiz',
+          question: 'Who painted the Mona Lisa?',
+          options: [
+            { id: 'q_opt1', text: 'Van Gogh' },
+            { id: 'q_opt2', text: 'Da Vinci' }
+          ],
+          correctOptionId: 'q_opt2',
+          position: { x: 50, y: 40 }
+        },
+        {
+          type: 'mention',
+          userHandle: '@dchen_tech',
+          position: { x: 50, y: 70 }
+        }
+      ]
+    },
     { id: 's3', user: MOCK_USERS['u2'], type: 'audio', url: 'https://picsum.photos/id/2/350/600', audioUrl: 'https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3', isViewed: false, duration: 15, caption: 'Podcast recommendation! 🎧'},
     { id: 's4', user: MOCK_USERS['u6'], type: 'video', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', isViewed: false, duration: 15, caption: 'Cooking time 🍝'},
 ];
