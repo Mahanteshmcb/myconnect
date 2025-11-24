@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useEffect } from 'react';
 import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community, Comment, Product } from './types';
 import { SocialFeed } from './components/SocialFeed';
@@ -503,6 +500,17 @@ export default function App() {
     }
   };
 
+  const handleFollowUser = (userId: string) => {
+      setCurrentUser(prev => {
+          const isFollowing = prev.followingIds?.includes(userId);
+          const newFollowingIds = isFollowing 
+            ? prev.followingIds?.filter(id => id !== userId)
+            : [...(prev.followingIds || []), userId];
+          
+          return { ...prev, followingIds: newFollowingIds };
+      });
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case ViewMode.FEED:
@@ -529,10 +537,12 @@ export default function App() {
         return (
           <VideoReels 
             videos={reels} 
+            currentUser={currentUser}
             isMuted={isReelsMuted} 
             toggleMute={() => setIsReelsMuted(!isReelsMuted)} 
             onViewProfile={handleViewProfile}
             onCreateReel={() => setActiveTab(ViewMode.CREATE_REEL)}
+            onSubscribe={handleFollowUser}
           />
         );
       case ViewMode.CREATE_REEL:

@@ -6,6 +6,7 @@ import { CURRENT_USER, MOCK_USERS } from '../services/mockData';
 
 export interface VideoReelsProps {
   videos: Video[];
+  currentUser: User;
   isMuted: boolean;
   toggleMute: () => void;
   onViewProfile: (user: User) => void;
@@ -16,6 +17,7 @@ export interface VideoReelsProps {
 
 interface ReelItemProps {
   video: Video;
+  currentUser: User;
   isActive: boolean;
   isMuted: boolean;
   toggleMute: () => void;
@@ -328,15 +330,19 @@ const ShareSheet = ({ isOpen, onClose, video }: { isOpen: boolean, onClose: () =
     );
 };
 
-const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMute, onViewProfile, onSubscribe, onUseSound }) => {
+const ReelItem: React.FC<ReelItemProps> = ({ video, currentUser, isActive, isMuted, toggleMute, onViewProfile, onSubscribe, onUseSound }) => {
   const [liked, setLiked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(isActive);
   const [progress, setProgress] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([
+      { id: 'c1', author: MOCK_USERS['u2'], text: 'Awesome shot! 🔥', timestamp: '1h ago', likes: 12 },
+      { id: 'c2', author: MOCK_USERS['u5'], text: 'Where is this?', timestamp: '30m ago', likes: 5 },
+  ]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isSubscribed = currentUser.followingIds?.includes(video.author.id);
 
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -394,7 +400,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
   const handleAddComment = (text: string) => {
     const newComment: Comment = {
         id: `c_${Date.now()}`,
-        author: CURRENT_USER,
+        author: currentUser,
         text,
         timestamp: 'Just now',
     };
@@ -426,7 +432,12 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
             <div className="flex items-center gap-2">
               <img onClick={() => onViewProfile(video.author)} src={video.author.avatar} className="w-10 h-10 rounded-full border-2 border-white cursor-pointer" alt={video.author.name} />
               <span onClick={() => onViewProfile(video.author)} className="font-bold cursor-pointer">{video.author.name}</span>
-              <button onClick={() => onSubscribe && onSubscribe(video.author.id)} className="px-3 py-1 bg-white text-black text-xs font-bold rounded-md">Subscribe</button>
+              <button 
+                onClick={() => onSubscribe && onSubscribe(video.author.id)} 
+                className={`px-3 py-1 text-xs font-bold rounded-md transition ${isSubscribed ? 'bg-transparent border border-white/50 text-white' : 'bg-white text-black'}`}
+              >
+                  {isSubscribed ? 'Following' : 'Follow'}
+              </button>
             </div>
             <p className="text-sm line-clamp-2">{video.description}</p>
             <div onClick={() => onUseSound && onUseSound(video)} className="flex items-center gap-2 text-xs cursor-pointer">
@@ -443,7 +454,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
             </button>
             <button onClick={() => setShowComments(true)} className="flex flex-col items-center gap-1">
               <CommentIcon className="w-8 h-8" />
-              <span className="text-xs font-bold">{video.comments}</span>
+              <span className="text-xs font-bold">{comments.length}</span>
             </button>
             <button onClick={() => setShowShare(true)} className="flex flex-col items-center gap-1">
               <ShareIcon className="w-8 h-8" />
@@ -465,9 +476,14 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
     </div>
   );
 };
-export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile, onCreateReel, onSubscribe, onUseSound }) => {
+export const VideoReels: React.FC<VideoReelsProps> = ({ videos, currentUser, isMuted, toggleMute, onViewProfile, onCreateReel, onSubscribe, onUseSound }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const displayVideos = activeTab === 'following' 
+    ? videos.filter(v => currentUser.followingIds?.includes(v.author.id)) 
+    : videos;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -493,25 +509,37 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleM
         elements.forEach((el) => observer.unobserve(el as Element));
       }
     };
-  }, [videos]);
+  }, [displayVideos]);
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-y-auto snap-y snap-mandatory scroll-smooth no-scrollbar">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 text-white">
-        <div className="flex items-center gap-4 font-bold text-lg">
-          <span className="opacity-70">Following</span>
-          <span className="opacity-100">For You</span>
+      <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 text-white pointer-events-none">
+        <div className="flex items-center gap-4 font-bold text-lg pointer-events-auto">
+          <button 
+            onClick={() => setActiveTab('following')} 
+            className={`transition-opacity ${activeTab === 'following' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
+          >
+            Following
+          </button>
+          <div className="w-px h-4 bg-white/30"></div>
+          <button 
+            onClick={() => setActiveTab('for_you')} 
+            className={`transition-opacity ${activeTab === 'for_you' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
+          >
+            For You
+          </button>
         </div>
-        <button onClick={onCreateReel} className="p-2 rounded-full hover:bg-white/20">
+        <button onClick={onCreateReel} className="p-2 rounded-full hover:bg-white/20 pointer-events-auto">
           <CameraIcon className="w-6 h-6" />
         </button>
       </div>
 
-      {videos.map((video, index) => (
+      {displayVideos.length > 0 ? displayVideos.map((video, index) => (
         <div key={video.id} data-index={index} className="h-full w-full snap-start flex-shrink-0 relative">
           <ReelItem
             video={video}
+            currentUser={currentUser}
             isActive={index === activeIndex}
             isMuted={isMuted}
             toggleMute={toggleMute}
@@ -520,7 +548,12 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleM
             onUseSound={onUseSound}
           />
         </div>
-      ))}
+      )) : (
+          <div className="h-full w-full flex items-center justify-center text-white flex-col gap-4">
+              <p>No videos in your Following feed yet.</p>
+              <button onClick={() => setActiveTab('for_you')} className="bg-white text-black px-4 py-2 rounded-full font-bold">Go to For You</button>
+          </div>
+      )}
     </div>
   );
 };

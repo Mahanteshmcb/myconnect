@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { LongFormVideo, User, Video, Comment } from '../types';
 import { SearchIcon, MenuIcon, BellIcon, BellRingIcon, ThumbsUpIcon, ThumbsDownIcon, ShareIcon, StreamHubLogo, MicrophoneIcon, CreateVideoIcon, SettingsIcon, UploadIcon, HomeIcon, HistoryIcon, LibraryIcon, CheckIcon, CloseIcon, QualityIcon, CCIcon, PlayCircleIcon, SignalIcon, AnalyticsIcon, EyeIcon, GlobeIcon, LockClosedIcon, DashboardIcon, DownloadIcon, ClockIcon, ReplyIcon, PlaylistIcon, MicActiveIcon, ToggleLeftIcon, CheckCircleIcon, MoreVerticalIcon, ListPlusIcon, QuestionMarkCircleIcon } from './Icons';
@@ -779,7 +780,7 @@ const VideoComment = ({ comment, onReply, currentUser }: { comment: Comment, onR
 
                 {/* Nested Replies */}
                 {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-3 space-y-3 ml-8 pl-4 border-l-2 border-gray-200 dark:border-gray-800">
                         {comment.replies.map(reply => (
                             <VideoComment key={reply.id} comment={reply} onReply={onReply} currentUser={currentUser} />
                         ))}
@@ -1341,7 +1342,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                       )}
                   </div>
               )}
-              {currentView === 'REELS' && <VideoReels videos={reelsVideos} isMuted={isReelsMuted} toggleMute={() => setIsReelsMuted(!isReelsMuted)} onViewProfile={onViewProfile} onCreateReel={() => setCurrentView('CREATE_REEL')} />}
+              {currentView === 'REELS' && <VideoReels videos={reelsVideos} currentUser={currentUser} isMuted={isReelsMuted} toggleMute={() => setIsReelsMuted(!isReelsMuted)} onViewProfile={onViewProfile} onCreateReel={() => setCurrentView('CREATE_REEL')} />}
               {currentView === 'CHANNEL' && viewingChannel && <ChannelPage user={viewingChannel} videos={videos} onVideoClick={handleVideoClick} currentUser={currentUser} />}
               {currentView === 'WATCH_LATER' && 
                 <div>
