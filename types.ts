@@ -105,6 +105,7 @@ export interface Post {
   content: string;
   image?: string;
   videoUrl?: string;
+  audioUrl?: string;
   documentUrl?: string;
   documentName?: string;
   documentSize?: string;
@@ -114,7 +115,7 @@ export interface Post {
   shares: number;
   timestamp: string;
   unixTimestamp?: number; // Crucial for time-decay algorithms
-  type: 'text' | 'image' | 'video' | 'document';
+  type: 'text' | 'image' | 'video' | 'document' | 'audio';
   communityId?: string; // Optional link to a community
   
   // Algorithmic Metadata

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community, Comment, Product } from './types';
 import { SocialFeed } from './components/SocialFeed';
@@ -204,7 +205,19 @@ export default function App() {
     }
   };
 
+  // FIX: Update function signature to match what is passed from the SocialFeed component.
   const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video' | 'text', communityId?: string, productId?: string) => {
+    const mediaType: Post['type'] = type || 'text';
+    let postData: Partial<Post> = {};
+
+    if (media) {
+        if (mediaType === 'image') {
+            postData = { image: media };
+        } else if (mediaType === 'video') {
+            postData = { videoUrl: media };
+        }
+    }
+
     const newPost: Post = {
       id: `new_p_${Date.now()}`,
       author: currentUser,
@@ -214,10 +227,10 @@ export default function App() {
       commentsList: [],
       shares: 0,
       timestamp: 'Just now',
-      type: type || 'text',
-      image: media,
+      type: mediaType,
       communityId: communityId,
-      taggedProductId: productId
+      taggedProductId: productId,
+      ...postData
     };
     setPosts([newPost, ...posts]);
   };
@@ -457,6 +470,34 @@ export default function App() {
   const handleUpdateVideo = (updatedVideo: LongFormVideo) => {
     setLongFormVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v));
   };
+  
+  const handleToggleSavePost = (postId: string) => {
+    setCurrentUser(prevUser => {
+      const savedPostIds = prevUser.savedPostIds || [];
+      const isSaved = savedPostIds.includes(postId);
+      const newSavedPostIds = isSaved
+        ? savedPostIds.filter(id => id !== postId)
+        : [...savedPostIds, postId];
+      
+      const updatedUser = { ...prevUser, savedPostIds: newSavedPostIds };
+      
+      if (viewingUser.id === prevUser.id) {
+        setViewingUser(updatedUser);
+      }
+      
+      return updatedUser;
+    });
+  };
+
+  const handleUpdatePost = (updatedPost: Post) => {
+    setPosts(prevPosts => prevPosts.map(p => p.id === updatedPost.id ? updatedPost : p));
+  };
+
+  const handleDeletePost = (postId: string) => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+        setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -475,6 +516,12 @@ export default function App() {
                 onDeleteCommunity={handleDeleteCommunity}
                 onUpdateCommunity={handleUpdateCommunity}
                 onRemoveMember={handleRemoveMember}
+                // @ts-ignore
+                onToggleSavePost={handleToggleSavePost}
+                // @ts-ignore
+                onUpdatePost={handleUpdatePost}
+                // @ts-ignore
+                onDeletePost={handleDeletePost}
             />
         );
       case ViewMode.WATCH:
@@ -553,7 +600,7 @@ export default function App() {
       case ViewMode.MARKET:
         return <Marketplace initialProduct={initialProduct} />;
       default:
-        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
+        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} onToggleSavePost={handleToggleSavePost} onUpdatePost={handleUpdatePost} onDeletePost={handleDeletePost} />;
     }
   };
 

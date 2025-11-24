@@ -857,6 +857,7 @@ const ProductPickerModal = ({ onClose, onSelect }: { onClose: () => void, onSele
 const CreatePost = ({ user, onPost, onViewProfile, communities }: { user: User, onPost: (content: string, media?: string, type?: 'image'|'video'|'text', communityId?: string, productId?: string) => void, onViewProfile: (u: User) => void, communities: Community[] }) => {
     const [text, setText] = useState('');
     const [image, setImage] = useState<string | null>(null);
+    const [mediaType, setMediaType] = useState<'image' | 'video' | 'text'>('text');
     const [selectedCommunity, setSelectedCommunity] = useState<string>('');
     const [showProductPicker, setShowProductPicker] = useState(false);
     const [taggedProduct, setTaggedProduct] = useState<Product | null>(null);
@@ -864,18 +865,26 @@ const CreatePost = ({ user, onPost, onViewProfile, communities }: { user: User, 
 
     const handlePost = () => {
         if(!text.trim() && !image) return;
-        onPost(text, image || undefined, image ? 'image' : 'text', selectedCommunity || undefined, taggedProduct?.id);
+        onPost(text, image || undefined, image ? mediaType : 'text', selectedCommunity || undefined, taggedProduct?.id);
         setText('');
         setImage(null);
+        setMediaType('text');
         setSelectedCommunity('');
         setTaggedProduct(null);
     }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if(e.target.files?.[0]) {
-            setImage(URL.createObjectURL(e.target.files[0]));
+            const file = e.target.files[0];
+            setImage(URL.createObjectURL(file));
+            setMediaType(file.type.startsWith('video') ? 'video' : 'image');
         }
     }
+
+    const handleRemoveMedia = () => {
+        setImage(null);
+        setMediaType('text');
+    };
 
     return (
         <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm mb-6">
@@ -893,8 +902,12 @@ const CreatePost = ({ user, onPost, onViewProfile, communities }: { user: User, 
                     
                     {image && (
                         <div className="relative mb-3 inline-block">
-                             <img src={image} className="max-h-60 rounded-lg" />
-                             <button onClick={() => setImage(null)} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"><CloseIcon className="w-4 h-4" /></button>
+                             {mediaType === 'image' ? (
+                                <img src={image} className="max-h-60 rounded-lg" />
+                             ) : (
+                                <video src={image} className="max-h-60 rounded-lg" controls />
+                             )}
+                             <button onClick={handleRemoveMedia} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1"><CloseIcon className="w-4 h-4" /></button>
                         </div>
                     )}
 
