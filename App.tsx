@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community, Comment } from './types';
+import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community, Comment, Product } from './types';
 import { SocialFeed } from './components/SocialFeed';
 import { VideoReels, CreateReel } from './components/VideoReels';
 import { ChatApp } from './components/ChatApp';
@@ -9,12 +8,12 @@ import { UserProfile } from './components/UserProfile';
 import { Notifications } from './components/Notifications';
 import { Marketplace } from './components/Marketplace';
 import { Explore } from './components/Explore';
-import { SettingsModal, OnboardingModal } from './components/Settings'; // Import new components
+import { SettingsModal, OnboardingModal } from './components/Settings';
+import { Auth } from './components/Auth';
 import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES, MARKET_ITEMS } from './services/mockData';
 import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, StreamHubIcon, ShoppingBagIcon } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
-// Updated MobileMenu to support settings triggers
 const MobileMenu = ({ 
     isOpen, 
     onClose, 
@@ -22,7 +21,8 @@ const MobileMenu = ({
     isDarkMode, 
     toggleDarkMode, 
     onViewProfile,
-    onOpenSettings 
+    onOpenSettings,
+    onSignOut
 }: { 
     isOpen: boolean; 
     onClose: () => void; 
@@ -31,6 +31,7 @@ const MobileMenu = ({
     toggleDarkMode: () => void; 
     onViewProfile: () => void;
     onOpenSettings: () => void;
+    onSignOut: () => void;
 }) => {
   if (!isOpen) return null;
 
@@ -85,10 +86,18 @@ const MobileMenu = ({
         </div>
 
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
-          <button className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+          {!currentUser.isProfileComplete && (
+              <button 
+                onClick={() => { onOpenSettings(); onClose(); }} 
+                className="w-full mb-3 py-3 text-blue-600 font-bold bg-blue-100 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition animate-pulse"
+              >
+                Complete Your Profile
+              </button>
+          )}
+          <button onClick={onSignOut} className="w-full py-3 text-red-600 font-bold bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition">
             Log Out
           </button>
-          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.2.0</p>
+          <p className="text-center text-xs text-gray-400 mt-4">MyConnect v1.3.0</p>
         </div>
       </div>
     </div>
@@ -96,6 +105,7 @@ const MobileMenu = ({
 };
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<ViewMode>(ViewMode.FEED);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -114,6 +124,7 @@ export default function App() {
   const [reels, setReels] = useState<Video[]>(REELS_VIDEOS);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [communities, setCommunities] = useState<Community[]>(MOCK_COMMUNITIES);
+  const [marketItems, setMarketItems] = useState<Product[]>(MARKET_ITEMS);
 
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [isReelsMuted, setIsReelsMuted] = useState(false);
@@ -126,12 +137,17 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  // Check profile completeness on mount
-  useEffect(() => {
-      if (!currentUser.isProfileComplete) {
-          setIsOnboardingOpen(true);
-      }
-  }, []);
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+    if (!currentUser.isProfileComplete) {
+        setTimeout(() => setIsOnboardingOpen(true), 500);
+    }
+  };
+
+  const handleSignOut = () => {
+      setIsAuthenticated(false);
+      setActiveTab(ViewMode.FEED);
+  };
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
@@ -152,7 +168,6 @@ export default function App() {
       setActiveTab(ViewMode.PROFILE);
   };
 
-  // Updated Create Post handler to support product tagging
   const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video' | 'text', communityId?: string, productId?: string) => {
     const newPost: Post = {
       id: `new_p_${Date.now()}`,
@@ -166,7 +181,7 @@ export default function App() {
       type: type || 'text',
       image: media,
       communityId: communityId,
-      taggedProductId: productId // Add product ID
+      taggedProductId: productId
     };
     setPosts([newPost, ...posts]);
   };
@@ -191,7 +206,6 @@ export default function App() {
       }));
   };
 
-  // ... (Keep Community Actions)
   const handleCreateCommunity = (name: string, description: string) => {
       const newId = `c_${Date.now()}`;
       const newCommunity: Community = {
@@ -265,8 +279,8 @@ export default function App() {
           unread: 0,
           timestamp: 'Just now',
           messages: [],
-          participants: [currentUser], // Start with creator
-          admins: [currentUser.id] // Creator is admin
+          participants: [currentUser],
+          admins: [currentUser.id]
       };
       setChats([newGroup, ...chats]);
       setActiveTab(ViewMode.CHAT);
@@ -457,9 +471,12 @@ export default function App() {
              user={viewingUser} 
              currentUser={currentUser}
              posts={posts} 
+             longFormVideos={longFormVideos}
+             marketItems={marketItems}
              onBack={() => setActiveTab(ViewMode.FEED)}
              onUpdateUser={handleUpdateUser}
              onStartChat={handleStartChat}
+             onOpenSettings={() => setIsSettingsOpen(true)}
           />
         );
       case ViewMode.NOTIFICATIONS:
@@ -483,6 +500,10 @@ export default function App() {
   };
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
+  
+  if (!isAuthenticated) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-black transition-colors duration-300">
@@ -490,6 +511,7 @@ export default function App() {
         isOpen={isOnboardingOpen}
         currentUser={currentUser}
         onComplete={handleProfileComplete}
+        onSkip={() => setIsOnboardingOpen(false)}
       />
 
       <SettingsModal 
@@ -507,6 +529,7 @@ export default function App() {
         toggleDarkMode={toggleDarkMode}
         onViewProfile={() => handleViewProfile(currentUser)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onSignOut={handleSignOut}
       />
 
       <header className="hidden md:flex bg-white dark:bg-gray-900 shadow-sm z-50 px-6 h-16 items-center justify-between sticky top-0 border-b dark:border-gray-800 transition-colors">

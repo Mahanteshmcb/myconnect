@@ -55,6 +55,7 @@ export interface User {
   email?: string;
   statusMessage?: string;
   phoneNumber?: string;
+  password?: string; // For mock auth
   
   // Configuration
   isProfileComplete?: boolean;

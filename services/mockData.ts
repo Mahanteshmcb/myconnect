@@ -1,9 +1,10 @@
 
+
 import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community, Store, Order } from '../types';
 
 export const MOCK_USERS: Record<string, User> = {
-  'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true, followingIds: ['u2', 'u4'] },
-  'u2': { id: 'u2', name: 'David Chen', handle: '@dchen_tech', avatar: 'https://picsum.photos/id/91/100/100', verified: true, subscribers: '850K', isOnline: false, followingIds: ['u1', 'u5', 'me'] },
+  'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true, followingIds: ['u2', 'u4'], email: 'sarah@example.com', phoneNumber: '+12223334444', password: 'password123' },
+  'u2': { id: 'u2', name: 'David Chen', handle: '@dchen_tech', avatar: 'https://picsum.photos/id/91/100/100', verified: true, subscribers: '850K', isOnline: false, followingIds: ['u1', 'u5', 'me'], email: 'david@example.com', phoneNumber: '+13334445555', password: 'password123' },
   'u3': { id: 'u3', name: 'MyConnect AI', handle: '@ai_assistant', avatar: 'https://picsum.photos/id/2/100/100', verified: true, isOnline: true, followingIds: [] },
   'u4': { id: 'u4', name: 'Emma Wilson', handle: '@emma_art', avatar: 'https://picsum.photos/id/129/100/100', subscribers: '45K', isOnline: true, followingIds: ['u1', 'me'] },
   'u5': { id: 'u5', name: 'TechDaily', handle: '@techdaily', avatar: 'https://picsum.photos/id/201/100/100', verified: true, subscribers: '2.1M', isOnline: false, followingIds: ['u2'] },
@@ -27,8 +28,9 @@ export const CURRENT_USER: User = {
   location: 'San Francisco, CA',
   joinedDate: 'September 2021',
   statusMessage: 'Available for freelance work 🚀',
-  phoneNumber: '+1 (555) 012-3456',
+  phoneNumber: '+15550123456',
   email: 'hello@alexrivera.dev',
+  password: 'password123',
   twitter: 'https://twitter.com/alexrivera',
   github: 'https://github.com/alexrivera',
   linkedin: 'https://linkedin.com/in/alexrivera',
@@ -51,6 +53,12 @@ export const CURRENT_USER: User = {
       lastActive: 'public'
   }
 };
+
+export const REGISTERED_USERS: User[] = [
+    CURRENT_USER,
+    MOCK_USERS['u1'],
+    MOCK_USERS['u2'],
+];
 
 export const getUserByHandle = (handle: string): User | undefined => {
     // Normalize handle (remove @ if present)
@@ -130,6 +138,20 @@ export const FEED_POSTS: Post[] = [
     timestamp: '4h ago',
     type: 'text'
   },
+   {
+    id: 'p_me_1',
+    author: CURRENT_USER,
+    content: 'Loving the new setup for my workspace! Productivity through the roof. #desksetup #wfh',
+    image: 'https://picsum.photos/id/26/800/600',
+    likes: 152,
+    comments: 2,
+    commentsList: [
+        { id: 'c_me_1', author: MOCK_USERS['u2'], text: 'Looks clean! What keyboard is that?', timestamp: '1h ago' }
+    ],
+    shares: 5,
+    timestamp: 'Just now',
+    type: 'image',
+  },
   {
     id: 'p3',
     author: MOCK_USERS['u4'],
@@ -182,6 +204,15 @@ export const FEED_POSTS: Post[] = [
 
 export const REELS_VIDEOS: Video[] = [
   {
+    id: 'v_me_1',
+    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    thumbnail: 'https://picsum.photos/id/48/400/700',
+    likes: '1.2K',
+    comments: '45',
+    author: CURRENT_USER,
+    description: 'Quick coffee break! ☕️ #coffee'
+  },
+  {
     id: 'v1',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     thumbnail: 'https://picsum.photos/id/28/400/700',
@@ -212,6 +243,20 @@ export const REELS_VIDEOS: Video[] = [
 
 export const LONG_FORM_VIDEOS: LongFormVideo[] = [
   {
+    id: 'lf_me_1',
+    title: 'My Desk Setup Tour 2025 | Productivity & Tech',
+    duration: '15:30',
+    views: '15K',
+    uploadedAt: '1 day ago',
+    author: CURRENT_USER,
+    description: 'Here is a full tour of my 2025 desk setup for programming, video editing, and content creation.',
+    category: 'Technology',
+    thumbnail: 'https://picsum.photos/id/17/640/360',
+    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
+    likes: '1.1K',
+    type: 'video'
+  },
+  {
     id: 'lf1',
     title: 'Building a Social Media App in 10 Minutes',
     duration: '12:45',
@@ -223,6 +268,20 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/1/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     likes: '124K',
+    type: 'video'
+  },
+  {
+    id: 'lf_me_2',
+    title: 'How I Plan My Week for Maximum Focus',
+    duration: '8:45',
+    views: '8K',
+    uploadedAt: '3 days ago',
+    author: CURRENT_USER,
+    description: 'A look into my weekly planning process using Notion and other tools.',
+    category: 'Productivity',
+    thumbnail: 'https://picsum.photos/id/35/640/360',
+    url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    likes: '850',
     type: 'video'
   },
   {
@@ -545,6 +604,7 @@ export const MARKET_ITEMS: Product[] = [
     { id: 'p14', title: 'Ceramic Vase', price: '$35', rawPrice: 35, image: 'https://picsum.photos/id/400/300/300', images: [], location: 'Santa Fe, NM', category: 'Home', sellerId: 'u4', stock: 5, rating: 5.0, reviewCount: 12 },
     { id: 'p15', title: 'Mechanical Keyboard', price: '$140', rawPrice: 140, image: 'https://picsum.photos/id/425/300/300', images: [], location: 'New York, NY', category: 'Electronics', sellerId: 'me', stock: 3, rating: 4.8, reviewCount: 20 },
     { id: 'p16', title: 'Organic Face Oil', price: '$40', rawPrice: 40, image: 'https://picsum.photos/id/443/300/300', images: [], location: 'San Diego, CA', category: 'Beauty', sellerId: 'u1', stock: 30, rating: 4.7, reviewCount: 55 },
+    { id: 'p17', title: 'Designer Desk Lamp', price: '$75', rawPrice: 75, image: 'https://picsum.photos/id/500/300/300', images: [], location: 'San Francisco, CA', category: 'Home', sellerId: 'me', stock: 5, rating: 4.9, reviewCount: 15 },
 ];
 
 export const MARKET_BANNERS = [
