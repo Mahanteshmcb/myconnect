@@ -35,6 +35,7 @@ export const CURRENT_USER: User = {
   github: 'https://github.com/alexrivera',
   linkedin: 'https://linkedin.com/in/alexrivera',
   savedPostIds: [],
+  isPrivateMode: false,
   
   // New Profile Fields - Set to Trigger Onboarding
   isProfileComplete: false,
@@ -117,13 +118,27 @@ export const FEED_POSTS: Post[] = [
     likes: 245,
     comments: 2,
     commentsList: [
-        { id: 'c1', author: MOCK_USERS['u1'], text: 'This is huge! Great work David.', timestamp: '1h ago' },
-        { id: 'c2', author: MOCK_USERS['u5'], text: 'Are you writing a blog post about this?', timestamp: '30m ago' }
+        { id: 'c1', author: MOCK_USERS['u1'], text: 'This is huge! Great work David.', timestamp: '1h ago', likes: 22, dislikes: 1 },
+        { id: 'c2', author: MOCK_USERS['u5'], text: 'Are you writing a blog post about this?', timestamp: '30m ago', likes: 10, dislikes: 0 }
     ],
     shares: 12,
     timestamp: '2h ago',
     type: 'image',
     communityId: 'g1'
+  },
+   {
+    id: 'p_video_1',
+    author: MOCK_USERS['u6'],
+    content: 'Tutorial: How to make the perfect carbonara! 🍝 Full recipe in my creator hub. #cooking #recipe #pasta',
+    videoUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    likes: 1800,
+    comments: 3,
+    commentsList: [
+        { id: 'c_vid_1', author: MOCK_USERS['u1'], text: 'Looks delicious!', timestamp: '1h ago', likes: 15, dislikes: 0 },
+    ],
+    shares: 250,
+    timestamp: '3h ago',
+    type: 'video',
   },
   {
     id: 'p2',
@@ -132,7 +147,7 @@ export const FEED_POSTS: Post[] = [
     likes: 89,
     comments: 1,
     commentsList: [
-        { id: 'c3', author: MOCK_USERS['u4'], text: 'Check out Mount Tamalpais! The views are insane.', timestamp: '3h ago' },
+        { id: 'c3', author: MOCK_USERS['u4'], text: 'Check out Mount Tamalpais! The views are insane.', timestamp: '3h ago', likes: 5, dislikes: 0 },
     ],
     shares: 2,
     timestamp: '4h ago',
@@ -146,11 +161,27 @@ export const FEED_POSTS: Post[] = [
     likes: 152,
     comments: 2,
     commentsList: [
-        { id: 'c_me_1', author: MOCK_USERS['u2'], text: 'Looks clean! What keyboard is that?', timestamp: '1h ago' }
+        { id: 'c_me_1', author: MOCK_USERS['u2'], text: 'Looks clean! What keyboard is that?', timestamp: '1h ago', likes: 8, dislikes: 0 }
     ],
     shares: 5,
     timestamp: 'Just now',
     type: 'image',
+  },
+  {
+    id: 'p_doc_1',
+    author: MOCK_USERS['u5'],
+    content: "Here's our Q3 earnings report for investors. We've seen incredible growth in the AI sector. #tech #business #earnings",
+    documentUrl: '#', // Placeholder link
+    documentName: 'Q3_Earnings_Report.pdf',
+    documentSize: '2.5 MB',
+    likes: 450,
+    comments: 1,
+    commentsList: [
+      {id: 'c_doc_1', author: MOCK_USERS['u2'], text: 'Impressive numbers!', timestamp: '4h ago', likes: 5, dislikes: 0}
+    ],
+    shares: 80,
+    timestamp: '8h ago',
+    type: 'document'
   },
   {
     id: 'p3',
@@ -208,6 +239,8 @@ export const REELS_VIDEOS: Video[] = [
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     thumbnail: 'https://picsum.photos/id/48/400/700',
     likes: '1.2K',
+    dislikeCount: 12,
+    shareCount: 88,
     comments: '45',
     author: CURRENT_USER,
     description: 'Quick coffee break! ☕️ #coffee'
@@ -217,6 +250,8 @@ export const REELS_VIDEOS: Video[] = [
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     thumbnail: 'https://picsum.photos/id/28/400/700',
     likes: '12.5K',
+    dislikeCount: 150,
+    shareCount: 1200,
     comments: '405',
     author: MOCK_USERS['u4'],
     description: 'Morning routine in the mountains 🏔️'
@@ -226,6 +261,8 @@ export const REELS_VIDEOS: Video[] = [
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     thumbnail: 'https://picsum.photos/id/56/400/700',
     likes: '45.2K',
+    dislikeCount: 800,
+    shareCount: 4300,
     comments: '1.2K',
     author: MOCK_USERS['u1'],
     description: 'Singapore is amazing at night! 🤯'
@@ -235,6 +272,8 @@ export const REELS_VIDEOS: Video[] = [
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     thumbnail: 'https://picsum.photos/id/88/400/700',
     likes: '8.9K',
+    dislikeCount: 45,
+    shareCount: 560,
     comments: '220',
     author: MOCK_USERS['u2'],
     description: 'Coding ASMR - Mechanical Keyboards ⌨️'
@@ -254,6 +293,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/17/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
     likes: '1.1K',
+    shareCount: 150,
     type: 'video'
   },
   {
@@ -268,6 +308,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/1/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     likes: '124K',
+    shareCount: 12000,
     type: 'video'
   },
   {
@@ -282,6 +323,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/35/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
     likes: '850',
+    shareCount: 80,
     type: 'video'
   },
   {
@@ -296,6 +338,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/10/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     likes: '22K',
+    shareCount: 3000,
     type: 'video'
   },
   {
@@ -310,6 +353,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/20/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
     likes: '5.6K',
+    shareCount: 800,
     type: 'video'
   },
   {
@@ -324,6 +368,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/104/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
     likes: '1.1K',
+    shareCount: 120,
     type: 'video'
   },
   {
@@ -338,6 +383,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/225/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
     likes: '200K',
+    shareCount: 25000,
     type: 'video'
   },
   {
@@ -352,6 +398,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/374/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
     likes: '15K',
+    shareCount: 2000,
     type: 'video'
   },
   {
@@ -366,6 +413,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/3/640/360',
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     likes: '3K',
+    shareCount: 50,
     type: 'live'
   },
   {
@@ -380,6 +428,7 @@ export const LONG_FORM_VIDEOS: LongFormVideo[] = [
     thumbnail: 'https://picsum.photos/id/40/360/640', // Portrait
     url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     likes: '500K',
+    shareCount: 80000,
     type: 'short'
   }
 ];
@@ -433,13 +482,13 @@ export const INITIAL_CHATS: ChatSession[] = [
 ];
 
 export const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: 'n1', type: 'like', user: MOCK_USERS['u1'], content: 'liked your photo.', timestamp: '2m ago', read: false, targetImage: 'https://picsum.photos/id/0/100/100' },
-  { id: 'n2', type: 'comment', user: MOCK_USERS['u2'], content: 'commented: "Great work!"', timestamp: '15m ago', read: false, targetImage: 'https://picsum.photos/id/0/100/100' },
-  { id: 'n3', type: 'follow', user: MOCK_USERS['u4'], content: 'started following you.', timestamp: '1h ago', read: true },
+  { id: 'n1', type: 'like', user: MOCK_USERS['u1'], content: 'liked your photo.', timestamp: '2m ago', read: false, targetImage: 'https://picsum.photos/id/26/100/100', targetId: 'p_me_1' },
+  { id: 'n2', type: 'comment', user: MOCK_USERS['u2'], content: 'commented: "Looks clean! What keyboard is that?"', timestamp: '15m ago', read: false, targetImage: 'https://picsum.photos/id/26/100/100', targetId: 'p_me_1' },
+  { id: 'n3', type: 'follow', user: MOCK_USERS['u4'], content: 'started following you.', timestamp: '1h ago', read: true, targetId: 'u4' },
   { id: 'n4', type: 'system', content: 'Your subscription to MyConnect Premium was successful.', timestamp: '2h ago', read: true },
-  { id: 'n5', type: 'like', user: MOCK_USERS['u5'], content: 'liked your reel.', timestamp: '3h ago', read: true, targetImage: 'https://picsum.photos/id/28/100/100' },
-  { id: 'n6', type: 'mention', user: MOCK_USERS['u6'], content: 'mentioned you in a post.', timestamp: '5h ago', read: true, targetImage: 'https://picsum.photos/id/292/100/100' },
-  { id: 'n7', type: 'follow', user: MOCK_USERS['u2'], content: 'started following you.', timestamp: '1d ago', read: true },
+  { id: 'n5', type: 'like', user: MOCK_USERS['u5'], content: 'liked your reel.', timestamp: '3h ago', read: true, targetImage: 'https://picsum.photos/id/28/100/100', targetId: 'v1' },
+  { id: 'n6', type: 'mention', user: MOCK_USERS['u6'], content: 'mentioned you in a post.', timestamp: '5h ago', read: true, targetImage: 'https://picsum.photos/id/292/100/100', targetId: 'p5' },
+  { id: 'n7', type: 'follow', user: MOCK_USERS['u2'], content: 'started following you.', timestamp: '1d ago', read: true, targetId: 'u2'},
 ];
 
 const EXPLORE_CATEGORIES = ['Decor', 'Travel', 'Architecture', 'Food', 'Art', 'Style', 'Music', 'DIY', 'Beauty'];

@@ -1142,7 +1142,8 @@ export const Marketplace = ({ initialProduct }: { initialProduct?: Product | nul
             </div>
        </div>
   );
-// FIX: Add renderStore function definition
+  
+  // FIX: Moved renderStore function out of renderAddProduct to correct its scope.
   const renderStore = () => {
     if (!selectedStore) return null;
 
@@ -1192,6 +1193,7 @@ export const Marketplace = ({ initialProduct }: { initialProduct?: Product | nul
       </div>
     );
   };
+
   return (
     <div className="h-full bg-white dark:bg-[#0f0f0f] flex flex-col">
       {renderHeader()}

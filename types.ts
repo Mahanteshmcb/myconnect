@@ -1,4 +1,5 @@
 
+
 export enum ViewMode {
   FEED = 'FEED',
   WATCH = 'WATCH',
@@ -60,6 +61,7 @@ export interface User {
   // Configuration
   isProfileComplete?: boolean;
   privacySettings?: PrivacySettings;
+  isPrivateMode?: boolean;
 
   // Social Links
   twitter?: string;
@@ -92,6 +94,7 @@ export interface Comment {
   timestamp: string;
   unixTimestamp?: number; // For sorting
   likes?: number;
+  dislikes?: number;
   replies?: Comment[]; // Nested replies
 }
 
@@ -100,13 +103,17 @@ export interface Post {
   author: User;
   content: string;
   image?: string;
+  videoUrl?: string;
+  documentUrl?: string;
+  documentName?: string;
+  documentSize?: string;
   likes: number;
   comments: number;
   commentsList?: Comment[];
   shares: number;
   timestamp: string;
   unixTimestamp?: number; // Crucial for time-decay algorithms
-  type: 'text' | 'image' | 'video';
+  type: 'text' | 'image' | 'video' | 'document';
   communityId?: string; // Optional link to a community
   
   // Algorithmic Metadata
@@ -119,12 +126,24 @@ export interface Post {
   taggedProductId?: string;
 }
 
+export interface Story {
+  id: string;
+  user: User;
+  type: 'image' | 'video';
+  url: string;
+  caption?: string;
+  isViewed?: boolean;
+  duration?: number; // in seconds
+}
+
 export interface Video {
   id: string;
   url: string;
   thumbnail: string;
   likes: string; // Display string "12K"
   likeCount?: number; // Numeric for sorting
+  dislikeCount?: number;
+  shareCount?: number;
   comments: string;
   author: User;
   description: string;
@@ -149,6 +168,7 @@ export interface LongFormVideo {
   likes?: string;
   likeCount?: number;
   dislikeCount?: number;
+  shareCount?: number;
   type?: 'video' | 'short' | 'live';
   tags?: string[];
   privacy?: 'public' | 'private' | 'unlisted';

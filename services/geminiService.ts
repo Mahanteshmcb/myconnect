@@ -1,13 +1,12 @@
 
-import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.API_KEY || '';
+import { GoogleGenAI, Type } from "@google/genai";
 
-// Safely initialize only if key exists, though we expect it to be there in this environment.
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+// Safely initialize. The API_KEY is expected to be in the environment.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getAIResponse = async (userMessage: string): Promise<string> => {
-  if (!ai) {
+  if (!process.env.API_KEY) {
     return "I'm sorry, I can't connect to the AI service right now. Please check your API key configuration.";
   }
 
@@ -28,19 +27,47 @@ export const getAIResponse = async (userMessage: string): Promise<string> => {
 };
 
 export const generateProductDetails = async (productName: string): Promise<any> => {
-  if (!ai) return null;
+  if (!process.env.API_KEY) return null;
   try {
-    const prompt = `Generate a JSON object for a marketplace product based on the name "${productName}".
-    Fields: description (marketing copy, max 2 sentences), category (one word), suggestedPrice (number), tags (array of strings).
-    Do not include markdown formatting.`;
+    const prompt = `Generate details for a marketplace product named "${productName}".`;
     
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
-        config: { responseMimeType: 'application/json' }
+        config: { 
+            responseMimeType: 'application/json',
+            // FIX: Use responseSchema for more reliable JSON output.
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    description: {
+                        type: Type.STRING,
+                        description: 'Marketing copy for the product, maximum 2 sentences.'
+                    },
+                    category: {
+                        type: Type.STRING,
+                        description: 'A single-word category for the product.'
+                    },
+                    suggestedPrice: {
+                        type: Type.NUMBER,
+                        description: 'A suggested price for the product as a number.'
+                    },
+                    tags: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.STRING
+                        },
+                        description: 'An array of relevant string tags for the product.'
+                    }
+                },
+                required: ['description', 'category', 'suggestedPrice', 'tags']
+            }
+        }
     });
     
-    return JSON.parse(response.text || '{}');
+    // FIX: The response.text is a string that needs to be parsed.
+    const jsonText = response.text?.trim();
+    return jsonText ? JSON.parse(jsonText) : {};
   } catch (e) {
     console.error(e);
     return null;

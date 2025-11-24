@@ -517,9 +517,18 @@ export const SettingsModal: React.FC<SettingsProps> = ({ isOpen, onClose, curren
                                 <h4 className="font-bold text-sm dark:text-white mb-1">Private Mode</h4>
                                 <p className="text-xs text-gray-600 dark:text-gray-300">When enabled, your profile is hidden from search engines and non-contacts.</p>
                             </div>
-                            <div className="ml-auto w-10 h-6 bg-gray-300 dark:bg-gray-600 rounded-full cursor-pointer">
-                                <div className="w-4 h-4 bg-white rounded-full m-1 shadow"></div>
-                            </div>
+                            <label htmlFor="private-mode-toggle" className="ml-auto cursor-pointer">
+                                <div className={`w-10 h-6 rounded-full p-1 transition-colors ${formData.isPrivateMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.isPrivateMode ? 'translate-x-4' : ''}`}></div>
+                                </div>
+                                <input 
+                                    id="private-mode-toggle"
+                                    type="checkbox" 
+                                    className="hidden"
+                                    checked={!!formData.isPrivateMode}
+                                    onChange={(e) => setFormData({...formData, isPrivateMode: e.target.checked})}
+                                />
+                            </label>
                         </div>
                     </div>
                 );

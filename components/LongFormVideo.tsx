@@ -489,7 +489,6 @@ const ChannelPage = ({
                         </tr>
                     ))}
                 </tbody>
-            </table>
              {channelVideos.length === 0 && <p className="p-8 text-center text-gray-500">No content uploaded yet.</p>}
         </div>
     );
@@ -749,9 +748,11 @@ const VideoComment = ({ comment, onReply, currentUser }: { comment: Comment, onR
                 <div className="flex items-center gap-4 mt-2">
                     <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
                         <ThumbsUpIcon className="w-3.5 h-3.5" />
+                        {comment.likes && <span className="text-xs">{comment.likes}</span>}
                     </button>
                     <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
                         <ThumbsDownIcon className="w-3.5 h-3.5" />
+                        {comment.dislikes && <span className="text-xs">{comment.dislikes}</span>}
                     </button>
                     <button 
                         onClick={() => setIsReplying(!isReplying)} 
@@ -901,10 +902,10 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
         setDescriptionExpanded(false);
         
         const mockComments: Comment[] = [
-            { id: 'c1', author: MOCK_USERS['u2'], text: "Great content as always!", timestamp: "2 hours ago", replies: [
-                { id: 'c1_r1', author: currentUser, text: "Thanks David!", timestamp: "1 hour ago" }
+            { id: 'c1', author: MOCK_USERS['u2'], text: "Great content as always!", timestamp: "2 hours ago", likes: 120, dislikes: 2, replies: [
+                { id: 'c1_r1', author: currentUser, text: "Thanks David!", timestamp: "1 hour ago", likes: 10, dislikes: 0 }
             ]},
-            { id: 'c2', author: MOCK_USERS['u1'], text: "Can you do a tutorial on the advanced features?", timestamp: "5 hours ago", replies: [] }
+            { id: 'c2', author: MOCK_USERS['u1'], text: "Can you do a tutorial on the advanced features?", timestamp: "5 hours ago", likes: 55, dislikes: 0, replies: [] }
         ];
         setComments(mockComments);
         
@@ -1403,7 +1404,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                       </div>
                                       <button onClick={() => setSharingVideo(selectedVideo)} className="px-4 py-2 flex items-center gap-2 rounded-full bg-gray-100 dark:bg-[#272727] hover:bg-gray-200 dark:hover:bg-[#3f3f3f]">
                                         <ShareIcon className="w-5 h-5" />
-                                        <span className="text-sm font-bold">Share</span>
+                                        <span className="text-sm font-bold">{formatCompactNumber(selectedVideo.shareCount || 0)}</span>
                                       </button>
                                   </div>
                               </div>

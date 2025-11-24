@@ -10,7 +10,7 @@ import { Marketplace } from './components/Marketplace';
 import { Explore } from './components/Explore';
 import { SettingsModal, OnboardingModal } from './components/Settings';
 import { Auth } from './components/Auth';
-import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES, MARKET_ITEMS } from './services/mockData';
+import { FEED_POSTS, CURRENT_USER, REELS_VIDEOS, INITIAL_CHATS, LONG_FORM_VIDEOS, MOCK_NOTIFICATIONS, EXPLORE_ITEMS, MOCK_COMMUNITIES, MARKET_ITEMS, MOCK_USERS } from './services/mockData';
 import { HomeIcon, VideoIcon, ChatIcon, MenuIcon, CloseIcon, SettingsIcon, BookmarkIcon, MoonIcon, HelpIcon, TrashIcon, BellIcon, ExploreIcon, StreamHubIcon, ShoppingBagIcon } from './components/Icons';
 import { getAIResponse } from './services/geminiService';
 
@@ -178,6 +178,30 @@ export default function App() {
   const handleViewProfile = (user?: User) => {
       setViewingUser(user || currentUser);
       setActiveTab(ViewMode.PROFILE);
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+    
+    switch (notification.type) {
+        case 'like':
+        case 'comment':
+        case 'mention':
+            // In a real app, you would navigate to the specific post and open comments if needed.
+            // For this mock, we'll just switch to the feed.
+            setActiveTab(ViewMode.FEED);
+            // You could add logic here to scroll to post with `notification.targetId`
+            break;
+        case 'follow':
+            if (notification.user) {
+                handleViewProfile(notification.user);
+            }
+            break;
+        default:
+            // For system notifications, do nothing or show an alert.
+            break;
+    }
   };
 
   const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video' | 'text', communityId?: string, productId?: string) => {
@@ -514,7 +538,7 @@ export default function App() {
           />
         );
       case ViewMode.NOTIFICATIONS:
-        return <Notifications notifications={notifications} onViewProfile={handleViewProfile} />;
+        return <Notifications notifications={notifications} onViewProfile={handleViewProfile} onNotificationClick={handleNotificationClick} />;
       case ViewMode.EXPLORE:
         return (
             <Explore 
