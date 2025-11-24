@@ -1,5 +1,9 @@
 {
   "name": "MyConnect",
   "description": "The ultimate all-in-one social platform combining feed, short-form reels, long-form video creator hub, and messaging into a single cohesive interface.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Video, Comment, User } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, VolumeUpIcon, VolumeOffIcon, PlayCircleIcon, CloseIcon, SendIcon, PlusIcon, CameraIcon, MusicIcon, CheckIcon, ThumbsUpIcon, ThumbsDownIcon } from './Icons';
@@ -327,7 +328,6 @@ const ShareSheet = ({ isOpen, onClose, video }: { isOpen: boolean, onClose: () =
     );
 };
 
-// FIX: This component was incomplete and not returning any JSX. It has been fully implemented.
 const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMute, onViewProfile, onSubscribe, onUseSound }) => {
   const [liked, setLiked] = useState(false);
   const [isPlaying, setIsPlaying] = useState(isActive);
@@ -339,14 +339,28 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const handlePlay = async () => {
+        try {
+            await videoElement.play();
+            setIsPlaying(true);
+        } catch (error) {
+            if ((error as DOMException).name !== 'AbortError') {
+                console.error("Video play failed:", error);
+            }
+            setIsPlaying(false);
+        }
+    };
+    
     if (isActive) {
-      videoRef.current?.play().catch(e => console.error("Play failed", e));
-      setIsPlaying(true);
+        handlePlay();
     } else {
-      videoRef.current?.pause();
-      if(videoRef.current) videoRef.current.currentTime = 0;
-      setIsPlaying(false);
-      setProgress(0);
+        videoElement.pause();
+        videoElement.currentTime = 0;
+        setIsPlaying(false);
+        setProgress(0);
     }
   }, [isActive]);
 
@@ -363,12 +377,18 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
   }, []);
 
   const togglePlay = () => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
     if (isPlaying) {
-      videoRef.current?.pause();
+      videoElement.pause();
+      setIsPlaying(false);
     } else {
-      videoRef.current?.play();
+      videoElement.play().catch(e => {
+          if ((e as DOMException).name !== 'AbortError') console.error("Play toggle failed", e);
+      });
+      setIsPlaying(true);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleAddComment = (text: string) => {
@@ -445,7 +465,6 @@ const ReelItem: React.FC<ReelItemProps> = ({ video, isActive, isMuted, toggleMut
     </div>
   );
 };
-// FIX: The 'VideoReels' component was missing. It has been added and exported to resolve import errors.
 export const VideoReels: React.FC<VideoReelsProps> = ({ videos, isMuted, toggleMute, onViewProfile, onCreateReel, onSubscribe, onUseSound }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);

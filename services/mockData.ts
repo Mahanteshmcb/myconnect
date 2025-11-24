@@ -1,6 +1,7 @@
 
 
-import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community, Store, Order } from '../types';
+
+import { Post, User, Video, ChatSession, Product, LongFormVideo, Notification, ExploreItem, Community, Store, Order, Story } from '../types';
 
 export const MOCK_USERS: Record<string, User> = {
   'u1': { id: 'u1', name: 'Sarah Jenkins', handle: '@sarahj', avatar: 'https://picsum.photos/id/65/100/100', subscribers: '120K', isOnline: true, followingIds: ['u2', 'u4'], email: 'sarah@example.com', phoneNumber: '+12223334444', password: 'password123' },
@@ -99,6 +100,14 @@ export const getCommunityMembers = (communityId: string): User[] => {
 };
 
 // --- Content Data ---
+
+export const MOCK_STORIES: Story[] = [
+    { id: 's_me', user: CURRENT_USER, type: 'image', url: 'https://picsum.photos/id/101/350/600', isViewed: false, duration: 5, caption: 'My new setup!'},
+    { id: 's1', user: MOCK_USERS['u1'], type: 'video', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', isViewed: false, duration: 10, caption: 'Beach day! 🏖️'},
+    { id: 's2', user: MOCK_USERS['u4'], type: 'image', url: 'https://picsum.photos/id/103/350/600', isViewed: true, duration: 5, caption: 'Art in progress.'},
+    { id: 's3', user: MOCK_USERS['u2'], type: 'audio', url: 'https://picsum.photos/id/2/350/600', audioUrl: 'https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3', isViewed: false, duration: 15, caption: 'Podcast recommendation! 🎧'},
+    { id: 's4', user: MOCK_USERS['u6'], type: 'video', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', isViewed: false, duration: 15, caption: 'Cooking time 🍝'},
+];
 
 export const MOCK_COMMUNITIES: Community[] = [
   { id: 'g1', name: 'React Developers', members: 15400, avatar: 'https://picsum.photos/id/0/200/200', description: 'Everything React.js, Next.js and more.', isJoined: true, creatorId: 'u2' },

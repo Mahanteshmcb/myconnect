@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, PrivacyLevel } from '../types';
 import { 
@@ -10,7 +11,10 @@ import {
     ChevronDownIcon,
     CheckIcon,
     EyeOffIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    CameraIcon,
+    MicrophoneIcon,
+    MapIcon
 } from './Icons';
 
 interface SettingsProps {
@@ -54,6 +58,66 @@ const PrivacySelector = ({
     );
 };
 
+const PermissionsSettings = () => {
+    const [permissions, setPermissions] = useState({
+        camera: true,
+        microphone: true,
+        location: false,
+    });
+
+    const togglePermission = (perm: keyof typeof permissions) => {
+        setPermissions(prev => ({ ...prev, [perm]: !prev[perm] }));
+    };
+
+    const PermissionToggle = ({ label, icon, enabled, onToggle }: { label: string, icon: React.ReactNode, enabled: boolean, onToggle: () => void }) => (
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#252525] rounded-xl">
+            <div className="flex items-center gap-3">
+                <div className="text-gray-500">{icon}</div>
+                <span className="font-medium text-sm dark:text-white">{label}</span>
+            </div>
+            <label htmlFor={`${label}-toggle`} className="cursor-pointer">
+                <div className={`w-10 h-6 rounded-full p-1 transition-colors ${enabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                    <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-4' : ''}`}></div>
+                </div>
+                <input 
+                    id={`${label}-toggle`}
+                    type="checkbox" 
+                    className="hidden"
+                    checked={enabled}
+                    onChange={onToggle}
+                />
+            </label>
+        </div>
+    );
+
+    return (
+        <div className="max-w-2xl">
+            <p className="text-gray-500 mb-6 text-sm">Manage app permissions for accessing your device's features. These can also be controlled from your browser or device settings.</p>
+            <div className="space-y-4">
+                <PermissionToggle 
+                    label="Camera Access" 
+                    icon={<CameraIcon className="w-5 h-5"/>} 
+                    enabled={permissions.camera} 
+                    onToggle={() => togglePermission('camera')}
+                />
+                <PermissionToggle 
+                    label="Microphone Access" 
+                    icon={<MicrophoneIcon className="w-5 h-5"/>} 
+                    enabled={permissions.microphone} 
+                    onToggle={() => togglePermission('microphone')}
+                />
+                <PermissionToggle 
+                    label="Location Access" 
+                    icon={<MapIcon className="w-5 h-5"/>} 
+                    enabled={permissions.location} 
+                    onToggle={() => togglePermission('location')}
+                />
+            </div>
+             <p className="text-xs text-gray-400 mt-4">Disabling permissions may limit functionality for features like video/audio stories and location tagging.</p>
+        </div>
+    );
+};
+
 const HelpCenter = () => {
     const faqs = [
         { q: "How do I change my password?", a: "You can change your password from the 'Account' section in your settings. You will be asked to enter your current password and then your new password." },
@@ -62,7 +126,14 @@ const HelpCenter = () => {
         { q: "How to enable Two-Factor Authentication?", a: "Navigate to Settings > Privacy > Security and you will find the option to enable Two-Factor Authentication for enhanced account security."}
     ];
 
+    const policies = [
+        { title: "Permissions Policy", content: "MyConnect requests certain permissions to provide a full-featured experience. Camera and Microphone access are required for creating video/audio posts and stories. Location access is optional and used for tagging your posts with a location to enhance discovery. We respect your privacy, and you can manage these permissions at any time from your device settings or the 'Permissions' tab here." },
+        { title: "Terms of Service", content: "By using MyConnect, you agree to our terms... (full text would be here)." },
+        { title: "Privacy Policy", content: "We collect data to improve your experience... (full text would be here)." }
+    ];
+
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [openPolicy, setOpenPolicy] = useState<string | null>(null);
 
     return (
         <div className="space-y-8 max-w-2xl">
@@ -87,15 +158,20 @@ const HelpCenter = () => {
 
             <div>
                  <h3 className="font-bold text-lg dark:text-white mb-4">Legal & Policies</h3>
-                 <div className="space-y-2">
-                     <div className="p-4 bg-gray-50 dark:bg-[#252525] rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-[#333] transition group">
-                         <span className="font-medium text-sm dark:text-white">Terms of Service</span>
-                         <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                     </div>
-                      <div className="p-4 bg-gray-50 dark:bg-[#252525] rounded-xl flex justify-between items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-[#333] transition group">
-                         <span className="font-medium text-sm dark:text-white">Privacy Policy</span>
-                         <ChevronRightIcon className="w-4 h-4 text-gray-400" />
-                     </div>
+                 <div className="space-y-2 border border-gray-100 dark:border-gray-800 rounded-xl p-2">
+                     {policies.map((policy) => (
+                         <div key={policy.title} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                            <button onClick={() => setOpenPolicy(openPolicy === policy.title ? null : policy.title)} className="w-full flex justify-between items-center py-4 px-2 text-left">
+                                <span className="font-medium text-sm dark:text-white">{policy.title}</span>
+                                <ChevronDownIcon className={`w-5 h-5 text-gray-400 transition-transform ${openPolicy === policy.title ? 'rotate-180' : ''}`} />
+                            </button>
+                            {openPolicy === policy.title && (
+                                <div className="pb-4 px-2 text-sm text-gray-600 dark:text-gray-300 animate-fade-in leading-relaxed">
+                                    {policy.content}
+                                </div>
+                            )}
+                        </div>
+                     ))}
                  </div>
             </div>
 
@@ -350,7 +426,7 @@ export const OnboardingModal: React.FC<OnboardingProps> = ({ isOpen, currentUser
 };
 
 export const SettingsModal: React.FC<SettingsProps> = ({ isOpen, onClose, currentUser, onUpdateUser }) => {
-    const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'backup' | 'help'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'permissions' | 'backup' | 'help'>('profile');
     const [formData, setFormData] = useState<User>(currentUser);
     const [backupStatus, setBackupStatus] = useState<'idle' | 'backing_up' | 'done'>('idle');
 
@@ -532,6 +608,8 @@ export const SettingsModal: React.FC<SettingsProps> = ({ isOpen, onClose, curren
                         </div>
                     </div>
                 );
+            case 'permissions':
+                return <PermissionsSettings />;
             case 'backup':
                  return (
                     <div className="max-w-2xl space-y-8">
@@ -598,6 +676,7 @@ export const SettingsModal: React.FC<SettingsProps> = ({ isOpen, onClose, curren
                     <div className="space-y-2">
                         <TabButton id="profile" label="Edit Profile" icon={<UserPlusIcon className="w-5 h-5" />} />
                         <TabButton id="privacy" label="Privacy" icon={<LockClosedIcon className="w-5 h-5" />} />
+                        <TabButton id="permissions" label="Permissions" icon={<EyeOffIcon className="w-5 h-5" />} />
                         <TabButton id="backup" label="Data & Backup" icon={<DatabaseIcon className="w-5 h-5" />} />
                         <TabButton id="help" label="Help & Support" icon={<QuestionMarkCircleIcon className="w-5 h-5" />} />
                     </div>
@@ -613,6 +692,7 @@ export const SettingsModal: React.FC<SettingsProps> = ({ isOpen, onClose, curren
                         >
                             <option value="profile">Edit Profile</option>
                             <option value="privacy">Privacy</option>
+                            <option value="permissions">Permissions</option>
                             <option value="backup">Data & Backup</option>
                             <option value="help">Help & Support</option>
                         </select>

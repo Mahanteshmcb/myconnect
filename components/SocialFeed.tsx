@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Post, User, Comment, Community, Product } from '../types';
-import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, RepeatIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon, ShoppingBagIcon } from './Icons';
-import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS, MARKET_ITEMS, MOCK_COMMUNITIES } from '../services/mockData';
+import { Post, User, Comment, Community, Product, Story } from '../types';
+import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon, ShoppingBagIcon, MoreVerticalIcon, DocumentIcon, DownloadIcon, PlayCircleIcon, VolumeUpIcon, MusicIcon } from './Icons';
+import { TRENDING_TOPICS, SUGGESTED_USERS, getUserByHandle, getCommunityMembers, MOCK_USERS, MARKET_ITEMS, MOCK_COMMUNITIES, MOCK_STORIES } from '../services/mockData';
 import { getPersonalizedFeed, formatCompactNumber } from '../services/coreEngine';
 
 export interface SocialFeedProps {
@@ -20,83 +20,230 @@ export interface SocialFeedProps {
   onUpdateUser?: (user: User) => void;
 }
 
-// --- Stories Logic ---
-interface Story {
-  id: string;
-  user: User;
-  img: string;
-  isViewed: boolean;
-}
-
-// Mock Stories for visual demo
-const generateMockStories = (currentUser: User, users: User[]): Story[] => [
-    { id: 's0', user: currentUser, isViewed: false, img: 'https://picsum.photos/id/101/350/600' },
-    { id: 's1', user: users[0] || currentUser, isViewed: false, img: 'https://picsum.photos/id/102/350/600' },
-    { id: 's2', user: users[1] || currentUser, isViewed: true, img: 'https://picsum.photos/id/103/350/600' },
-    { id: 's3', user: users[2] || currentUser, isViewed: false, img: 'https://picsum.photos/id/104/350/600' },
-    { id: 's4', user: users[3] || currentUser, isViewed: true, img: 'https://picsum.photos/id/106/350/600' },
-];
-
-const StoryViewer = ({ stories, initialIndex, onClose }: { stories: Story[], initialIndex: number, onClose: () => void }) => {
+// --- Story Viewer Logic ---
+const StoryViewer = ({ 
+    stories, 
+    initialIndex, 
+    onClose, 
+    currentUser,
+    onDeleteStory,
+    onUpdateStory
+}: { 
+    stories: Story[], 
+    initialIndex: number, 
+    onClose: () => void,
+    currentUser: User,
+    onDeleteStory: (id: string) => void,
+    onUpdateStory: (id: string, updates: Partial<Story>) => void
+}) => {
     const [activeIndex, setActiveIndex] = useState(initialIndex);
     const [progress, setProgress] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const [showMoreMenu, setShowMoreMenu] = useState(false);
+    const [isEditingCaption, setIsEditingCaption] = useState(false);
+    const [editedCaption, setEditedCaption] = useState('');
+
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    const activeStory = stories[activeIndex];
+    const isCurrentUserStory = activeStory.user.id === currentUser.id;
 
     useEffect(() => {
+        // Main playback and progress timer effect
+        if (isPaused || showMoreMenu || isEditingCaption) return;
+
+        const duration = activeStory.duration || 5;
+        const interval = 50; // ms
+        const increment = 100 / (duration * 1000 / interval);
+
         const timer = setInterval(() => {
             setProgress(prev => {
                 if (prev >= 100) {
                     if (activeIndex < stories.length - 1) {
                         setActiveIndex(activeIndex + 1);
-                        return 0;
                     } else {
                         onClose();
-                        return 100;
                     }
+                    return 0;
                 }
-                return prev + 1; // 100 ticks approx 5s roughly if interval is 50ms
+                return prev + increment;
             });
-        }, 50);
+        }, interval);
         return () => clearInterval(timer);
-    }, [activeIndex, stories.length, onClose]);
+    }, [activeIndex, stories.length, onClose, isPaused, showMoreMenu, isEditingCaption]);
+    
+    useEffect(() => {
+        // Effect to control play/pause state of media
+        const video = videoRef.current;
+        const audio = audioRef.current;
+        const shouldPlay = !isPaused && !showMoreMenu && !isEditingCaption;
 
-    const activeStory = stories[activeIndex];
+        const playMedia = async (media: HTMLMediaElement) => {
+            try {
+                if (media.paused) await media.play();
+            } catch (error) {
+                if ((error as DOMException).name !== 'AbortError') {
+                    console.error("Media play failed:", error);
+                }
+            }
+        };
+
+        if (shouldPlay) {
+            if (video) playMedia(video);
+            if (audio) playMedia(audio);
+        } else {
+            if (video && !video.paused) video.pause();
+            if (audio && !audio.paused) audio.pause();
+        }
+
+    }, [isPaused, showMoreMenu, isEditingCaption, activeIndex]);
+
+
+    useEffect(() => {
+        // Effect to reset and start media when story changes
+        setProgress(0);
+        setShowMoreMenu(false);
+        setIsEditingCaption(false);
+
+        const video = videoRef.current;
+        const audio = audioRef.current;
+        
+        const startMedia = async (media: HTMLMediaElement) => {
+            try {
+                media.currentTime = 0;
+                await media.play();
+            } catch (error) {
+                 if ((error as DOMException).name !== 'AbortError') {
+                    console.error("Media start failed:", error);
+                }
+            }
+        };
+
+        if (video) startMedia(video);
+        if (audio) startMedia(audio);
+        
+        // Cleanup function to pause media when story changes
+        return () => {
+            if (video && !video.paused) video.pause();
+            if (audio && !audio.paused) audio.pause();
+        };
+
+    }, [activeIndex]);
+    
+    const handleEditCaption = () => {
+        setEditedCaption(activeStory.caption || '');
+        setIsEditingCaption(true);
+        setShowMoreMenu(false);
+    };
+
+    const handleSaveCaption = () => {
+        onUpdateStory(activeStory.id, { caption: editedCaption });
+        setIsEditingCaption(false);
+    };
+
+    const handleDelete = () => {
+        if (confirm("Are you sure you want to delete this story?")) {
+            onDeleteStory(activeStory.id);
+            // Viewer will close via the main component logic
+        }
+    };
+
+    const renderMedia = () => {
+        switch (activeStory.type) {
+            case 'video':
+                return <video ref={videoRef} src={activeStory.url} className="w-full h-full object-cover" autoPlay muted playsInline />;
+            case 'audio':
+                return (
+                    <div className="w-full h-full relative">
+                        <img src={activeStory.url} className="w-full h-full object-cover blur-sm" />
+                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center p-8">
+                            <img src={activeStory.user.avatar} className="w-40 h-40 rounded-full mb-8 shadow-2xl border-4 border-white/50" />
+                            <div className="flex items-center gap-4 text-white">
+                                <MusicIcon className="w-6 h-6" />
+                                <p className="font-bold text-lg">Playing Audio</p>
+                            </div>
+                        </div>
+                        <audio ref={audioRef} src={activeStory.audioUrl} autoPlay playsInline />
+                    </div>
+                );
+            case 'image':
+            default:
+                return <img src={activeStory.url} className="w-full h-full object-cover" />;
+        }
+    };
 
     return (
-        <div className="fixed inset-0 z-[70] bg-black flex items-center justify-center">
-            {/* Story Container */}
+        <div 
+            className="fixed inset-0 z-[70] bg-black flex items-center justify-center"
+            onMouseDown={() => setIsPaused(true)}
+            onMouseUp={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
+        >
             <div className="relative w-full md:w-[400px] h-full md:h-[90vh] bg-gray-900 md:rounded-xl overflow-hidden">
-                {/* Progress Bars */}
                 <div className="absolute top-4 left-2 right-2 flex gap-1 z-20">
                     {stories.map((s, idx) => (
                         <div key={s.id} className="h-1 bg-white/30 flex-1 rounded-full overflow-hidden">
                              <div 
-                                className="h-full bg-white transition-all duration-100 ease-linear"
+                                className="h-full bg-white transition-all duration-[50ms] ease-linear"
                                 style={{ width: idx < activeIndex ? '100%' : idx === activeIndex ? `${progress}%` : '0%' }}
                              ></div>
                         </div>
                     ))}
                 </div>
 
-                {/* Header */}
                 <div className="absolute top-8 left-4 flex items-center gap-3 z-20">
                     <img src={activeStory.user.avatar} className="w-10 h-10 rounded-full border-2 border-white" />
                     <span className="text-white font-bold">{activeStory.user.name}</span>
                     <span className="text-white/70 text-sm">3h</span>
                 </div>
                 
-                <button onClick={onClose} className="absolute top-8 right-4 text-white z-20">
-                    <CloseIcon className="w-8 h-8" />
-                </button>
+                <div className="absolute top-8 right-4 flex items-center gap-2 z-20">
+                    {isCurrentUserStory && (
+                         <div className="relative">
+                            <button onClick={(e) => { e.stopPropagation(); setShowMoreMenu(!showMoreMenu); }} className="text-white">
+                                <MoreVerticalIcon className="w-8 h-8" />
+                            </button>
+                            {showMoreMenu && (
+                                <div className="absolute top-full right-0 bg-white dark:bg-gray-800 rounded-lg shadow-xl w-40 py-1" onClick={e => e.stopPropagation()}>
+                                    <button onClick={handleEditCaption} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Edit Caption</button>
+                                    <button onClick={handleDelete} className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">Delete Story</button>
+                                </div>
+                            )}
+                         </div>
+                    )}
+                    <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-white">
+                        <CloseIcon className="w-8 h-8" />
+                    </button>
+                </div>
 
-                {/* Image */}
-                <img src={activeStory.img} className="w-full h-full object-cover" />
+                {renderMedia()}
+                
+                {(activeStory.caption || isEditingCaption) && (
+                    <div className="absolute bottom-20 left-4 right-4 z-20 text-center">
+                        {isEditingCaption ? (
+                            <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                                <input 
+                                    value={editedCaption}
+                                    onChange={(e) => setEditedCaption(e.target.value)}
+                                    className="flex-1 bg-transparent border-b-2 border-white text-white text-center outline-none"
+                                    autoFocus
+                                />
+                                <button onClick={handleSaveCaption} className="text-white bg-blue-500 px-3 py-1 rounded-md text-sm">Save</button>
+                            </div>
+                        ) : (
+                            <span className="px-3 py-1.5 bg-black/50 text-white rounded-lg text-sm backdrop-blur-sm">
+                                {activeStory.caption}
+                            </span>
+                        )}
+                    </div>
+                )}
 
-                {/* Tap Areas */}
-                <div className="absolute inset-y-0 left-0 w-1/3 z-10" onClick={() => { if(activeIndex > 0) { setActiveIndex(activeIndex - 1); setProgress(0); } }}></div>
-                <div className="absolute inset-y-0 right-0 w-1/3 z-10" onClick={() => { if(activeIndex < stories.length - 1) { setActiveIndex(activeIndex + 1); setProgress(0); } else onClose(); }}></div>
+                <div className="absolute inset-y-0 left-0 w-1/3 z-10" onClick={(e) => { e.stopPropagation(); if(activeIndex > 0) setActiveIndex(activeIndex - 1); }}></div>
+                <div className="absolute inset-y-0 right-0 w-1/3 z-10" onClick={(e) => { e.stopPropagation(); if(activeIndex < stories.length - 1) setActiveIndex(activeIndex + 1); else onClose(); }}></div>
 
-                {/* Reply */}
-                <div className="absolute bottom-4 left-4 right-4 z-20">
+                <div className="absolute bottom-4 left-4 right-4 z-20" onClick={e => e.stopPropagation()}>
                      <input type="text" placeholder="Send message" className="w-full bg-transparent border border-white/50 rounded-full px-4 py-3 text-white placeholder-white/70 outline-none focus:border-white" />
                 </div>
             </div>
@@ -761,7 +908,7 @@ const CreatePost = ({ user, onPost, onViewProfile, communities }: { user: User, 
 
                     <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800">
                         <div className="flex gap-4">
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleImageChange} />
                             <button onClick={() => fileInputRef.current?.click()} className="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 p-2 rounded-full transition"><CameraIcon className="w-5 h-5" /></button>
                             <button onClick={() => setShowProductPicker(true)} className="text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 p-2 rounded-full transition"><TagIcon className="w-5 h-5" /></button>
                             
@@ -867,7 +1014,7 @@ const PostCard = ({
             </div>
 
             {/* Media */}
-            {post.image && (
+            {post.type === 'image' && post.image && (
                 <div className="ml-12 mb-3 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 relative group cursor-pointer">
                     <img src={post.image} className="w-full h-auto max-h-[500px] object-cover" />
                     {post.taggedProductId && (
@@ -878,6 +1025,26 @@ const PostCard = ({
                     )}
                 </div>
             )}
+            
+            {post.type === 'video' && post.videoUrl && (
+                 <div className="ml-12 mb-3 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800">
+                    <video src={post.videoUrl} className="w-full h-auto max-h-[500px] object-cover bg-black" controls muted playsInline />
+                </div>
+            )}
+
+            {post.type === 'document' && post.documentUrl && (
+                <a href={post.documentUrl} download={post.documentName} className="ml-12 mb-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center gap-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <DocumentIcon className="w-10 h-10 text-blue-500 flex-shrink-0" />
+                    <div className="flex-1 overflow-hidden">
+                        <p className="font-bold text-sm dark:text-white truncate">{post.documentName}</p>
+                        <p className="text-xs text-gray-500">{post.documentSize}</p>
+                    </div>
+                    <div className="p-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                        <DownloadIcon className="w-5 h-5" />
+                    </div>
+                </a>
+            )}
+
 
             {/* Actions */}
             <div className="ml-12 flex justify-between items-center pr-4">
@@ -895,16 +1062,16 @@ const PostCard = ({
                     <span>{formatCompactNumber(post.commentsList?.length || post.comments)}</span>
                 </button>
 
-                <button className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-green-500 group">
+                <button onClick={() => onShareClick(post)} className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-green-500 group">
                      <div className="p-2 rounded-full group-hover:bg-green-50 dark:group-hover:bg-green-900/20 transition">
-                        <RepeatIcon className="w-5 h-5" />
+                        <ShareIcon className="w-5 h-5" />
                     </div>
                     <span>{formatCompactNumber(post.shares)}</span>
                 </button>
 
-                <button onClick={() => onShareClick(post)} className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-blue-500 group">
-                    <div className="p-2 rounded-full group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition">
-                        <ShareIcon className="w-5 h-5" />
+                <button className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-indigo-500 group">
+                    <div className="p-2 rounded-full group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/20 transition">
+                        <BookmarkIcon className="w-5 h-5" />
                     </div>
                 </button>
             </div>
@@ -916,7 +1083,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
     posts, currentUser, onPostCreate, onViewProfile, communities = [], onJoinCommunity, onCreateCommunity, onAddComment, onDeleteCommunity, onUpdateCommunity, onRemoveMember 
 }) => {
   const [activeTab, setActiveTab] = useState<'For You' | 'Following' | 'Communities'>('For You');
-  const [stories, setStories] = useState<Story[]>(generateMockStories(currentUser, SUGGESTED_USERS));
+  const [stories, setStories] = useState<Story[]>(MOCK_STORIES);
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null);
   const storyInputRef = useRef<HTMLInputElement>(null);
   
@@ -948,6 +1115,16 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const activePostForComments = useMemo(() => 
      posts.find(p => p.id === activePostIdForComments) || null
   , [posts, activePostIdForComments]);
+
+  const handleDeleteStory = (storyId: string) => {
+    setStories(prev => prev.filter(s => s.id !== storyId));
+    setViewingStoryIndex(null); // Close viewer
+  };
+
+  const handleUpdateStory = (storyId: string, updates: Partial<Story>) => {
+    setStories(prev => prev.map(s => s.id === storyId ? {...s, ...updates} : s));
+  };
+
 
   // Combined Search Results Logic
   const searchResults = useMemo(() => {
@@ -1022,11 +1199,17 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
   const handleStoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+          const fileUrl = URL.createObjectURL(file);
+          const fileType = file.type.startsWith('video') ? 'video' : (file.type.startsWith('audio') ? 'audio' : 'image');
+          
           const newStory: Story = {
               id: `s_${Date.now()}`,
               user: currentUser,
-              img: URL.createObjectURL(file),
-              isViewed: false
+              url: fileType === 'audio' ? currentUser.avatar : fileUrl,
+              audioUrl: fileType === 'audio' ? fileUrl : undefined,
+              isViewed: false,
+              type: fileType,
+              duration: file.type.startsWith('video') ? 10 : (file.type.startsWith('audio') ? 15 : 5)
           };
           setStories(prev => [prev[0], newStory, ...prev.slice(1)]);
       }
@@ -1234,6 +1417,9 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                 stories={stories} 
                 initialIndex={viewingStoryIndex} 
                 onClose={() => setViewingStoryIndex(null)} 
+                currentUser={currentUser}
+                onDeleteStory={handleDeleteStory}
+                onUpdateStory={handleUpdateStory}
             />
         )}
         
@@ -1345,7 +1531,7 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                         {/* Stories Tray - Only on 'For You' or 'Following' */}
                         {activeTab !== 'Communities' && (
                             <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex gap-4 overflow-x-auto no-scrollbar">
-                                <input type="file" ref={storyInputRef} className="hidden" accept="image/*" onChange={handleStoryUpload} />
+                                <input type="file" ref={storyInputRef} className="hidden" accept="image/*,video/*,audio/*" onChange={handleStoryUpload} />
                                 {/* Create Story */}
                                 <div onClick={() => storyInputRef.current?.click()} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
                                     <div className="relative w-16 h-16">
@@ -1358,10 +1544,10 @@ export const SocialFeed: React.FC<SocialFeedProps> = ({
                                 </div>
 
                                 {/* Other Stories */}
-                                {stories.slice(1).map((story, idx) => (
-                                    <div key={story.id} onClick={() => setViewingStoryIndex(idx + 1)} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer">
+                                {stories.map((story, idx) => (
+                                    <div key={story.id} onClick={() => setViewingStoryIndex(idx)} className="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer">
                                         <div className={`w-16 h-16 rounded-full p-[2px] ${story.isViewed ? 'bg-gray-300 dark:bg-gray-700' : 'bg-gradient-to-tr from-yellow-400 to-fuchsia-600'}`}>
-                                            <img src={story.img} className="w-full h-full rounded-full border-2 border-white dark:border-black object-cover" />
+                                            <img src={story.url} className="w-full h-full rounded-full border-2 border-white dark:border-black object-cover" />
                                         </div>
                                         <span className="text-xs text-gray-700 dark:text-gray-300 truncate w-16 text-center">{story.user.name.split(' ')[0]}</span>
                                     </div>

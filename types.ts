@@ -1,5 +1,6 @@
 
 
+
 export enum ViewMode {
   FEED = 'FEED',
   WATCH = 'WATCH',
@@ -129,8 +130,9 @@ export interface Post {
 export interface Story {
   id: string;
   user: User;
-  type: 'image' | 'video';
-  url: string;
+  type: 'image' | 'video' | 'audio';
+  url: string; // for image or video
+  audioUrl?: string; // for audio stories
   caption?: string;
   isViewed?: boolean;
   duration?: number; // in seconds

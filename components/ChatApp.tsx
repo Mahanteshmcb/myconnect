@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, User, Message } from '../types';
 import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon, ShieldCheckIcon, MoreVerticalIcon } from './Icons';
@@ -84,24 +85,21 @@ const AudioPlayer = ({ src }: { src: string }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        if (!src) return;
-        
-        const audio = new Audio(src);
-        audioRef.current = audio;
+        const audio = audioRef.current;
+        if (!audio) return;
 
         const onLoadedMetadata = () => setDuration(audio.duration);
         const onTimeUpdate = () => {
             if (audio.duration) {
                 setProgress((audio.currentTime / audio.duration) * 100);
+                setCurrentTime(audio.currentTime);
             }
         };
-        const onEnded = () => {
-            setIsPlaying(false);
-            setProgress(0);
-        };
+        const onEnded = () => setIsPlaying(false);
         const onError = (e: Event) => {
             console.error("Audio playback error:", e);
             setIsPlaying(false);
@@ -113,30 +111,29 @@ const AudioPlayer = ({ src }: { src: string }) => {
         audio.addEventListener('error', onError);
 
         return () => {
-            audio.pause();
             audio.removeEventListener('loadedmetadata', onLoadedMetadata);
             audio.removeEventListener('timeupdate', onTimeUpdate);
             audio.removeEventListener('ended', onEnded);
             audio.removeEventListener('error', onError);
-            audioRef.current = null;
         };
     }, [src]);
 
-    const togglePlay = () => {
-        if (!audioRef.current) return;
+    const togglePlay = async () => {
+        const audio = audioRef.current;
+        if (!audio) return;
         
         if (isPlaying) {
-            audioRef.current.pause();
+            audio.pause();
             setIsPlaying(false);
         } else {
-            const playPromise = audioRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => setIsPlaying(true))
-                    .catch(error => {
-                        console.error("Audio play failed:", error);
-                        setIsPlaying(false);
-                    });
+            try {
+                await audio.play();
+                setIsPlaying(true);
+            } catch (error) {
+                if ((error as DOMException).name !== 'AbortError') {
+                    console.error("Audio play failed:", error);
+                }
+                setIsPlaying(false);
             }
         }
     };
@@ -150,6 +147,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
 
     return (
         <div className="flex items-center gap-3 min-w-[240px] py-2 px-2 bg-gray-100 dark:bg-gray-700/50 rounded-xl backdrop-blur-sm">
+            <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
             <button 
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                 className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-md hover:bg-blue-600 transition flex-shrink-0"
@@ -168,7 +166,7 @@ const AudioPlayer = ({ src }: { src: string }) => {
                     ></div>
                 </div>
                 <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-300 font-mono font-bold">
-                    <span>{isPlaying && audioRef.current ? formatTime(audioRef.current.currentTime) : formatTime(0)}</span>
+                    <span>{formatTime(currentTime)}</span>
                     <span>{formatTime(duration || 0)}</span>
                 </div>
             </div>
