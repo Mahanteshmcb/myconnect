@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { LongFormVideo, User, Video, Comment } from '../types';
 import { SearchIcon, MenuIcon, BellIcon, BellRingIcon, ThumbsUpIcon, ThumbsDownIcon, ShareIcon, StreamHubLogo, MicrophoneIcon, CreateVideoIcon, SettingsIcon, UploadIcon, HomeIcon, HistoryIcon, LibraryIcon, CheckIcon, CloseIcon, QualityIcon, CCIcon, PlayCircleIcon, SignalIcon, AnalyticsIcon, EyeIcon, GlobeIcon, LockClosedIcon, DashboardIcon, DownloadIcon, ClockIcon, ReplyIcon, PlaylistIcon, MicActiveIcon, ToggleLeftIcon, CheckCircleIcon, MoreVerticalIcon, ListPlusIcon } from './Icons';
@@ -10,6 +9,7 @@ interface LongFormVideoProps {
   currentUser: User;
   onUpdateVideo: (video: LongFormVideo) => void;
   onViewProfile: (user?: User) => void;
+  initialVideo?: LongFormVideo | null;
 }
 
 // --- Share Video Modal ---
@@ -767,7 +767,7 @@ const VideoContextMenu = ({
     );
 };
 
-export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initialVideos, currentUser, onViewProfile }) => {
+export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initialVideos, currentUser, onViewProfile, onUpdateVideo, initialVideo }) => {
   const [videos, setVideos] = useState(initialVideos);
   const [currentView, setCurrentView] = useState<'HOME' | 'WATCH' | 'REELS' | 'CHANNEL' | 'LIBRARY' | 'LIVE' | 'ANALYTICS' | 'CREATE_REEL' | 'WATCH_LATER'>('HOME');
   const [selectedVideo, setSelectedVideo] = useState<LongFormVideo | null>(null);
@@ -778,11 +778,9 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
-  // Header State
   const [isListening, setIsListening] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Watch State
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isBellOn, setIsBellOn] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -792,40 +790,23 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
   const [comments, setComments] = useState<Comment[]>([]);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
-  // Library State
   const [history, setHistory] = useState<LongFormVideo[]>([]);
   const [watchLater, setWatchLater] = useState<LongFormVideo[]>([]);
   const [downloads, setDownloads] = useState<LongFormVideo[]>([]);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   
-  // Sharing & Menu
   const [sharingVideo, setSharingVideo] = useState<LongFormVideo | null>(null);
   const [activeMenuVideoId, setActiveMenuVideoId] = useState<string | null>(null);
 
-  // Local Subscriptions List (IDs)
   const [subscriptions, setSubscriptions] = useState<string[]>(currentUser.subscriptions || ['u2', 'u5']);
 
-  // Shorts/Reels State
   const [isReelsMuted, setIsReelsMuted] = useState(false);
-  // Reels video list - in real app this would be separate API but we filter videos
   const [reelsVideos, setReelsVideos] = useState<Video[]>(REELS_VIDEOS);
 
-  const filteredVideos = videos.filter(v => {
-      const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === 'All' || v.category === activeCategory;
-      const matchesType = activeType === 'all' || v.type === activeType;
-      
-      const videoType = v.type || 'video';
-      const effectiveMatchType = activeType === 'all' || videoType === activeType;
-
-      return matchesSearch && matchesCategory && effectiveMatchType;
-  });
-
   const handleVideoClick = (video: LongFormVideo) => {
-    // Add to history
     setHistory(prev => {
         const newHistory = [video, ...prev.filter(v => v.id !== video.id)];
-        return newHistory.slice(0, 50); // Keep last 50
+        return newHistory.slice(0, 50);
     });
 
     if (video.type === 'short') {
@@ -839,7 +820,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
         setIsDisliked(false);
         setDescriptionExpanded(false);
         
-        // Mock Comments with updated structure
         const mockComments: Comment[] = [
             { id: 'c1', author: { ...currentUser, name: "TechFan99" }, text: "Great content as always!", timestamp: "2 hours ago", replies: [] },
             { id: 'c2', author: { ...currentUser, name: "Sarah J." }, text: "Can you do a tutorial on the advanced features?", timestamp: "5 hours ago", replies: [] }
@@ -849,6 +829,29 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
         window.scrollTo(0, 0);
     }
   };
+  
+  useEffect(() => {
+    if (initialVideo) {
+      handleVideoClick(initialVideo);
+    } else {
+      if(currentView === 'WATCH' && selectedVideo) {
+        setCurrentView('HOME');
+        setSelectedVideo(null);
+      }
+    }
+  }, [initialVideo]);
+
+  const filteredVideos = videos.filter(v => {
+      const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || v.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = activeCategory === 'All' || v.category === activeCategory;
+      const matchesType = activeType === 'all' || v.type === activeType;
+      
+      const videoType = v.type || 'video';
+      const effectiveMatchType = activeType === 'all' || videoType === activeType;
+
+      return matchesSearch && matchesCategory && effectiveMatchType;
+  });
+
 
   const handleChannelClick = (user: User) => {
       setViewingChannel(user);
@@ -939,7 +942,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
   const startVoiceSearch = () => {
       setIsListening(true);
-      // Simulate listening
       setTimeout(() => {
           setSearchQuery("New Technology Trends");
           setIsListening(false);
@@ -957,7 +959,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                           <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition" />
                           <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">{video.duration}</span>
                           
-                          {/* Three Dot Context Menu Trigger (Bottom Right of Thumbnail) */}
                           <button 
                              onClick={(e) => { e.stopPropagation(); setActiveMenuVideoId(activeMenuVideoId === video.id ? null : video.id); }}
                              className="absolute bottom-1 left-1 p-1 bg-black/70 hover:bg-black/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
@@ -997,7 +998,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
           />
       ) : (
       <>
-      {/* INLINED HEADER TO FIX INPUT FOCUS ISSUE */}
       <div className="sticky top-0 z-20 bg-white dark:bg-[#0f0f0f] px-4 h-14 flex items-center justify-between border-b border-transparent dark:border-none">
           <div className="flex items-center gap-4">
               <button 
@@ -1078,7 +1078,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                       <div className="absolute top-12 right-0 w-80 bg-white dark:bg-[#282828] rounded-xl shadow-2xl border border-gray-100 dark:border-[#333] z-50 overflow-hidden">
                           <div className="p-3 border-b border-gray-100 dark:border-[#333] font-bold dark:text-white">Notifications</div>
                           <div className="max-h-80 overflow-y-auto">
-                              {/* Mock Notifications */}
                               {[1,2,3].map(i => (
                                   <div key={i} className="p-3 hover:bg-gray-50 dark:hover:bg-[#333] flex gap-3 cursor-pointer">
                                       <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
@@ -1111,7 +1110,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
       />
       
       <div className="flex flex-1 overflow-hidden">
-          {/* Collapsible Sidebar */}
           <div 
             className={`hidden md:flex flex-col px-3 hover:overflow-y-auto overflow-hidden sticky top-14 h-full pb-4 transition-all duration-300 ease-in-out border-r border-transparent dark:border-[#1f1f1f]
             ${isSidebarCollapsed ? 'w-20 items-center' : 'w-60'} 
@@ -1133,7 +1131,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
             
             {!isSidebarCollapsed && <div className="px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-300">Subscriptions</div>}
             
-            {/* Dynamic Subscription List */}
             {subscriptions.map(subId => {
                 const subUser = Object.values(MOCK_USERS).find(u => u.id === subId) || { id: subId, name: 'Unknown User', avatar: 'https://via.placeholder.com/30' } as User;
                 return (
@@ -1150,7 +1147,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
             })}
           </div>
 
-          {/* Main Content */}
           <div className="flex-1 overflow-y-auto bg-white dark:bg-[#0f0f0f]">
               {currentView === 'ANALYTICS' && <ChannelAnalytics currentUser={currentUser} />}
               
@@ -1276,7 +1272,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
               {currentView === 'WATCH' && selectedVideo && (
                   <div className="flex flex-col lg:flex-row max-w-[1750px] mx-auto w-full p-0 lg:p-6 gap-6">
-                        {/* Left Column: Video & Comments */}
                         <div className="flex-1">
                             <EnhancedVideoPlayer video={selectedVideo} autoPlay={true} />
                             
@@ -1369,7 +1364,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                     </span>
                                 </div>
 
-                                {/* Comment Section */}
                                 <div className="mt-6">
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{comments.length} Comments</h3>
                                     
@@ -1399,7 +1393,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                             </div>
                         </div>
 
-                        {/* Right Column: Recommendations */}
                         <div className="w-full lg:w-[400px] px-4 lg:px-0 flex flex-col gap-3 pb-20">
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="font-bold dark:text-white">Up Next</h3>
@@ -1433,7 +1426,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
 
               {currentView === 'HOME' && (
                   <div className="pb-20">
-                     {/* Format Filter Bar */}
                      <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-sm px-4 pt-3 flex gap-2 overflow-x-auto no-scrollbar">
                           {[
                               { id: 'all', label: 'All' },
@@ -1451,7 +1443,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                           ))}
                      </div>
 
-                     {/* Category Filter Chips */}
                      <div className="sticky top-12 z-10 bg-white/95 dark:bg-[#0f0f0f]/95 backdrop-blur-sm py-3 px-4 flex gap-3 overflow-x-auto no-scrollbar border-b border-transparent dark:border-[#3f3f3f]">
                           {['All', 'Technology', 'Nature', 'Travel', 'Art', 'Tech', 'Music', 'News'].map((tag, i) => (
                               <button 
@@ -1472,7 +1463,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                          <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-in-out" alt="" />
                                          <span className={`absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs font-bold px-1.5 py-0.5 rounded ${video.type === 'live' ? 'bg-red-600' : ''}`}>{video.duration}</span>
 
-                                         {/* Three Dot Context Menu Trigger */}
                                          <button 
                                             onClick={(e) => { e.stopPropagation(); setActiveMenuVideoId(activeMenuVideoId === video.id ? null : video.id); }}
                                             className="absolute bottom-1 left-1 p-1 bg-black/70 hover:bg-black/90 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1481,7 +1471,6 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                                          </button>
                                      </div>
 
-                                     {/* Context Menu Dropdown */}
                                      {activeMenuVideoId === video.id && (
                                          <VideoContextMenu 
                                              video={video}

@@ -129,6 +129,9 @@ export default function App() {
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [isReelsMuted, setIsReelsMuted] = useState(false);
 
+  const [initialVideo, setInitialVideo] = useState<LongFormVideo | null>(null);
+  const [initialProduct, setInitialProduct] = useState<Product | null>(null);
+
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -136,6 +139,15 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    if (activeTab !== ViewMode.CREATOR) {
+      setInitialVideo(null);
+    }
+    if (activeTab !== ViewMode.MARKET) {
+      setInitialProduct(null);
+    }
+  }, [activeTab]);
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
@@ -265,6 +277,24 @@ export default function App() {
   const handlePostReel = (video: Video) => {
       setReels([video, ...reels]);
       setActiveTab(ViewMode.WATCH);
+  };
+  
+  const handleWatchReel = (reel: Video) => {
+    setReels(prev => {
+        const others = prev.filter(r => r.id !== reel.id);
+        return [reel, ...others];
+    });
+    setActiveTab(ViewMode.WATCH);
+  };
+
+  const handleWatchVideo = (video: LongFormVideo) => {
+    setInitialVideo(video);
+    setActiveTab(ViewMode.CREATOR);
+  };
+
+  const handleViewProduct = (product: Product) => {
+    setInitialProduct(product);
+    setActiveTab(ViewMode.MARKET);
   };
 
   const handleCreateGroup = (name: string) => {
@@ -463,6 +493,7 @@ export default function App() {
             currentUser={currentUser}
             onUpdateVideo={handleUpdateVideo}
             onViewProfile={handleViewProfile} 
+            initialVideo={initialVideo}
           />
         );
       case ViewMode.PROFILE:
@@ -477,6 +508,9 @@ export default function App() {
              onUpdateUser={handleUpdateUser}
              onStartChat={handleStartChat}
              onOpenSettings={() => setIsSettingsOpen(true)}
+             onWatchReel={handleWatchReel}
+             onWatchVideo={handleWatchVideo}
+             onViewProduct={handleViewProduct}
           />
         );
       case ViewMode.NOTIFICATIONS:
@@ -493,7 +527,7 @@ export default function App() {
             />
         );
       case ViewMode.MARKET:
-        return <Marketplace />;
+        return <Marketplace initialProduct={initialProduct} />;
       default:
         return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} />;
     }
