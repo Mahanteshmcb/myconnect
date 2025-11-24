@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Product, Store, Order, User, PayoutDetails, OrderItem } from '../types';
 import { ShoppingBagIcon, StoreIcon, BoxIcon, TrendingUpIcon, ShieldCheckIcon, PlusIcon, SearchIcon, FilterIcon, CloseIcon, MagicIcon, CheckIcon, CreditCardIcon, TruckIcon, StarIcon, BackIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, SlidersIcon, WalletIcon, BankIcon, LockIcon, UsersIcon, HeartIcon, ShareIcon, PencilIcon, UploadIcon, ChartBarIcon, ClockIcon, MapIcon, VideoIcon } from './Icons';
@@ -7,6 +6,7 @@ import { generateProductDetails } from '../services/geminiService';
 
 // View Modes for Marketplace
 type MarketView = 'BROWSE' | 'PRODUCT' | 'STORE' | 'CART' | 'CHECKOUT' | 'SELLER_DASHBOARD' | 'ADD_PRODUCT' | 'ORDERS';
+type DashboardTab = 'DASHBOARD' | 'PRODUCTS' | 'ORDERS';
 
 const PromoCarousel = ({ onBannerClick }: { onBannerClick: (category: string) => void }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -500,6 +500,7 @@ export const Marketplace = ({ initialProduct }: { initialProduct?: Product | nul
   const gridRef = useRef<HTMLDivElement>(null);
 
   const [myStore, setMyStore] = useState<Store | undefined>(stores.find(s => s.sellerId === CURRENT_USER.id));
+  const [dashboardTab, setDashboardTab] = useState<DashboardTab>('DASHBOARD');
 
   const [newProduct, setNewProduct] = useState<Partial<Product>>({ title: '', price: '', description: '' });
   const [mediaPreviews, setMediaPreviews] = useState<Array<{url: string, type: 'image' | 'video'}>>([]);
@@ -893,71 +894,9 @@ export const Marketplace = ({ initialProduct }: { initialProduct?: Product | nul
       );
   };
 
-  const renderStore = () => {
-      if (!selectedStore) return null;
-      const storeProducts = products.filter(p => p.sellerId === selectedStore.sellerId);
-
-      return (
-          <div className="pb-32 animate-slide-up">
-              <div className="h-64 md:h-80 w-full relative group">
-                  <img src={selectedStore.banner} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <button onClick={() => setView('BROWSE')} className="absolute top-6 left-6 flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-4 py-2 rounded-full hover:bg-black/50 transition">
-                      <BackIcon className="w-5 h-5" /> Back
-                  </button>
-              </div>
-
-              <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-20 relative z-10">
-                  <div className="flex flex-col md:flex-row items-end md:items-center gap-6 mb-8">
-                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2rem] border-4 border-white dark:border-[#0f0f0f] shadow-2xl overflow-hidden bg-white">
-                          <img src={selectedStore.logo} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 mb-2 text-white md:text-gray-900 md:dark:text-white">
-                          <h1 className="text-3xl md:text-4xl font-black flex items-center gap-2 drop-shadow-md md:drop-shadow-none">
-                              {selectedStore.name} {selectedStore.isVerified && <CheckIcon className="w-7 h-7 text-blue-500 bg-white rounded-full" />}
-                          </h1>
-                          <div className="flex flex-wrap gap-4 mt-2 text-sm font-medium opacity-90">
-                              <span className="flex items-center gap-1"><UsersIcon className="w-4 h-4" /> {selectedStore.followers} Followers</span>
-                              <span className="flex items-center gap-1"><StarIcon className="w-4 h-4 text-yellow-400" filled /> {selectedStore.rating} Rating</span>
-                              <span className="flex items-center gap-1"><BoxIcon className="w-4 h-4" /> {storeProducts.length} Products</span>
-                          </div>
-                      </div>
-                      <div className="flex gap-3 w-full md:w-auto mb-2">
-                          <button className="flex-1 md:flex-none px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg hover:shadow-blue-500/30 active:scale-95">Follow Store</button>
-                          <button className="p-3 bg-gray-100 dark:bg-[#222] rounded-xl hover:bg-gray-200 dark:hover:bg-[#333] transition dark:text-white"><ShareIcon className="w-5 h-5" /></button>
-                      </div>
-                  </div>
-
-                  <div className="bg-gray-50 dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-100 dark:border-[#333] mb-10">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-2">About Store</h3>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{selectedStore.description}</p>
-                  </div>
-
-                  <h2 className="text-2xl font-black dark:text-white mb-6 flex items-center gap-2">Latest Arrivals <span className="text-sm font-medium text-gray-500 bg-gray-100 dark:bg-[#252525] px-3 py-1 rounded-full">{storeProducts.length}</span></h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                      {storeProducts.map(p => (
-                          <div key={p.id} onClick={() => { setSelectedProduct(p); setView('PRODUCT'); }} className="bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#333] rounded-3xl overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                              <div className="aspect-square relative overflow-hidden bg-gray-100 dark:bg-[#222]">
-                                  <img src={p.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                  <button className="absolute bottom-3 right-3 p-2.5 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0">
-                                      <PlusIcon className="w-5 h-5 dark:text-white" />
-                                  </button>
-                              </div>
-                              <div className="p-4">
-                                  <h3 className="font-bold text-sm dark:text-white truncate mb-1">{p.title}</h3>
-                                  <div className="font-extrabold text-blue-600 text-lg">{p.price}</div>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-              </div>
-          </div>
-      );
-  };
-
   const renderCart = () => (
       <div className="pb-48 md:pb-32 px-4 md:px-8 pt-6 max-w-5xl mx-auto animate-fade-in">
-          <button onClick={() => setView('BROWSE')} className="mb-8 flex items-center gap-2 text-gray-500 font-bold text-sm group"><div className="p-2 bg-gray-100 dark:bg-[#252525] rounded-full group-hover:bg-gray-200 transition"><BackIcon className="w-4 h-4" /></div> Back to Cart</button>
+          <button onClick={() => setView('BROWSE')} className="mb-8 flex items-center gap-2 text-gray-500 font-bold text-sm group"><div className="p-2 bg-gray-100 dark:bg-[#252525] rounded-full group-hover:bg-gray-200 transition"><BackIcon className="w-4 h-4" /></div> Back to Shopping</button>
           <h1 className="text-4xl font-black dark:text-white mb-8 flex items-center gap-3">
               Shopping Cart <span className="text-lg font-medium text-gray-500 bg-gray-100 dark:bg-[#252525] px-3 py-1 rounded-full">{cart.length} items</span>
           </h1>
@@ -982,9 +921,278 @@ export const Marketplace = ({ initialProduct }: { initialProduct?: Product | nul
                               <div className="flex-1 flex flex-col justify-between py-1">
                                   <div>
                                       <div className="flex justify-between items-start">
-// FIX: The Marketplace component was not returning a JSX element.
-// I have added a return statement to conditionally render views based on the `view` state.
-return (
+                                        <div>
+                                            <p className="text-xs text-gray-400 font-bold uppercase">{item.category}</p>
+                                            <h3 className="font-bold dark:text-white group-hover:text-blue-500 transition">{item.title}</h3>
+                                        </div>
+                                        <button onClick={() => setCart(cart.filter((_, i) => i !== idx))} className="p-2 -mr-2 text-gray-400 hover:text-red-500"><TrashIcon className="w-4 h-4" /></button>
+                                      </div>
+                                  </div>
+                                  <div className="flex justify-between items-end">
+                                      <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#252525] rounded-full font-bold">
+                                          <button className="px-3 py-1">-</button>
+                                          <span className="px-2 text-sm">1</span>
+                                          <button className="px-3 py-1">+</button>
+                                      </div>
+                                      <span className="text-xl font-black dark:text-white">{item.price}</span>
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+                  <div className="w-full lg:w-80">
+                    <div className="bg-gray-50 dark:bg-[#1a1a1a] p-6 rounded-[2rem] border border-gray-100 dark:border-[#333] sticky top-24">
+                        <h3 className="font-bold text-xl dark:text-white mb-6">Order Summary</h3>
+                        <div className="space-y-3 text-sm mb-6">
+                            <div className="flex justify-between text-gray-600 dark:text-gray-300"><span>Subtotal</span> <span className="font-medium dark:text-white">${cartTotal.toFixed(2)}</span></div>
+                            <div className="flex justify-between text-gray-600 dark:text-gray-300"><span>Shipping</span> <span className="font-medium dark:text-white">$5.00</span></div>
+                            <div className="flex justify-between text-gray-600 dark:text-gray-300"><span>Taxes</span> <span className="font-medium dark:text-white">${(cartTotal * 0.08).toFixed(2)}</span></div>
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-[#333] pt-4">
+                            <div className="flex justify-between font-bold dark:text-white text-lg"><span>Total</span> <span>${(cartTotal + 5 + (cartTotal * 0.08)).toFixed(2)}</span></div>
+                        </div>
+                        <button onClick={() => setView('CHECKOUT')} className="w-full mt-6 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg active:scale-95">Proceed to Checkout</button>
+                    </div>
+                  </div>
+              </div>
+          )}
+      </div>
+  );
+
+  const renderCheckout = () => (
+      <div className="pb-32 px-4 md:px-8 pt-6 max-w-4xl mx-auto animate-fade-in">
+            <button onClick={() => setView('CART')} className="mb-8 flex items-center gap-2 text-gray-500 font-bold text-sm group"><div className="p-2 bg-gray-100 dark:bg-[#252525] rounded-full group-hover:bg-gray-200 transition"><BackIcon className="w-4 h-4" /></div> Back to Cart</button>
+            <h1 className="text-4xl font-black dark:text-white mb-8">Checkout</h1>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Shipping */}
+                    <div className="bg-white dark:bg-[#1f1f1f] p-6 rounded-2xl border border-gray-100 dark:border-[#333]">
+                        <h3 className="font-bold text-lg dark:text-white mb-4">Shipping Address</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <input placeholder="First Name" className="p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                            <input placeholder="Last Name" className="p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                            <input placeholder="Address" className="col-span-2 p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                            <input placeholder="City" className="p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                            <input placeholder="Zip Code" className="p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                        </div>
+                    </div>
+
+                    {/* Payment */}
+                    <div className="bg-white dark:bg-[#1f1f1f] p-6 rounded-2xl border border-gray-100 dark:border-[#333]">
+                        <h3 className="font-bold text-lg dark:text-white mb-4">Payment Method</h3>
+                        <div className="space-y-3">
+                            <div className="p-4 border border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center gap-3">
+                                <div className="w-4 h-4 rounded-full border-2 border-blue-500 p-0.5"><div className="w-full h-full bg-blue-500 rounded-full"></div></div>
+                                <CreditCardIcon className="w-6 h-6 text-blue-500" />
+                                <span className="font-bold dark:text-white">Credit Card</span>
+                            </div>
+                             <input placeholder="Card Number" className="w-full p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                             <div className="flex gap-4">
+                                <input placeholder="MM / YY" className="flex-1 p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                                <input placeholder="CVC" className="flex-1 p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="sticky top-24">
+                     <div className="bg-gray-50 dark:bg-[#1a1a1a] p-6 rounded-[2rem] border border-gray-100 dark:border-[#333]">
+                        <h3 className="font-bold text-xl dark:text-white mb-6">Order Summary</h3>
+                        {cart.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-sm mb-2 text-gray-600 dark:text-gray-300">
+                                <span className="truncate pr-4">{item.title}</span>
+                                <span className="font-medium dark:text-white">${item.rawPrice?.toFixed(2)}</span>
+                            </div>
+                        ))}
+                        <div className="border-t border-gray-200 dark:border-[#333] mt-4 pt-4">
+                            <div className="flex justify-between font-bold dark:text-white text-lg"><span>Total</span> <span>${(cartTotal + 5 + (cartTotal * 0.08)).toFixed(2)}</span></div>
+                        </div>
+                        <button onClick={() => { alert('Order placed!'); setCart([]); setView('BROWSE'); }} className="w-full mt-6 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition shadow-lg active:scale-95">Place Order</button>
+                    </div>
+                </div>
+            </div>
+      </div>
+  );
+
+  const renderSellerDashboard = () => {
+      if (!myStore) return <p>Loading store...</p>;
+      const myProducts = products.filter(p => p.sellerId === myStore.sellerId);
+      const myOrders = MOCK_ORDERS;
+
+      return (
+         <div className="p-4 md:p-8 animate-fade-in pb-20">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-start mb-8">
+                <div>
+                    <h1 className="text-3xl font-black dark:text-white">Seller Dashboard</h1>
+                    <p className="text-gray-500 flex items-center gap-2 mt-1">{myStore.name} <CheckIcon className="w-4 h-4 text-blue-500" /></p>
+                </div>
+                <button onClick={() => setView('ADD_PRODUCT')} className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:opacity-80 transition shadow-lg">
+                    <PlusIcon className="w-4 h-4" /> Add New Product
+                </button>
+            </div>
+
+            <div className="border-b border-gray-200 dark:border-[#333] mb-8 flex gap-6">
+                {(['DASHBOARD', 'PRODUCTS', 'ORDERS'] as DashboardTab[]).map(tab => (
+                    <button 
+                        key={tab}
+                        onClick={() => setDashboardTab(tab)}
+                        className={`py-3 font-bold text-sm uppercase tracking-wide border-b-2 transition ${dashboardTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
+
+            {dashboardTab === 'DASHBOARD' && (
+                <>
+                    <SellerWallet store={myStore} onUpdate={(s) => setMyStore(s)} />
+                    <SellerAnalytics />
+                </>
+            )}
+            {dashboardTab === 'PRODUCTS' && (
+                <div className="space-y-3">
+                    {myProducts.map(p => (
+                        <div key={p.id} className="flex items-center gap-4 bg-white dark:bg-[#1f1f1f] p-3 rounded-xl border border-gray-100 dark:border-[#333]">
+                            <img src={p.image} className="w-16 h-16 rounded-lg object-cover" />
+                            <div className="flex-1">
+                                <h4 className="font-bold dark:text-white">{p.title}</h4>
+                                <p className="text-sm text-blue-500 font-bold">{p.price}</p>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                                <p><strong>Stock:</strong> {p.stock}</p>
+                                <p><strong>Sales:</strong> {Math.floor(Math.random() * 100)}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button className="p-2 bg-gray-100 dark:bg-[#2f2f2f] rounded-lg"><PencilIcon className="w-4 h-4" /></button>
+                                <button className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {dashboardTab === 'ORDERS' && (
+                 <div className="space-y-4">
+                    {myOrders.map(o => <OrderTracking key={o.id} order={o} />)}
+                 </div>
+            )}
+         </div>
+      );
+  };
+  
+  const renderAddProduct = () => (
+       <div className="p-4 md:p-8 max-w-4xl mx-auto pb-20">
+            <button onClick={() => setView('SELLER_DASHBOARD')} className="mb-8 flex items-center gap-2 text-gray-500 font-bold text-sm group"><div className="p-2 bg-gray-100 dark:bg-[#252525] rounded-full group-hover:bg-gray-200 transition"><BackIcon className="w-4 h-4" /></div> Back to Dashboard</button>
+            <h1 className="text-3xl font-black dark:text-white mb-8">Add a New Product</h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                    <div>
+                        <label className="font-bold text-sm dark:text-gray-300 mb-2 block">Product Title</label>
+                        <div className="flex gap-2">
+                             <input value={newProduct.title} onChange={e => setNewProduct({...newProduct, title: e.target.value})} className="flex-1 p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                             <button onClick={handleMagicFill} disabled={isGeneratingAI} className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-300 disabled:opacity-50">
+                                <MagicIcon className={`w-5 h-5 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                             </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="font-bold text-sm dark:text-gray-300 mb-2 block">Description</label>
+                        <textarea value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} rows={5} className="w-full p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white resize-none" />
+                    </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                             <label className="font-bold text-sm dark:text-gray-300 mb-2 block">Price ($)</label>
+                             <input value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} type="text" className="w-full p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                        </div>
+                        <div>
+                             <label className="font-bold text-sm dark:text-gray-300 mb-2 block">Stock</label>
+                             <input value={newProduct.stock || ''} onChange={e => setNewProduct({...newProduct, stock: Number(e.target.value)})} type="number" className="w-full p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white" />
+                        </div>
+                    </div>
+                     <div>
+                         <label className="font-bold text-sm dark:text-gray-300 mb-2 block">Category</label>
+                         <select value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} className="w-full p-3 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg outline-none dark:text-white">
+                             <option>Electronics</option>
+                             <option>Fashion</option>
+                             <option>Home</option>
+                         </select>
+                    </div>
+                </div>
+                <div>
+                     <label className="font-bold text-sm dark:text-gray-300 mb-2 block">Media (Images/Videos)</label>
+                     <input type="file" ref={fileInputRef} multiple className="hidden" onChange={handleFileSelect} />
+                     <div onClick={() => fileInputRef.current?.click()} className="w-full h-40 bg-gray-50 dark:bg-[#2f2f2f] rounded-lg border-2 border-dashed border-gray-300 dark:border-[#444] flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition mb-4">
+                         <UploadIcon className="w-8 h-8 text-gray-400 mb-2" />
+                         <p className="text-sm text-gray-500">Click to upload</p>
+                     </div>
+                     <div className="grid grid-cols-4 gap-2">
+                        {mediaPreviews.map((media, i) => (
+                            <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
+                                <img src={media.url} className="w-full h-full object-cover" />
+                                {media.type === 'video' && <VideoIcon className="absolute bottom-1 left-1 w-4 h-4 text-white" />}
+                                <button onClick={() => removeMedia(i)} className="absolute top-1 right-1 p-0.5 bg-black/50 text-white rounded-full"><CloseIcon className="w-3 h-3" /></button>
+                            </div>
+                        ))}
+                     </div>
+                </div>
+            </div>
+            <div className="mt-8 flex justify-end">
+                <button onClick={() => { alert('Product Listed!'); setView('SELLER_DASHBOARD'); }} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition">List Product</button>
+            </div>
+       </div>
+  );
+// FIX: Add renderStore function definition
+  const renderStore = () => {
+    if (!selectedStore) return null;
+
+    const storeProducts = products.filter(p => p.sellerId === selectedStore.sellerId);
+
+    return (
+      <div className="animate-fade-in pb-20">
+        <button onClick={() => setView('BROWSE')} className="m-4 md:m-8 flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition font-bold text-sm group">
+            <div className="p-2 bg-gray-100 dark:bg-[#252525] rounded-full group-hover:bg-gray-200 dark:hover:bg-[#333] transition"><BackIcon className="w-4 h-4" /></div> Back
+        </button>
+
+        <div className="h-48 md:h-64 bg-gray-200 dark:bg-gray-800 relative">
+          <img src={selectedStore.banner} className="w-full h-full object-cover" alt={`${selectedStore.name} banner`} />
+        </div>
+        
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
+            <div className="flex flex-col md:flex-row items-start gap-6 -mt-16">
+                <img src={selectedStore.logo} className="w-32 h-32 rounded-2xl border-4 border-white dark:border-[#0f0f0f] shadow-lg" alt={`${selectedStore.name} logo`} />
+                <div className="flex-1 mt-4 md:mt-16">
+                    <div className="flex flex-col md:flex-row justify-between items-start">
+                        <div>
+                            <h1 className="text-3xl font-black dark:text-white flex items-center gap-2">{selectedStore.name} {selectedStore.isVerified && <CheckIcon className="w-6 h-6 text-blue-500" />}</h1>
+                            <p className="text-gray-500 mt-1">{selectedStore.followers} followers • {selectedStore.rating} ★ rating</p>
+                        </div>
+                        <button className="mt-4 md:mt-0 bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-blue-700 transition">Follow</button>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-4 max-w-2xl">{selectedStore.description}</p>
+                </div>
+            </div>
+
+            <h2 className="text-2xl font-bold dark:text-white mt-12 mb-6">Products from {selectedStore.name}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {storeProducts.map(product => (
+                    <div key={product.id} onClick={() => { setSelectedProduct(product); setView('PRODUCT'); }} className="bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#333] rounded-3xl overflow-hidden cursor-pointer group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                        <div className="aspect-square relative overflow-hidden bg-gray-100 dark:bg-[#222]">
+                            <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                        </div>
+                        <div className="p-4">
+                            <h3 className="font-bold text-gray-900 dark:text-white truncate text-sm mb-1">{product.title}</h3>
+                            <span className="font-black text-lg dark:text-white">{product.price}</span>
+                        </div>
+                    </div>
+                ))}
+                {storeProducts.length === 0 && <p className="text-gray-500 col-span-full text-center py-10">This store has no products yet.</p>}
+            </div>
+        </div>
+      </div>
+    );
+  };
+  return (
     <div className="h-full bg-white dark:bg-[#0f0f0f] flex flex-col">
       {renderHeader()}
       <div className="flex-1 overflow-y-auto">
@@ -992,29 +1200,13 @@ return (
         {view === 'PRODUCT' && renderProductDetails()}
         {view === 'STORE' && renderStore()}
         {view === 'CART' && renderCart()}
-        {/* The following render functions are defined in the file but were not being called */}
-        {view === 'CHECKOUT' && (
-             <div className="p-8">
-                 <h1 className="text-2xl font-bold">Checkout</h1>
-                 <p>This is a placeholder for the checkout process.</p>
-                 <p>Total: ${cartTotal}</p>
-             </div>
-         )}
-         {view === 'SELLER_DASHBOARD' && myStore && (
-             <div className="p-8">
-                <SellerWallet store={myStore} onUpdate={(s) => setMyStore(s)} />
-                <SellerAnalytics />
-             </div>
-         )}
-        {view === 'ADD_PRODUCT' && (
-             <div className="p-8">
-                 <h1 className="text-2xl font-bold">Add Product</h1>
-                 <p>This is a placeholder for the add product form.</p>
-             </div>
-         )}
-         {view === 'ORDERS' && (
-             <div className="p-8">
-                 <h1 className="text-2xl font-bold">My Orders</h1>
+        {view === 'CHECKOUT' && renderCheckout()}
+        {view === 'SELLER_DASHBOARD' && renderSellerDashboard()}
+        {view === 'ADD_PRODUCT' && renderAddProduct()}
+        {view === 'ORDERS' && (
+             <div className="p-4 md:p-8 max-w-4xl mx-auto pb-20">
+                 <button onClick={() => setView('SELLER_DASHBOARD')} className="mb-8 flex items-center gap-2 text-gray-500 font-bold text-sm group"><div className="p-2 bg-gray-100 dark:bg-[#252525] rounded-full group-hover:bg-gray-200 transition"><BackIcon className="w-4 h-4" /></div> Back to Dashboard</button>
+                 <h1 className="text-3xl font-black dark:text-white mb-8">Your Orders</h1>
                  {orders.map(order => <OrderTracking key={order.id} order={order} />)}
              </div>
          )}

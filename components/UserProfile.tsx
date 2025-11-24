@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { User, Post, Video, LongFormVideo, Product } from '../types';
-// FIX: Imported HeartIcon and CommentIcon to resolve errors.
 import { GridIcon, TagIcon, PlayCircleIcon, SettingsIcon, CameraIcon, BackIcon, CloseIcon, CheckIcon, TwitterIcon, LinkedInIcon, GitHubIcon, SendIcon, LinkIcon, MapIcon, FilmIcon, ShoppingBagIcon, PencilIcon, HeartIcon, CommentIcon } from './Icons';
 import { REELS_VIDEOS } from '../services/mockData';
 import { getFollowersForUser, getFollowingForUser } from '../services/mockData';
@@ -198,6 +197,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                         <p className="text-gray-500">@{user.handle}</p>
                     </div>
                      <div className="flex gap-2">
+                        {user.twitter && <a href={user.twitter} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><TwitterIcon className="w-5 h-5" /></a>}
+                        {user.linkedin && <a href={user.linkedin} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><LinkedInIcon className="w-5 h-5" /></a>}
+                        {user.github && <a href={user.github} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><GitHubIcon className="w-5 h-5" /></a>}
                         {isCurrentUser ? (
                             <button onClick={onOpenSettings} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                                 <SettingsIcon className="w-5 h-5" />
@@ -214,26 +216,26 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
                 {isCurrentUser ? (
                     isEditingStatus ? (
-                        <div className="mt-2 flex items-center gap-2">
+                        <div className="mt-2 flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <input
                                 type="text"
                                 value={statusText}
                                 onChange={(e) => setStatusText(e.target.value)}
-                                className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-1 text-sm outline-none focus:ring-1 ring-blue-500"
+                                className="flex-1 bg-transparent dark:bg-gray-800 rounded-lg px-2 py-1 text-sm outline-none focus:ring-1 ring-blue-500"
                                 placeholder="Set a status..."
                                 autoFocus
                             />
-                            <button onClick={handleStatusSave} className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg">Save</button>
-                            <button onClick={() => setIsEditingStatus(false)} className="text-xs text-gray-500">Cancel</button>
+                            <button onClick={handleStatusSave} className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">Save</button>
+                            <button onClick={() => setIsEditingStatus(false)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
                         </div>
                     ) : (
-                        <div onClick={() => setIsEditingStatus(true)} className="mt-2 text-sm text-gray-500 italic flex items-center gap-2 cursor-pointer p-2 -ml-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
-                             <PencilIcon className="w-4 h-4" /> 
+                        <div onClick={() => setIsEditingStatus(true)} className="mt-2 text-sm text-gray-500 italic flex items-center gap-2 cursor-pointer p-2 -ml-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 group">
+                             <span className="opacity-50 group-hover:opacity-100 transition"><PencilIcon className="w-4 h-4" /> </span>
                              <span>{user.statusMessage || 'Set a status...'}</span>
                         </div>
                     )
                 ) : user.statusMessage && (
-                     <div className="mt-2 text-sm text-gray-500 italic bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
+                     <div className="mt-2 text-sm text-gray-500 italic bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                          "{user.statusMessage}"
                      </div>
                 )}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, User, Message } from '../types';
 import { SendIcon, PlusIcon, MenuIcon, ChatIcon, SearchIcon, PaperClipIcon, CameraIcon, CheckIcon, UsersIcon, MicrophoneIcon, CloseIcon, BackIcon, ClockIcon, LockIcon, DocumentIcon, PhoneIcon, InfoIcon, VideoIcon, UserPlusIcon, UserMinusIcon, ExitIcon, PlayCircleIcon, DownloadIcon, PhoneOffIcon, VideoOffIcon, MicOffIcon, MicActiveIcon, ReplyIcon, TrashIcon, CopyIcon, PencilIcon, LinkIcon, UploadIcon, ShieldCheckIcon, MoreVerticalIcon } from './Icons';
@@ -213,13 +212,13 @@ const CallOverlay = ({
     };
 
     return (
-        <div className="absolute inset-0 z-[100] bg-[#1a1a1a] flex flex-col items-center text-white animate-fade-in">
-            <div className="flex-1 flex flex-col items-center justify-center w-full relative">
-                {/* Background Effect */}
-                <div className="absolute inset-0 overflow-hidden opacity-30 blur-3xl">
-                    <img src={user.avatar} className="w-full h-full object-cover" />
-                </div>
+        <div className="absolute inset-0 z-[100] bg-[#1a1a1a] flex flex-col items-center text-white animate-fade-in overflow-hidden">
+            <div className="absolute inset-0 opacity-30">
+                <img src={user.avatar} className="w-full h-full object-cover blur-3xl scale-125" />
+                <div className="absolute inset-0 bg-black/50"></div>
+            </div>
 
+            <div className="flex-1 flex flex-col items-center justify-center w-full relative">
                 {/* User Info */}
                 <div className="flex flex-col items-center z-10 relative">
                     <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl mb-6 relative">
@@ -234,10 +233,10 @@ const CallOverlay = ({
             </div>
 
             {/* Controls */}
-            <div className="w-full bg-[#222] p-8 rounded-t-[3rem] flex items-center justify-center gap-8 shadow-2xl z-20 border-t border-[#333]">
+            <div className="w-full bg-black/30 backdrop-blur-xl p-8 rounded-t-[3rem] flex items-center justify-center gap-8 shadow-2xl z-20 border-t border-white/10">
                 <button 
                     onClick={() => setIsMuted(!isMuted)}
-                    className={`p-4 rounded-full transition transform active:scale-95 ${isMuted ? 'bg-white text-black' : 'bg-[#333] text-white hover:bg-[#444]'}`}
+                    className={`p-4 rounded-full transition transform active:scale-95 ${isMuted ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}
                 >
                     {isMuted ? <MicOffIcon className="w-7 h-7" /> : <MicrophoneIcon className="w-7 h-7" />}
                 </button>
@@ -252,11 +251,12 @@ const CallOverlay = ({
                 {type === 'video' && (
                     <button 
                         onClick={() => setIsVideoOff(!isVideoOff)}
-                        className={`p-4 rounded-full transition transform active:scale-95 ${isVideoOff ? 'bg-white text-black' : 'bg-[#333] text-white hover:bg-[#444]'}`}
+                        className={`p-4 rounded-full transition transform active:scale-95 ${isVideoOff ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}
                     >
                         {isVideoOff ? <VideoOffIcon className="w-7 h-7" /> : <VideoIcon className="w-7 h-7" />}
                     </button>
                 )}
+                 {type === 'audio' && <div className="w-[68px]"></div>}
             </div>
         </div>
     );
