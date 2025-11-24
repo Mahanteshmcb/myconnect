@@ -32,10 +32,12 @@ export const CURRENT_USER: User = {
   phoneNumber: '+15550123456',
   email: 'hello@alexrivera.dev',
   password: 'password123',
-  twitter: 'https://twitter.com/alexrivera',
-  github: 'https://github.com/alexrivera',
-  linkedin: 'https://linkedin.com/in/alexrivera',
-  savedPostIds: [],
+  socialLinks: [
+    { type: 'twitter', url: 'https://twitter.com/alexrivera' },
+    { type: 'github', url: 'https://github.com/alexrivera' },
+    { type: 'linkedin', url: 'https://linkedin.com/in/alexrivera' },
+  ],
+  savedPostIds: ['p1', 'p3'],
   isPrivateMode: false,
   
   // New Profile Fields - Set to Trigger Onboarding

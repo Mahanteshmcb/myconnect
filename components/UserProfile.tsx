@@ -71,6 +71,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const followers = getFollowersForUser(user.id);
   const following = getFollowingForUser(user.id);
 
+  // FIX: Access social links from the socialLinks array.
+  const twitterUrl = user.socialLinks?.find(link => link.type === 'twitter')?.url;
+  const linkedinUrl = user.socialLinks?.find(link => link.type === 'linkedin')?.url;
+  const githubUrl = user.socialLinks?.find(link => link.type === 'github')?.url;
+
   const userPosts = posts.filter(p => p.author.id === user.id);
   const userVideos = longFormVideos.filter(v => v.author.id === user.id);
   const userReels: Video[] = REELS_VIDEOS.filter(v => v.author.id === user.id);
@@ -197,9 +202,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                         <p className="text-gray-500">@{user.handle}</p>
                     </div>
                      <div className="flex gap-2">
-                        {user.twitter && <a href={user.twitter} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><TwitterIcon className="w-5 h-5" /></a>}
-                        {user.linkedin && <a href={user.linkedin} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><LinkedInIcon className="w-5 h-5" /></a>}
-                        {user.github && <a href={user.github} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><GitHubIcon className="w-5 h-5" /></a>}
+                        {twitterUrl && <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><TwitterIcon className="w-5 h-5" /></a>}
+                        {linkedinUrl && <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><LinkedInIcon className="w-5 h-5" /></a>}
+                        {githubUrl && <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><GitHubIcon className="w-5 h-5" /></a>}
                         {isCurrentUser ? (
                             <button onClick={onOpenSettings} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                                 <SettingsIcon className="w-5 h-5" />

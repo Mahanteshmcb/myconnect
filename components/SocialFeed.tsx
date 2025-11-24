@@ -18,6 +18,10 @@ export interface SocialFeedProps {
   onUpdateCommunity?: (id: string, updates: Partial<Community>) => void;
   onRemoveMember?: (communityId: string, userId: string) => void;
   onUpdateUser?: (user: User) => void;
+  // FIX: Add missing props to the interface.
+  onToggleSavePost: (postId: string) => void;
+  onUpdatePost: (post: Post) => void;
+  onDeletePost: (postId: string) => void;
 }
 
 // --- Story Viewer Logic ---

@@ -1,4 +1,7 @@
 
+
+
+
 import React, { useState, useEffect } from 'react';
 import { ViewMode, Post, ChatSession, Message, LongFormVideo, User, Video, Notification, Community, Comment, Product } from './types';
 import { SocialFeed } from './components/SocialFeed';
@@ -205,8 +208,7 @@ export default function App() {
     }
   };
 
-  // FIX: Update function signature to match what is passed from the SocialFeed component.
-  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video' | 'text', communityId?: string, productId?: string) => {
+  const handleCreatePost = (content: string, media?: string, type?: 'image' | 'video' | 'text' | 'audio', communityId?: string, productId?: string) => {
     const mediaType: Post['type'] = type || 'text';
     let postData: Partial<Post> = {};
 
@@ -215,6 +217,8 @@ export default function App() {
             postData = { image: media };
         } else if (mediaType === 'video') {
             postData = { videoUrl: media };
+        } else if (mediaType === 'audio') {
+            postData = { audioUrl: media };
         }
     }
 
@@ -516,11 +520,8 @@ export default function App() {
                 onDeleteCommunity={handleDeleteCommunity}
                 onUpdateCommunity={handleUpdateCommunity}
                 onRemoveMember={handleRemoveMember}
-                // @ts-ignore
                 onToggleSavePost={handleToggleSavePost}
-                // @ts-ignore
                 onUpdatePost={handleUpdatePost}
-                // @ts-ignore
                 onDeletePost={handleDeletePost}
             />
         );
@@ -600,7 +601,7 @@ export default function App() {
       case ViewMode.MARKET:
         return <Marketplace initialProduct={initialProduct} />;
       default:
-        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} onToggleSavePost={handleToggleSavePost} onUpdatePost={handleUpdatePost} onDeletePost={handleDeletePost} />;
+        return <SocialFeed posts={posts} currentUser={currentUser} onPostCreate={handleCreatePost} onAddComment={handleAddComment} onViewProfile={handleViewProfile} onUpdateUser={handleUpdateUser} communities={communities} onJoinCommunity={handleJoinCommunity} onCreateCommunity={handleCreateCommunity} onDeleteCommunity={handleDeleteCommunity} onUpdateCommunity={handleUpdateCommunity} onRemoveMember={handleRemoveMember} onToggleSavePost={handleToggleSavePost} onUpdatePost={handleUpdatePost} onDeletePost={handleDeletePost} />;
     }
   };
 

@@ -65,9 +65,7 @@ export interface User {
   isPrivateMode?: boolean;
 
   // Social Links
-  twitter?: string;
-  linkedin?: string;
-  github?: string;
+  socialLinks?: { type: 'twitter' | 'linkedin' | 'github' | 'website' | string; url: string }[];
   
   // Preferences
   themePreference?: 'light' | 'dark' | 'system';
