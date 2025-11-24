@@ -726,7 +726,7 @@ const EnhancedVideoPlayer = ({ video, autoPlay, onEnded }: { video: LongFormVide
 };
 
 // --- Recursive Comment Component ---
-const VideoComment = ({ comment, onReply, currentUser }: { comment: Comment, onReply: (id: string, text: string) => void, currentUser: User }) => {
+const VideoComment = ({ comment, onReply, currentUser, depth = 0 }: { comment: Comment, onReply: (id: string, text: string) => void, currentUser: User, depth?: number }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyText, setReplyText] = useState('');
 
@@ -737,52 +737,69 @@ const VideoComment = ({ comment, onReply, currentUser }: { comment: Comment, onR
         setIsReplying(false);
     };
 
+    // Adjust avatar size based on nesting depth
+    const avatarSize = depth > 0 ? 'w-8 h-8' : 'w-10 h-10';
+
     return (
-        <div className="flex gap-4 group">
-            <img src={comment.author.avatar} className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0" alt={comment.author.name} />
-            <div className="flex-1">
+        <div className={`flex gap-4 group ${depth > 0 ? 'mt-3' : ''}`}>
+            <img 
+                src={comment.author.avatar} 
+                className={`${avatarSize} rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 object-cover`} 
+                alt={comment.author.name} 
+            />
+            <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                    <span className="font-bold text-sm text-gray-900 dark:text-white cursor-pointer hover:underline">{comment.author.name}</span>
-                    <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                    <span className={`font-bold ${depth > 0 ? 'text-xs' : 'text-sm'} text-gray-900 dark:text-white cursor-pointer hover:underline`}>{comment.author.name}</span>
+                    <span className="text-[10px] text-gray-500">{comment.timestamp}</span>
                 </div>
                 <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{comment.text}</p>
+                
                 <div className="flex items-center gap-4 mt-2">
-                    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
+                    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white transition">
                         <ThumbsUpIcon className="w-3.5 h-3.5" />
                         {comment.likes && <span className="text-xs">{comment.likes}</span>}
                     </button>
-                    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white">
+                    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-800 dark:hover:text-white transition">
                         <ThumbsDownIcon className="w-3.5 h-3.5" />
-                        {comment.dislikes && <span className="text-xs">{comment.dislikes}</span>}
                     </button>
                     <button 
                         onClick={() => setIsReplying(!isReplying)} 
-                        className="text-xs font-bold text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+                        className="text-xs font-bold text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 uppercase tracking-wide"
                     >
                         Reply
                     </button>
                 </div>
 
                 {isReplying && (
-                    <div className="mt-2 flex gap-2">
-                        <img src={currentUser.avatar} className="w-8 h-8 rounded-full" alt="Your avatar" />
-                        <input 
-                            className="bg-gray-100 dark:bg-[#272727] text-sm p-2 rounded w-full dark:text-white outline-none focus:border-blue-500 border border-transparent"
-                            placeholder="Add a reply..."
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            autoFocus
-                        />
-                        <button onClick={handleReplySubmit} className="bg-blue-600 text-white px-3 rounded text-xs font-bold">Reply</button>
-                        <button onClick={() => setIsReplying(false)} className="text-gray-500 text-xs hover:text-gray-700">Cancel</button>
+                    <div className="mt-3 flex gap-3 animate-fade-in">
+                        <img src={currentUser.avatar} className="w-6 h-6 rounded-full object-cover" alt="Your avatar" />
+                        <div className="flex-1">
+                            <input 
+                                className="bg-gray-100 dark:bg-[#272727] text-sm p-2 rounded-b-none rounded-t-lg w-full dark:text-white outline-none focus:border-b-2 border-blue-500 transition-colors placeholder-gray-500"
+                                placeholder={`Reply to ${comment.author.name}...`}
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                autoFocus
+                            />
+                            <div className="flex justify-end gap-2 mt-2">
+                                <button onClick={() => setIsReplying(false)} className="text-gray-500 text-xs hover:text-gray-700 font-bold px-3 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#333]">Cancel</button>
+                                <button onClick={handleReplySubmit} disabled={!replyText.trim()} className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold hover:bg-blue-700 disabled:opacity-50 transition">Reply</button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
                 {/* Nested Replies */}
                 {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-3 space-y-3 ml-8 pl-4 border-l-2 border-gray-200 dark:border-gray-800">
+                    <div className="relative ml-2 pl-6 border-l-2 border-gray-100 dark:border-[#333] space-y-1">
                         {comment.replies.map(reply => (
-                            <VideoComment key={reply.id} comment={reply} onReply={onReply} currentUser={currentUser} />
+                            <VideoComment 
+                                key={reply.id} 
+                                comment={reply} 
+                                onReply={onReply} 
+                                currentUser={currentUser} 
+                                depth={depth + 1} 
+                            />
                         ))}
                     </div>
                 )}
@@ -1342,7 +1359,7 @@ export const LongFormVideoApp: React.FC<LongFormVideoProps> = ({ videos: initial
                       )}
                   </div>
               )}
-              {currentView === 'REELS' && <VideoReels videos={reelsVideos} currentUser={currentUser} isMuted={isReelsMuted} toggleMute={() => setIsReelsMuted(!isReelsMuted)} onViewProfile={onViewProfile} onCreateReel={() => setCurrentView('CREATE_REEL')} />}
+              {currentView === 'REELS' && <VideoReels videos={reelsVideos} currentUser={currentUser} isMuted={isReelsMuted} toggleMute={() => setIsReelsMuted(!isReelsMuted)} onViewProfile={onViewProfile} onCreateReel={() => setCurrentView('CREATE_REEL')} onSubscribe={(id) => handleSubscribe()} />} 
               {currentView === 'CHANNEL' && viewingChannel && <ChannelPage user={viewingChannel} videos={videos} onVideoClick={handleVideoClick} currentUser={currentUser} />}
               {currentView === 'WATCH_LATER' && 
                 <div>

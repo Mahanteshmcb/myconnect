@@ -205,6 +205,13 @@ const CommentSheet = ({
     onViewProfile: (user: User) => void;
 }) => {
     const [text, setText] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isOpen && inputRef.current) {
+            setTimeout(() => inputRef.current?.focus(), 100);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -273,6 +280,7 @@ const CommentSheet = ({
                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 ring-1 ring-transparent focus-within:ring-blue-500/50 transition-all">
                         <img src={CURRENT_USER.avatar} className="w-7 h-7 rounded-full object-cover flex-shrink-0" alt="Me" />
                         <input 
+                            ref={inputRef}
                             type="text" 
                             value={text}
                             onChange={(e) => setText(e.target.value)}
@@ -481,9 +489,13 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, currentUser, isM
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const displayVideos = activeTab === 'following' 
-    ? videos.filter(v => currentUser.followingIds?.includes(v.author.id)) 
-    : videos;
+  // Filter videos based on active tab
+  const displayVideos = React.useMemo(() => {
+      if (activeTab === 'following') {
+          return videos.filter(v => currentUser.followingIds?.includes(v.author.id));
+      }
+      return videos; // 'for_you' shows all or algorithmic feed
+  }, [videos, activeTab, currentUser.followingIds]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -509,7 +521,7 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, currentUser, isM
         elements.forEach((el) => observer.unobserve(el as Element));
       }
     };
-  }, [displayVideos]);
+  }, [displayVideos]); // Dependencies updated to re-observe when list changes
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-y-auto snap-y snap-mandatory scroll-smooth no-scrollbar">
@@ -549,7 +561,7 @@ export const VideoReels: React.FC<VideoReelsProps> = ({ videos, currentUser, isM
           />
         </div>
       )) : (
-          <div className="h-full w-full flex items-center justify-center text-white flex-col gap-4">
+          <div className="h-full w-full flex items-center justify-center text-white flex-col gap-4 bg-black">
               <p>No videos in your Following feed yet.</p>
               <button onClick={() => setActiveTab('for_you')} className="bg-white text-black px-4 py-2 rounded-full font-bold">Go to For You</button>
           </div>
