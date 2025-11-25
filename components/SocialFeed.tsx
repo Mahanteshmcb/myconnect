@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Post, User, Comment, Community, Product, Story, PollElement, QuizElement, MentionElement } from '../types';
 import { HeartIcon, CommentIcon, ShareIcon, SearchIcon, PlusIcon, CloseIcon, CameraIcon, BookmarkIcon, ChartBarIcon, FilmIcon, UsersIcon, CheckIcon, SettingsIcon, SendIcon, TrashIcon, HomeIcon, PencilIcon, LinkIcon, TagIcon, ShoppingBagIcon, MoreVerticalIcon, DocumentIcon, DownloadIcon, PlayCircleIcon, VolumeUpIcon, MusicIcon } from './Icons';
@@ -20,7 +18,6 @@ export interface SocialFeedProps {
   onUpdateCommunity?: (id: string, updates: Partial<Community>) => void;
   onRemoveMember?: (communityId: string, userId: string) => void;
   onUpdateUser?: (user: User) => void;
-  // FIX: Add missing props to the interface.
   onToggleSavePost: (postId: string) => void;
   onUpdatePost: (post: Post) => void;
   onDeletePost: (postId: string) => void;
@@ -166,7 +163,8 @@ const StoryViewer = ({
     
     // --- Interactive Element Components ---
 
-    const PollComponent = ({ poll }: { poll: PollElement }) => {
+    // FIX: Change component to React.FC to properly handle key props
+    const PollComponent: React.FC<{ poll: PollElement }> = ({ poll }) => {
         const response = storyResponses[interactiveElementKey];
         const totalVotes = poll.options.reduce((sum, opt) => sum + opt.votes, 0);
 
@@ -209,7 +207,8 @@ const StoryViewer = ({
         );
     }
     
-    const QuizComponent = ({ quiz }: { quiz: QuizElement }) => {
+    // FIX: Change component to React.FC to properly handle key props
+    const QuizComponent: React.FC<{ quiz: QuizElement }> = ({ quiz }) => {
         const response = storyResponses[interactiveElementKey];
 
         const handleAnswer = (optionId: string) => {
@@ -259,7 +258,8 @@ const StoryViewer = ({
         );
     };
 
-    const MentionComponent = ({ mention }: { mention: MentionElement }) => {
+    // FIX: Change component to React.FC to properly handle key props
+    const MentionComponent: React.FC<{ mention: MentionElement }> = ({ mention }) => {
         const handleMentionClick = (e: React.MouseEvent) => {
             e.stopPropagation();
             const user = getUserByHandle(mention.userHandle);
@@ -1112,15 +1112,8 @@ const CreatePost = ({ user, onPost, onViewProfile, communities }: { user: User, 
 }
 
 // --- Post Card Component ---
-const PostCard = ({ 
-    post, 
-    currentUser, 
-    onViewProfile, 
-    onCommentClick, 
-    onHashtagClick, 
-    onMentionClick,
-    onShareClick
-}: { 
+// FIX: Create interface for PostCard props and change component to React.FC
+interface PostCardProps { 
     post: Post, 
     currentUser: User, 
     onViewProfile: (u: User) => void, 
@@ -1128,6 +1121,16 @@ const PostCard = ({
     onHashtagClick: (tag: string) => void, 
     onMentionClick: (handle: string) => void,
     onShareClick: (p: Post) => void
+}
+
+const PostCard: React.FC<PostCardProps> = ({ 
+    post, 
+    currentUser, 
+    onViewProfile, 
+    onCommentClick, 
+    onHashtagClick, 
+    onMentionClick,
+    onShareClick
 }) => {
     const [liked, setLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(post.likes);

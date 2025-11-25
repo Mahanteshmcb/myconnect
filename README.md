@@ -10,15 +10,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/1gg2Br3UlGqGdHOW0Y9Qksx
 
 ## Run Locally
 
-# Create a new project using Vite with React and TypeScript
-npm create vite@latest myconnectone -- --template react-ts
-
-# Navigate into the folder
-cd myconnectone
-
-# Install necessary dependencies
-npm install
-npm install @google/genai
 **Prerequisites:**  Node.js
 
 

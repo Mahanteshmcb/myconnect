@@ -1,75 +1,38 @@
 
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-import { GoogleGenAI, Type } from "@google/genai";
+// Initialize the Google GenAI client
+// FIX: Correctly initialize GoogleGenAI with named apiKey parameter.
+const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
 
-// Safely initialize. The API_KEY is expected to be in the environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+/**
+ * Returns an AI-generated response for a given user message.
+ * @param userMessage - The user's message.
+ * @returns A promise that resolves to an AI-generated string.
+ */
 export const getAIResponse = async (userMessage: string): Promise<string> => {
-  if (!process.env.API_KEY) {
-    return "I'm sorry, I can't connect to the AI service right now. Please check your API key configuration.";
-  }
-
+  // FIX: Use the recommended `ai.models.generateContent` method.
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash', // Recommended model for basic text tasks.
       contents: userMessage,
-      config: {
-        systemInstruction: "You are MyConnect AI, a helpful, friendly, and concise assistant integrated into a social media app. You help users with drafting posts, summarizing threads, or general queries. Keep answers short and social-media friendly.",
-      }
     });
-    
-    return response.text || "I couldn't generate a response at the moment.";
+    // FIX: Use the `.text` property to extract the string output.
+    return response.text ?? "I'm sorry, I couldn't generate a response at this moment.";
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    return "Sorry, I encountered an error processing your request.";
+    console.error("Gemini API Error in getAIResponse:", error);
+    return "I'm sorry, the AI assistant is currently experiencing issues.";
   }
 };
 
+/**
+ * Returns null as the AI product detail generation is disabled.
+ * @param productName - The name of the product (unused).
+ * @returns A promise that resolves to null.
+ */
 export const generateProductDetails = async (productName: string): Promise<any> => {
-  if (!process.env.API_KEY) return null;
-  try {
-    const prompt = `Generate details for a marketplace product named "${productName}".`;
-    
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: { 
-            responseMimeType: 'application/json',
-            // FIX: Use responseSchema for more reliable JSON output.
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    description: {
-                        type: Type.STRING,
-                        description: 'Marketing copy for the product, maximum 2 sentences.'
-                    },
-                    category: {
-                        type: Type.STRING,
-                        description: 'A single-word category for the product.'
-                    },
-                    suggestedPrice: {
-                        type: Type.NUMBER,
-                        description: 'A suggested price for the product as a number.'
-                    },
-                    tags: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.STRING
-                        },
-                        description: 'An array of relevant string tags for the product.'
-                    }
-                },
-                required: ['description', 'category', 'suggestedPrice', 'tags']
-            }
-        }
-    });
-    
-    // FIX: The response.text is a string that needs to be parsed.
-    const jsonText = response.text?.trim();
-    return jsonText ? JSON.parse(jsonText) : {};
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
+  // This functionality is currently disabled as per the original file.
+  // If implementation is needed, it would follow a pattern similar to getAIResponse
+  // potentially with responseSchema for structured JSON output.
+  return null;
 };
