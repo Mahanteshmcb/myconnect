@@ -490,7 +490,8 @@ const ChannelPage = ({
                         </tr>
                     ))}
                 </tbody>
-             {channelVideos.length === 0 && <p className="p-8 text-center text-gray-500">No content uploaded yet.</p>}
+            </table>
+            {channelVideos.length === 0 && <p className="p-8 text-center text-gray-500">No content uploaded yet.</p>}
         </div>
     );
 
