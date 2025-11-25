@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Product, Store, Order, User, PayoutDetails, OrderItem } from '../types';
-import { ShoppingBagIcon, StoreIcon, BoxIcon, TrendingUpIcon, ShieldCheckIcon, PlusIcon, SearchIcon, FilterIcon, CloseIcon, MagicIcon, CheckIcon, CreditCardIcon, TruckIcon, StarIcon, BackIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, SlidersIcon, WalletIcon, BankIcon, LockIcon, UsersIcon, HeartIcon, ShareIcon, PencilIcon, UploadIcon, ChartBarIcon, ClockIcon, MapIcon, VideoIcon } from './Icons';
+import { ShoppingBagIcon, StoreIcon, BoxIcon, TrendingUpIcon, ShieldCheckIcon, PlusIcon, SearchIcon, FilterIcon, CloseIcon, CheckIcon, CreditCardIcon, TruckIcon, StarIcon, BackIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, SlidersIcon, WalletIcon, BankIcon, LockIcon, UsersIcon, HeartIcon, ShareIcon, PencilIcon, UploadIcon, ChartBarIcon, ClockIcon, MapIcon, VideoIcon } from './Icons';
 import { MARKET_ITEMS, MOCK_STORES, MOCK_ORDERS, CURRENT_USER, MARKET_BANNERS } from '../services/mockData';
 
 // View Modes for Marketplace
