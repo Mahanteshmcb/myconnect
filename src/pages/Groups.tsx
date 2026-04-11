@@ -74,17 +74,17 @@ const Groups = () => {
     if (!user) return;
     setIsCreating(true);
     try {
-      const { data: groupData, error } = await supabase
-        .from("groups" as any)
-        .insert({ name: newGroup.name, description: newGroup.description, created_by: user.id } as any)
+      const { data: groupData, error } = await (supabase
+        .from("groups" as any) as any)
+        .insert({ name: newGroup.name, description: newGroup.description, created_by: user.id })
         .select()
         .single();
 
       if (error) throw error;
 
-      const { error: memberError } = await supabase
-        .from("group_members" as any)
-        .insert({ group_id: groupData.id, user_id: user.id, role: 'admin' } as any);
+      const { error: memberError } = await (supabase
+        .from("group_members" as any) as any)
+        .insert({ group_id: (groupData as any).id, user_id: user.id, role: 'admin' });
 
       if (memberError) throw memberError;
 
