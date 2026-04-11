@@ -51,8 +51,8 @@ const Echoes = () => {
       const ids = followingIds?.map(f => f.following_id) || [];
       ids.push(userId);
 
-      const { data, error } = await supabase
-        .from("echoes" as any)
+      const { data, error } = await (supabase
+        .from("echoes" as any) as any)
         .select(`
           *,
           profiles:user_id (username, avatar_url),
@@ -64,10 +64,10 @@ const Echoes = () => {
 
       if (error) throw error;
 
-      const formattedData = data.map(echo => ({
+      const formattedData = (data as any[]).map((echo: any) => ({
         ...echo,
         _count: {
-          echo_replies: echo.echo_replies.length
+          echo_replies: echo.echo_replies?.length || 0
         }
       }));
 

@@ -10,9 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Post {
   id: string;
-  content: string | null;
-  image_url: string | null;
-  video_url: string | null;
+  caption: string | null;
+  image_url: string;
   created_at: string;
   user_id: string;
   profiles: {
@@ -20,6 +19,7 @@ interface Post {
     avatar_url: string | null;
   };
   likes: { user_id: string }[];
+  comments: { id: string }[];
   _count?: {
     comments: number;
   };
@@ -106,7 +106,7 @@ const PostPage = () => {
           </div>
         ) : post ? (
           <div className="space-y-6">
-            <PostCard post={post} currentUser={user.id} onUpdate={fetchPost} />
+            <PostCard post={post} currentUser={user} onUpdate={fetchPost} />
             <CommentSection postId={post.id} currentUserId={user.id} />
           </div>
         ) : (
