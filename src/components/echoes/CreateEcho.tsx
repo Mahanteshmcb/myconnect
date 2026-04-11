@@ -30,10 +30,10 @@ const CreateEcho = ({ userId, onEchoCreated }: CreateEchoProps) => {
 
     setLoading(true);
     try {
-      const { data: echoData, error } = await supabase.from("echoes" as any).insert({
+      const { data: echoData, error } = await (supabase.from("echoes" as any) as any).insert({
         user_id: userId,
         content: content.trim(),
-      } as any).select('id').single();
+      }).select('id').single();
 
       if (error) throw error;
 
