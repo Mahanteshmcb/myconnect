@@ -5,7 +5,7 @@ import { User } from "@supabase/supabase-js";
 import Navigation from "@/components/Navigation";
 import ConversationList from "@/components/messages/ConversationList";
 import ConversationView from "@/components/messages/ConversationView";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 
 const Messages = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -16,22 +16,15 @@ const Messages = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
+      if (!session) { navigate("/auth"); return; }
       setUser(session.user);
       setLoading(false);
     };
-
     checkUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!session) navigate("/auth");
+      else setUser(session.user);
     });
 
     return () => subscription.unsubscribe();
@@ -48,25 +41,36 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation user={user} />
-
-      <main className="max-w-6xl mx-auto pt-20 pb-8 px-4 h-[calc(100vh-5rem)]">
-        <div className="h-full grid grid-cols-12 gap-4">
-          <div className="col-span-4 border-r border-border pr-4 overflow-y-auto">
+      <main className="max-w-6xl mx-auto pt-20 pb-8 md:pb-8 pb-20 px-4 h-[calc(100vh-5rem)]">
+        <div className="h-full flex gap-0 md:gap-4 rounded-2xl overflow-hidden border border-border/50 shadow-card bg-card">
+          {/* Conversation list - full width on mobile when no conversation selected */}
+          <div className={`${selectedConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r border-border/50`}>
             <ConversationList
               userId={user.id}
               selectedConversationId={selectedConversationId}
               onSelectConversation={setSelectedConversationId}
             />
           </div>
-          <div className="col-span-8">
+
+          {/* Conversation view - full width on mobile when conversation selected */}
+          <div className={`${selectedConversationId ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
             {selectedConversationId ? (
-              <ConversationView
-                conversationId={selectedConversationId}
-                userId={user.id}
-              />
+              <div className="flex flex-col h-full">
+                {/* Mobile back button */}
+                <button
+                  className="md:hidden flex items-center gap-2 p-3 text-sm text-primary font-medium border-b border-border/50"
+                  onClick={() => setSelectedConversationId(null)}
+                >
+                  ← Back to conversations
+                </button>
+                <div className="flex-1 overflow-hidden">
+                  <ConversationView conversationId={selectedConversationId} userId={user.id} />
+                </div>
+              </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
-                Select a conversation to start messaging
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+                <MessageSquare className="w-12 h-12 opacity-30" />
+                <p>Select a conversation to start messaging</p>
               </div>
             )}
           </div>
