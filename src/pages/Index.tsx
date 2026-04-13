@@ -14,6 +14,10 @@ const Index = () => {
     });
   }, [navigate]);
 
+  useEffect(() => {
+    document.title = "MyConnect - Share moments, connect with the world";
+  }, []);
+
   const features = [
     { icon: <Users className="w-6 h-6" />, title: "Connect", desc: "Follow friends and discover new people" },
     { icon: <Heart className="w-6 h-6" />, title: "Share", desc: "Post photos, stories, and moments" },
