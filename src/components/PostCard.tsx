@@ -15,8 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User } from "@supabase/supabase-js";
+import { motion } from "framer-motion";
 
-const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: User, onUpdate: () => void }) => {
+const PostCard = ({ post, currentUser, onUpdate }: { post: any; currentUser: User; onUpdate: () => void }) => {
   const [comment, setComment] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -32,7 +33,7 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: Use
       if (isLiked) {
         await supabase.from("likes").delete().eq("post_id", post.id).eq("user_id", currentUser.id);
         setIsLiked(false);
-        setLikesCount(prev => prev - 1);
+        setLikesCount((prev) => prev - 1);
       } else {
         await supabase.from("likes").insert({ post_id: post.id, user_id: currentUser.id });
         if (post.user_id !== currentUser.id) {
@@ -45,7 +46,7 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: Use
           });
         }
         setIsLiked(true);
-        setLikesCount(prev => prev + 1);
+        setLikesCount((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Error toggling like:", error);
@@ -56,11 +57,7 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: Use
     e.preventDefault();
     if (!comment.trim()) return;
     try {
-      await supabase.from("comments").insert({
-        post_id: post.id,
-        user_id: currentUser.id,
-        content: comment.trim(),
-      });
+      await supabase.from("comments").insert({ post_id: post.id, user_id: currentUser.id, content: comment.trim() });
       if (post.user_id !== currentUser.id) {
         await supabase.from("notifications").insert({
           user_id: post.user_id,
@@ -89,62 +86,84 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any, currentUser: Use
   };
 
   return (
-    <Card className="max-w-lg mx-auto">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <Link to={`/${post.profiles.username}`} className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={post.profiles.avatar_url} />
-              <AvatarFallback>{post.profiles.username[0].toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold">{post.profiles.username}</p>
-              <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
-            </div>
-          </Link>
-          {post.user_id === currentUser.id && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleDeletePost} className="text-destructive">Delete Post</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <Card className="max-w-lg mx-auto shadow-card border-border/50 overflow-hidden rounded-2xl">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <Link to={`/${post.profiles.username}`} className="flex items-center gap-3 group">
+              <Avatar className="ring-2 ring-border group-hover:ring-primary/50 transition-all">
+                <AvatarImage src={post.profiles.avatar_url} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {post.profiles.username[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-semibold text-sm group-hover:text-primary transition-colors">{post.profiles.username}</p>
+                <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
+              </div>
+            </Link>
+            {post.user_id === currentUser.id && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-xl">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleDeletePost} className="text-destructive">Delete Post</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </CardHeader>
+        <Link to={`/post/${post.id}`}>
+          <img src={post.image_url} alt={post.caption || "Post image"} className="w-full aspect-square object-cover" />
+        </Link>
+        <CardContent className="pt-4 pb-2">
+          <div className="flex items-center gap-2 mb-3">
+            <motion.button
+              whileTap={{ scale: 0.85 }}
+              onClick={handleLike}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors ${
+                isLiked ? "text-destructive bg-destructive/10" : "text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
+              {likesCount}
+            </motion.button>
+            <Link to={`/post/${post.id}`}>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors">
+                <MessageCircle className="w-5 h-5" />
+                {post.comments.length}
+              </div>
+            </Link>
+          </div>
+          {post.caption && (
+            <p className="text-sm">
+              <Link to={`/${post.profiles.username}`} className="font-semibold hover:text-primary transition-colors">{post.profiles.username}</Link>{" "}
+              {post.caption}
+            </p>
           )}
-        </div>
-      </CardHeader>
-      <Link to={`/post/${post.id}`}>
-        <img src={post.image_url} alt={post.caption || "Post image"} className="w-full aspect-square object-cover" />
-      </Link>
-      <CardContent className="pt-4 pb-2">
-        <div className="flex items-center gap-4 mb-3">
-          <Button variant="ghost" size="sm" className={isLiked ? "text-destructive" : ""} onClick={handleLike}>
-            <Heart className={`w-5 h-5 mr-1 ${isLiked ? "fill-current" : ""}`} /> {likesCount}
-          </Button>
-          <Link to={`/post/${post.id}`}>
-            <Button variant="ghost" size="sm">
-              <MessageCircle className="w-5 h-5 mr-1" /> {post.comments.length}
+          {post.comments.length > 0 && (
+            <Link to={`/post/${post.id}`} className="text-sm text-muted-foreground mt-2 block hover:text-foreground transition-colors">
+              View all {post.comments.length} comments
+            </Link>
+          )}
+        </CardContent>
+        <CardFooter className="pt-0">
+          <form onSubmit={handleComment} className="flex gap-2 w-full">
+            <Input placeholder="Add a comment..." value={comment} onChange={(e) => setComment(e.target.value)} className="rounded-xl bg-muted/30 border-border/50" />
+            <Button type="submit" size="icon" disabled={!comment.trim()} className="rounded-xl shrink-0">
+              <Send className="w-4 h-4" />
             </Button>
-          </Link>
-        </div>
-        <p className="text-sm">
-          <Link to={`/${post.profiles.username}`} className="font-semibold">{post.profiles.username}</Link>{" "}
-          {post.caption}
-        </p>
-        {post.comments.length > 0 && (
-          <Link to={`/post/${post.id}`} className="text-sm text-muted-foreground mt-2 block">
-            View all {post.comments.length} comments
-          </Link>
-        )}
-      </CardContent>
-      <CardFooter>
-        <form onSubmit={handleComment} className="flex gap-2 w-full">
-          <Input placeholder="Add a comment..." value={comment} onChange={(e) => setComment(e.target.value)} />
-          <Button type="submit" size="icon" disabled={!comment.trim()}><Send className="w-4 h-4" /></Button>
-        </form>
-      </CardFooter>
-    </Card>
+          </form>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 };
 

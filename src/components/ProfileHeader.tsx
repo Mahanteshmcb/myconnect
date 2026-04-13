@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, UserMinus, Settings, Link as LinkIcon } from "lucide-react";
+import { Loader2, UserPlus, UserMinus, Settings } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ProfileHeaderProps {
   profile: any;
@@ -26,7 +27,6 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
   const [editForm, setEditForm] = useState({
     full_name: profile.full_name || "",
     bio: profile.bio || "",
-    website: profile.website || "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -44,7 +44,6 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
       supabase.from("follows").select("*", { count: "exact" }).eq("follower_id", profile.id),
       supabase.from("posts").select("*", { count: "exact" }).eq("user_id", profile.id),
     ]);
-
     setFollowerCount(followersRes.count || 0);
     setFollowingCount(followingRes.count || 0);
     setPostCount(postsRes.count || 0);
@@ -57,7 +56,6 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
       .eq("follower_id", currentUserId)
       .eq("following_id", profile.id)
       .maybeSingle();
-
     setIsFollowing(!!data);
   };
 
@@ -65,25 +63,17 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
     setLoading(true);
     try {
       if (isFollowing) {
-        await supabase
-          .from("follows")
-          .delete()
-          .eq("follower_id", currentUserId)
-          .eq("following_id", profile.id);
+        await supabase.from("follows").delete().eq("follower_id", currentUserId).eq("following_id", profile.id);
         setIsFollowing(false);
         setFollowerCount((prev) => prev - 1);
       } else {
-        await supabase
-          .from("follows")
-          .insert({ follower_id: currentUserId, following_id: profile.id });
-
+        await supabase.from("follows").insert({ follower_id: currentUserId, following_id: profile.id });
         await supabase.from("notifications").insert({
           user_id: profile.id,
           type: "follow",
           content: "started following you",
           actor_id: currentUserId,
         });
-
         setIsFollowing(true);
         setFollowerCount((prev) => prev + 1);
       }
@@ -96,76 +86,24 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate bio length (500 chars max)
     if (editForm.bio.length > 500) {
-      toast({
-        title: "Bio too long",
-        description: "Bio must be less than 500 characters",
-        variant: "destructive",
-      });
+      toast({ title: "Bio too long", description: "Bio must be less than 500 characters", variant: "destructive" });
       return;
     }
-
-    // Validate full name length (100 chars max)
-    if (editForm.full_name.length > 100) {
-      toast({
-        title: "Name too long",
-        description: "Full name must be less than 100 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate website URL
-    if (editForm.website && !/^(https?:\/\/)/.test(editForm.website)) {
-      toast({
-        title: "Invalid URL",
-        description: "Website URL must start with http:// or https://",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate avatar file size (10MB max)
     if (avatarFile && avatarFile.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Maximum file size is 10MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate avatar file type
-    if (avatarFile && !avatarFile.type.startsWith("image/")) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select an image file",
-        variant: "destructive",
-      });
+      toast({ title: "File too large", description: "Maximum file size is 10MB", variant: "destructive" });
       return;
     }
 
     setLoading(true);
-
     try {
       let avatarUrl = profile.avatar_url;
-
       if (avatarFile) {
         const fileExt = avatarFile.name.split(".").pop();
         const fileName = `${currentUserId}/${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(fileName, avatarFile);
-
+        const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, avatarFile);
         if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(fileName);
-
+        const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(fileName);
         avatarUrl = publicUrl;
       }
 
@@ -174,159 +112,104 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
         .update({
           full_name: editForm.full_name.trim(),
           bio: editForm.bio.trim(),
-          website: editForm.website.trim(),
           avatar_url: avatarUrl,
         })
         .eq("id", currentUserId);
 
       if (error) throw error;
-
-      toast({
-        title: "Profile updated!",
-      });
-
+      toast({ title: "Profile updated!" });
       setEditOpen(false);
       onUpdate();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
+  const statItems = [
+    { label: "Posts", value: postCount },
+    { label: "Followers", value: followerCount },
+    { label: "Following", value: followingCount },
+  ];
+
   return (
-    <div className="mb-8">
-      <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
-        <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-elegant">
-          <AvatarImage src={profile.avatar_url} />
-          <AvatarFallback className="text-4xl bg-primary text-primary-foreground">
-            {profile.username[0].toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+    <motion.div
+      className="mb-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-6">
+        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+          <Avatar className="w-32 h-32 ring-4 ring-primary/20 shadow-elegant">
+            <AvatarImage src={profile.avatar_url} />
+            <AvatarFallback className="text-4xl bg-primary/10 text-primary font-bold">
+              {profile.username[0].toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </motion.div>
 
         <div className="flex-1 text-center md:text-left">
-          <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
+          <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
             <h1 className="text-2xl font-bold">{profile.username}</h1>
             {isOwnProfile ? (
               <Dialog open={editOpen} onOpenChange={setEditOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Edit Profile
+                  <Button variant="outline" size="sm" className="rounded-xl">
+                    <Settings className="w-4 h-4 mr-2" /> Edit Profile
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Edit Profile</DialogTitle>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
                   <form onSubmit={handleEditSubmit} className="space-y-4">
                     <div>
                       <Label htmlFor="avatar">Profile Picture</Label>
-                      <Input
-                        id="avatar"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
-                      />
+                      <Input id="avatar" type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
                     </div>
                     <div>
                       <Label htmlFor="full_name">Full Name</Label>
-                      <Input
-                        id="full_name"
-                        value={editForm.full_name}
-                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        value={editForm.website}
-                        onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                        placeholder="https://example.com"
-                      />
+                      <Input id="full_name" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
                     </div>
                     <div>
                       <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={editForm.bio}
-                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                        rows={4}
-                      />
+                      <Textarea id="bio" value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} rows={4} />
                     </div>
-                    <Button type="submit" disabled={loading} className="w-full gradient-primary shadow-glow">
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Changes"
-                      )}
+                    <Button type="submit" disabled={loading} className="w-full gradient-primary shadow-elegant">
+                      {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
                     </Button>
                   </form>
                 </DialogContent>
               </Dialog>
             ) : (
-              <Button
-                onClick={handleFollow}
-                disabled={loading}
-                className={
-                  isFollowing
-                    ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    : "gradient-primary shadow-glow"
-                }
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isFollowing ? (
-                  <>
-                    <UserMinus className="w-4 h-4 mr-2" />
-                    Unfollow
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Follow
-                  </>
-                )}
-              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={handleFollow}
+                  disabled={loading}
+                  className={isFollowing ? "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-xl" : "gradient-primary shadow-elegant rounded-xl"}
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isFollowing ? <><UserMinus className="w-4 h-4 mr-2" /> Unfollow</> : <><UserPlus className="w-4 h-4 mr-2" /> Follow</>}
+                </Button>
+              </motion.div>
             )}
           </div>
 
-          <div className="flex gap-6 mb-4 justify-center md:justify-start">
-            <div className="text-center">
-              <div className="font-bold text-lg">{postCount}</div>
-              <div className="text-sm text-muted-foreground">Posts</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">{followerCount}</div>
-              <div className="text-sm text-muted-foreground">Followers</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">{followingCount}</div>
-              <div className="text-sm text-muted-foreground">Following</div>
-            </div>
+          <div className="flex gap-8 mb-4 justify-center md:justify-start">
+            {statItems.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="font-bold text-xl">{stat.value}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</div>
+              </div>
+            ))}
           </div>
 
           <div>
-            <p className="font-semibold">{profile.full_name}</p>
-            {profile.bio && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>}
-            {profile.website && (
-              <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
-                <LinkIcon className="w-4 h-4" />
-                {profile.website.replace(/^(https?:\/\/)/, '')}
-              </a>
-            )}
+            {profile.full_name && <p className="font-semibold">{profile.full_name}</p>}
+            {profile.bio && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{profile.bio}</p>}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

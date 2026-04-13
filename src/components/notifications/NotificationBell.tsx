@@ -78,20 +78,20 @@ const NotificationBell = ({ userId }: NotificationBellProps) => {
     switch (notification.type) {
       case "like":
       case "comment":
-      case "post_mention": // New case for post mentions
-      case "comment_mention": // New case for comment mentions
-        return `/feed`; // Link to the feed for now, could be specific post later
-      case "video_caption_mention": // New case for video caption mentions
-      case "video_comment_mention": // New case for video comment mentions
-        return `/videos`; // Link to videos for now, could be specific video later
+      case "post_mention":
+      case "comment_mention":
+        return `/home`;
+      case "video_caption_mention":
+      case "video_comment_mention":
+        return `/videos`;
       case "follow":
-        return `/profile/${notification.actor?.username}`;
+        return notification.actor?.username ? `/${notification.actor.username}` : `/home`;
       case "message":
         return `/messages`;
       case "file":
-        return `/files`;
+        return `/messages`;
       default:
-        return "/feed";
+        return "/home";
     }
   };
 
