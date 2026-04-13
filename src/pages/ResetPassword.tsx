@@ -84,7 +84,7 @@ const ResetPassword = () => {
           <CardContent className="p-8">
             {success ? (
               <motion.div className="text-center py-4" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Password Reset!</h2>
                 <p className="text-muted-foreground">Redirecting you now...</p>
               </motion.div>
