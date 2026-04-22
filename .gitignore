@@ -48,3 +48,11 @@ UI_NAVIGATION_VERIFICATION.md
 
 # Auto-generated directories
 src/services/
+
+# Firebase configuration files
+.firebase/
+.firebaserc
+firebase-debug.log*
+.agents/
+.continue/
+skills-lock.json
