@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, UserMinus, Settings } from "lucide-react";
+import { Loader2, UserPlus, UserMinus, Settings, Ban, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ProfileHeaderProps {
@@ -19,6 +20,7 @@ interface ProfileHeaderProps {
 
 const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: ProfileHeaderProps) => {
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [postCount, setPostCount] = useState(0);
@@ -35,6 +37,7 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
     fetchStats();
     if (!isOwnProfile) {
       checkFollowStatus();
+      checkBlockStatus();
     }
   }, [profile.id, currentUserId]);
 
@@ -59,6 +62,16 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
     setIsFollowing(!!data);
   };
 
+  const checkBlockStatus = async () => {
+    const { data } = await supabase
+      .from("blocks")
+      .select("*")
+      .eq("blocker_id", currentUserId)
+      .eq("blocked_id", profile.id)
+      .maybeSingle();
+    setIsBlocking(!!data);
+  };
+
   const handleFollow = async () => {
     setLoading(true);
     try {
@@ -79,6 +92,32 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
       }
     } catch (error) {
       console.error("Error following/unfollowing:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    setLoading(true);
+    try {
+      if (isBlocking) {
+        await supabase.from("blocks").delete().eq("blocker_id", currentUserId).eq("blocked_id", profile.id);
+        setIsBlocking(false);
+        toast({ title: "User unblocked" });
+      } else {
+        await supabase.from("blocks").insert({ blocker_id: currentUserId, blocked_id: profile.id });
+        // Automatically unfollow when blocking
+        if (isFollowing) {
+          await supabase.from("follows").delete().eq("follower_id", currentUserId).eq("following_id", profile.id);
+          setIsFollowing(false);
+          setFollowerCount((prev) => prev - 1);
+        }
+        setIsBlocking(true);
+        toast({ title: "User blocked", description: "You won't see their posts or messages." });
+      }
+    } catch (error) {
+      console.error("Error blocking/unblocking:", error);
+      toast({ title: "Error", description: "Failed to block user", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -154,43 +193,63 @@ const ProfileHeader = ({ profile, isOwnProfile, currentUserId, onUpdate }: Profi
           <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
             <h1 className="text-2xl font-bold">{profile.username}</h1>
             {isOwnProfile ? (
-              <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-xl">
-                    <Settings className="w-4 h-4 mr-2" /> Edit Profile
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
-                  <form onSubmit={handleEditSubmit} className="space-y-4">
-                    <div>
-                      <Label htmlFor="avatar">Profile Picture</Label>
-                      <Input id="avatar" type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="full_name">Full Name</Label>
-                      <Input id="full_name" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} rows={4} />
-                    </div>
-                    <Button type="submit" disabled={loading} className="w-full gradient-primary shadow-elegant">
-                      {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
+              <div className="flex gap-2 flex-wrap justify-center md:justify-start">
+                <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="rounded-xl">
+                      <Settings className="w-4 h-4 mr-2" /> Edit Profile
                     </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="avatar">Profile Picture</Label>
+                        <Input id="avatar" type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="full_name">Full Name</Label>
+                        <Input id="full_name" value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label htmlFor="bio">Bio</Label>
+                        <Textarea id="bio" value={editForm.bio} onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })} rows={4} />
+                      </div>
+                      <Button type="submit" disabled={loading} className="w-full gradient-primary shadow-elegant">
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Link to={`/${profile.username}/analytics`}>
+                  <Button variant="outline" size="sm" className="rounded-xl">
+                    <BarChart3 className="w-4 h-4 mr-2" /> Analytics
+                  </Button>
+                </Link>
+              </div>
             ) : (
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  onClick={handleFollow}
-                  disabled={loading}
-                  className={isFollowing ? "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-xl" : "gradient-primary shadow-elegant rounded-xl"}
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isFollowing ? <><UserMinus className="w-4 h-4 mr-2" /> Unfollow</> : <><UserPlus className="w-4 h-4 mr-2" /> Follow</>}
-                </Button>
-              </motion.div>
+              <div className="flex gap-2">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleFollow}
+                    disabled={loading}
+                    className={isFollowing ? "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-xl" : "gradient-primary shadow-elegant rounded-xl"}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isFollowing ? <><UserMinus className="w-4 h-4 mr-2" /> Unfollow</> : <><UserPlus className="w-4 h-4 mr-2" /> Follow</>}
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={handleBlock}
+                    disabled={loading}
+                    variant={isBlocking ? "destructive" : "outline"}
+                    className="rounded-xl"
+                    title={isBlocking ? "Unblock user" : "Block user"}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                  </Button>
+                </motion.div>
+              </div>
             )}
           </div>
 

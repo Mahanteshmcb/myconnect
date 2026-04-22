@@ -48,17 +48,36 @@ const Groups = () => {
   const fetchGroups = async (userId: string) => {
     setLoading(true);
     try {
-      const { data: myGroupsData, error: myGroupsError } = await supabase.rpc('get_user_groups' as any, { p_user_id: userId });
-      if (myGroupsError) throw myGroupsError;
-      setMyGroups(myGroupsData as any);
+      // Get user's groups via group_members table
+      const { data: userGroupIds, error: userGroupsError } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", userId);
 
+      if (userGroupsError) throw userGroupsError;
+
+      if (userGroupIds && userGroupIds.length > 0) {
+        const groupIds = userGroupIds.map(m => m.group_id);
+        const { data: myGroupsData, error: myGroupsDataError } = await supabase
+          .from("groups")
+          .select("*")
+          .in("id", groupIds);
+
+        if (myGroupsDataError) throw myGroupsDataError;
+        setMyGroups(myGroupsData as any);
+      } else {
+        setMyGroups([]);
+      }
+
+      // Get public groups
       const { data: publicGroupsData, error: publicGroupsError } = await supabase
-        .from('groups' as any)
-        .select('*')
-        .eq('is_private', false);
+        .from("groups")
+        .select("*")
+        .eq("is_private", false);
+
       if (publicGroupsError) throw publicGroupsError;
       
-      const myGroupIds = new Set((myGroupsData as any[]).map((g: Group) => g.id));
+      const myGroupIds = new Set(userGroupIds?.map(m => m.group_id) || []);
       setPublicGroups((publicGroupsData as any[]).filter((g: Group) => !myGroupIds.has(g.id)));
 
     } catch (error) {
@@ -74,17 +93,17 @@ const Groups = () => {
     if (!user) return;
     setIsCreating(true);
     try {
-      const { data: groupData, error } = await (supabase
-        .from("groups" as any) as any)
+      const { data: groupData, error } = await supabase
+        .from("groups")
         .insert({ name: newGroup.name, description: newGroup.description, created_by: user.id })
         .select()
         .single();
 
       if (error) throw error;
 
-      const { error: memberError } = await (supabase
-        .from("group_members" as any) as any)
-        .insert({ group_id: (groupData as any).id, user_id: user.id, role: 'admin' });
+      const { error: memberError } = await supabase
+        .from("group_members")
+        .insert({ group_id: groupData.id, user_id: user.id, role: 'admin' });
 
       if (memberError) throw memberError;
 
@@ -96,6 +115,23 @@ const Groups = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleJoinGroup = async (e: React.MouseEvent, groupId: string) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("group_members")
+        .insert({ group_id: groupId, user_id: user.id, role: 'member' });
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Joined group successfully." });
+      fetchGroups(user.id);
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -185,22 +221,31 @@ const Groups = () => {
             {publicGroups.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {publicGroups.map((group) => (
-                  <Link to={`/group/${group.id}`} key={group.id}>
-                    <Card className="hover:border-primary transition-colors">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={group.avatar_url} />
-                            <AvatarFallback>{group.name[0]}</AvatarFallback>
-                          </Avatar>
-                          {group.name}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                  <Card key={group.id} className="hover:border-primary transition-colors flex flex-col">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={group.avatar_url} />
+                          <AvatarFallback>{group.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="line-clamp-1">{group.name}</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{group.description}</p>
+                      <div className="flex gap-2">
+                        <Link to={`/group/${group.id}`} className="flex-1">
+                          <Button variant="outline" className="w-full">View</Button>
+                        </Link>
+                        <Button 
+                          onClick={(e) => handleJoinGroup(e, group.id)}
+                          className="gradient-primary"
+                        >
+                          Join
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             ) : (

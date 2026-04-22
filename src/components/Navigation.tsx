@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Compass, PlusSquare, Users, Play, Feather, Gamepad2, LogOut, User, Menu, X } from "lucide-react";
+import { Home, MessageSquare, Compass, PlusSquare, Users, Play, Feather, Gamepad2, LogOut, User, Menu, X, Settings } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -108,6 +108,12 @@ const Navigation = ({ user }: NavigationProps) => {
                     <User className="w-4 h-4" /> Profile
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" /> Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="w-4 h-4 mr-2" /> Sign out
                 </DropdownMenuItem>

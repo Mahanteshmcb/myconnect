@@ -41,7 +41,7 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation user={user} />
-      <main className="max-w-6xl mx-auto pt-20 pb-8 md:pb-8 pb-20 px-4 h-[calc(100vh-5rem)]">
+      <main className="max-w-6xl mx-auto pt-20 pb-8 md:pb-8 px-4 h-[calc(100vh-5rem)]">
         <div className="h-full flex gap-0 md:gap-4 rounded-2xl overflow-hidden border border-border/50 shadow-card bg-card">
           {/* Conversation list - full width on mobile when no conversation selected */}
           <div className={`${selectedConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r border-border/50`}>

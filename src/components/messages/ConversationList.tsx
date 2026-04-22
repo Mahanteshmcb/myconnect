@@ -79,7 +79,7 @@ const ConversationList = ({ userId, selectedConversationId, onSelectConversation
             .select("user_id, profiles(id, username, avatar_url)")
             .eq("conversation_id", conv.id)
             .neq("user_id", userId)
-            .single();
+            .maybeSingle();
 
           const { data: lastMessage } = await supabase
             .from("messages")

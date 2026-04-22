@@ -11,6 +11,9 @@ import Explore from "@/pages/Explore";
 import Videos from "@/pages/Videos";
 import Echoes from "@/pages/Echoes";
 import TicTacToe from "@/pages/TicTacToe";
+import Settings from "@/pages/Settings";
+import Moderation from "@/pages/Moderation";
+import Analytics from "@/pages/Analytics";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -26,6 +29,9 @@ function App() {
           <Route path="/videos" element={<Videos />} />
           <Route path="/echoes" element={<Echoes />} />
           <Route path="/tictactoe" element={<TicTacToe />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/moderation" element={<Moderation />} />
+          <Route path="/:username/analytics" element={<Analytics />} />
           <Route path="/:username" element={<Profile />} />
           <Route path="/post/:postId" element={<PostPage />} />
           <Route path="/messages" element={<Messages />} />

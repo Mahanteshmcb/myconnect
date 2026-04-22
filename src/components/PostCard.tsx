@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, MessageCircle, Send, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreHorizontal, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { User } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
@@ -84,7 +85,21 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any; currentUser: Use
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
-
+  const handleReportPost = async () => {
+    try {
+      const { error } = await supabase.from("reports").insert({
+        type: "inappropriate_content",
+        reason: "User reported this post",
+        content_type: "post",
+        content_id: post.id,
+        reporter_id: currentUser.id,
+      });
+      if (error) throw error;
+      toast({ title: "Report submitted", description: "Thank you for helping us keep the platform safe." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -106,7 +121,7 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any; currentUser: Use
                 <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
               </div>
             </Link>
-            {post.user_id === currentUser.id && (
+            {post.user_id === currentUser.id ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-xl">
@@ -115,6 +130,20 @@ const PostCard = ({ post, currentUser, onUpdate }: { post: any; currentUser: Use
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={handleDeletePost} className="text-destructive">Delete Post</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-xl">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleReportPost} className="text-destructive flex items-center gap-2">
+                    <Flag className="w-4 h-4" />
+                    Report Post
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

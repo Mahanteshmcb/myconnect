@@ -51,27 +51,27 @@ const Echoes = () => {
       const ids = followingIds?.map(f => f.following_id) || [];
       ids.push(userId);
 
-      const { data, error } = await (supabase
-        .from("echoes" as any) as any)
+      const { data, error } = await supabase
+        .from("echoes")
         .select(`
           *,
           profiles:user_id (username, avatar_url),
           echo_likes (user_id),
           echo_replies (id)
         `)
-        .in("user_id", ids)
+        .in("user_id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const formattedData = (data as any[]).map((echo: any) => ({
+      const formattedData = (data || []).map((echo) => ({
         ...echo,
         _count: {
-          echo_replies: echo.echo_replies?.length || 0
+          echo_replies: (echo.echo_replies as any[])?.length || 0
         }
       }));
 
-      setEchoes(formattedData as any);
+      setEchoes(formattedData);
     } catch (error) {
       console.error("Error fetching echoes:", error);
     } finally {
