@@ -1,11 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
 
-// Hardcoded values from .env for this project
-const SUPABASE_URL = "https://uoljswwixsevqvuwedln.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvbGpzd3dpeHNldnF2dXdlZGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMjA0NjgsImV4cCI6MjA3ODc5NjQ2OH0.qDrsfmG4agJMgNi0TigvGGde0LyO4yQl6ohbPSyzTsY";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase configuration. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.'
+  );
+}
+
+// Only use the public ANON key in frontend code. Never expose a Supabase service_role key in browser assets.
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,

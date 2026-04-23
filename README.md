@@ -71,3 +71,73 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## ✔ Adding Firebase resources to Google Cloud Platform project
+# Option C: Firebase Hosting
+
+Install Firebase CLI: npm install -g firebase-tools
+Run firebase login
+In your project folder:
+firebase init hosting
+(choose “dist” as the public directory)
+Deploy:
+firebase deploy
+# =================================================== #
+
+✔ Please specify a unique project id (warning: cannot be modified afterward) [6-30
+characters]:
+ joinmyconnect
+✔ What would you like to call your project? (defaults to your project ID) myconnect
+✔ Creating Google Cloud Platform project
+✔ Adding Firebase resources to Google Cloud Platform project
+
+=== Your Firebase project is ready! ===
+
+Project information:
+   - Project ID: joinmyconnect
+   - Project Name: myconnect
+
+Firebase console is available at
+https://console.firebase.google.com/project/joinmyconnect/overview
+
+=== Hosting Setup
+
+Your public directory is the folder (relative to your project directory) that
+will contain Hosting assets to be uploaded with firebase deploy. If you
+have a build process for your assets, use your build's output directory.
+
+✔ What do you want to use as your public directory? dist
+✔ Configure as a single-page app (rewrite all urls to /index.html)? Yes
+✔ Set up automatic builds and deploys with GitHub? No
+✔ File dist\index.html already exists. Overwrite? No
+i  Skipping write of dist\index.html
+
+=== Agent Skills Setup
+If you are using an AI coding agent, Firebase Agent Skills make it an expert at Firebase.
+✔ Would you like to install agent skills for Firebase? Yes
+i  Installing Agent skills in the background...
++  Agent skills installation started
+
++  Wrote configuration info to firebase.json
++  Wrote project information to .firebaserc
+
++  Firebase initialization complete!
+(base) PS C:\Users\Mahantesh\DevelopmentProjects\myconnect> firebase deploy
+(node:9304) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+=== Deploying to 'joinmyconnect'...
+
+i  deploying hosting
+i  hosting[joinmyconnect]: beginning deploy...
+i  hosting[joinmyconnect]: found 6 files in dist
++  hosting[joinmyconnect]: file upload complete
+i  hosting[joinmyconnect]: finalizing version...
++  hosting[joinmyconnect]: version finalized
+i  hosting[joinmyconnect]: releasing new version...
++  hosting[joinmyconnect]: release complete
+
++  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/joinmyconnect/overview
+Hosting URL: https://joinmyconnect.web.app

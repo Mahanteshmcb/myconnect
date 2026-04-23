@@ -56,3 +56,4 @@ firebase-debug.log*
 .agents/
 .continue/
 skills-lock.json
+.temp/
